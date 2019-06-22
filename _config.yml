@@ -1,3 +1,4 @@
 theme: jekyll-theme-slate
 name: Tamir Dresher, IBlogger
 markdown: kramdown
+permalink: /blog/:year/:month/:day/:title
