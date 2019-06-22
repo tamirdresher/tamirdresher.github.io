@@ -1,0 +1,159 @@
+<div style="text-align: center">
+	<i><strong>This post was originally published on January 2, 2013 at <a href="https://blogs.microsoft.co.il/iblogger/2013/01/02/adding-localization-support-to-winrt-c-application/">https://blogs.microsoft.co.il/iblogger/2013/01/02/adding-localization-support-to-winrt-c-application/</a></strong></i>
+</div>
+
+				<div class="contx entry-content clearfix">
+			<p>When we create applications we usually want to make them easy to use by our users. One way to make application more accessible internationally is to make it localized to the users’ language and regional settings.
+</p>
+<p>In this post I wish to show how to add localization support to your WinRT C# application.
+</p>
+<p>All the source code can be downloaded from my GitHub: <a href="https://github.com/tamirdresher/LocalizedWinRTAppExample">https://github.com/tamirdresher/LocalizedWinRTAppExample</a>
+	</p>
+<h1>Sample App<br>
+</h1>
+<p>I created a simple application that includes a simple login page (the app includes only UI) and currently supports “en-US” and “he-IL” locales
+</p>
+<p style="text-align: justify">
+&nbsp;</p>
+<div style="text-align: center">
+<table style="border-collapse:collapse" border="0">
+<colgroup>
+<col style="width:283px">
+<col style="width:293px"></colgroup>
+<tbody valign="top">
+<tr>
+<td style="padding-left: 7px; padding-right: 7px">
+<p style="text-align: center">
+<img src="./adding-localization-support-to-winrt-c-application_files/en_version.png">
+						</p>
+<p style="text-align: center">English version</p>
+</td>
+<td style="padding-left: 7px; padding-right: 7px">
+<p style="text-align: center">
+<img src="./adding-localization-support-to-winrt-c-application_files/he_version.png">
+						</p>
+<p style="text-align: center">Hebrew version</p>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p style="text-align: justify">
+&nbsp;</p>
+<h1>How does it work?<br>
+</h1>
+<p>Create a new Windows Store project – I used the Blank App template
+</p>
+<p></p>
+<p><img src="./adding-localization-support-to-winrt-c-application_files/newproject.png"></p>
+<p>
+&nbsp;</p>
+<p>In the project Add a directory called “Strings” that includes sub directory for every locale you wish to support.
+</p>
+<p><img src="./adding-localization-support-to-winrt-c-application_files/projStructure.png"></p>
+<p>Each sub directory needs to contain a *.resw file (or more) with the localized values.
+</p>
+<p>
+&nbsp;</p>
+<p>In the XAML file we need to give each element that is localized a<span style="color:red"><br>
+			<strong>x:UID </strong></span>unique<span style="color:red"><strong><br>
+			</strong></span>value.
+</p>
+<p>e.g.
+</p>
+<p style="background: white"><span style="color:black; font-family:Consolas; font-size:10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:green">&lt;!–username&nbsp;textbox–&gt;<span style="color:black"><br>
+				</span></span></span></p>
+<p style="background: white"><span style="color:black; font-family:Consolas; font-size:10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">&lt;<span style="color:#a31515">TextBlock<span style="color:red">&nbsp;<span style="background-color:yellow">x<span style="color:blue">:<span style="color:red">Uid<span style="color:blue">=”UsernameCaption”</span></span></span></span><span style="color:black"><br>
+						</span></span></span></span></span></p>
+<p style="background: white"><span style="color:black; font-family:Consolas; font-size:10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:red">&nbsp;Grid.Row<span style="color:blue">=”0″<span style="color:black"><br>
+					</span></span></span></span></p>
+<p style="background: white"><span style="color:black; font-family:Consolas; font-size:10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:red">&nbsp;Grid.Column<span style="color:blue">=”0″<span style="color:black"><br>
+					</span></span></span></span></p>
+<p style="background: white"><span style="color:black; font-family:Consolas; font-size:10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:red">&nbsp;Text<span style="color:blue">=”Username”<span style="color:black"><br>
+					</span></span></span></span></p>
+<p style="background: white"><span style="color:black; font-family:Consolas; font-size:10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:red">&nbsp;HorizontalAlignment<span style="color:blue">=”Right”<span style="color:black"><br>
+					</span></span></span></span></p>
+<p style="background: white"><span style="color:black; font-family:Consolas; font-size:10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:red">&nbsp;VerticalAlignment<span style="color:blue">=”Center”<span style="color:black"><br>
+					</span></span></span></span></p>
+<p style="background: white"><span style="color:black; font-family:Consolas; font-size:10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:red">&nbsp;Style<span style="color:blue">=”{<span style="color:#a31515">StaticResource<span style="color:red">&nbsp;TitleTextStyle<span style="color:blue">}”&nbsp;/&gt;<span style="color:black"><br>
+								</span></span></span></span></span></span></span></p>
+<p style="background: white">
+&nbsp;</p>
+<p style="background: white">
+&nbsp;</p>
+<p>Later, in the *.resw files we define the appropriate value for each localized property
+</p>
+<p></p>
+<p><img src="./adding-localization-support-to-winrt-c-application_files/reswFiles.png"></p>
+<p>
+&nbsp;</p>
+<p>That’s all you need to do in order to make that UI element localized.
+</p>
+<p>Note that this doesn’t end with Text value but we can control any property on the element such as width, height etc.
+</p>
+<h1>Flow Direction<br>
+</h1>
+<p>Since different languages use different layout ordering (RTL, LTR), we need to add this behavior to our application.
+</p>
+<p>One way to achieve this is by setting the FlowDirection property (from a value in our .resw file) for each of our views but that error-prone and cumbersome.
+</p>
+<p>Instead we can add code for our application initialization that put the FlowDirection on the rootframe and since the FlowDirection is an inherited value, all the other views will have the same FlowDirection.
+</p>
+<p>This code snippet achieves that goal:
+</p>
+<p style="background: white"><span style="color:black; font-family:Consolas; font-size:10pt">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">var<span style="color:black">&nbsp;loader&nbsp;=&nbsp;<span style="color:blue">new<span style="color:black">&nbsp;Windows.ApplicationModel.Resources.<span style="color:#2b91af">ResourceLoader<span style="color:black">();<br>
+</span></span></span></span></span></span></span></p>
+<p style="background: white"><span style="color:black; font-family:Consolas; font-size:10pt">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">var<span style="color:black">&nbsp;flowDirectionString&nbsp;=&nbsp;loader.GetString(<span style="color:#a31515">“ApplicationFlowDirection”<span style="color:black">);<br>
+</span></span></span></span></span></p>
+<p style="background: white"><span style="color:black; font-family:Consolas; font-size:10pt">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">var<span style="color:black">&nbsp;flowDirection&nbsp;=&nbsp;<span style="color:#2b91af">FlowDirection<span style="color:black">.LeftToRight;<br>
+</span></span></span></span></span></p>
+<p style="background: white"><span style="color:black; font-family:Consolas; font-size:10pt">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#2b91af">FlowDirection<span style="color:black">.TryParse(flowDirectionString,&nbsp;<span style="color:blue">true<span style="color:black">,&nbsp;<span style="color:blue">out<span style="color:black">&nbsp;flowDirection);<br>
+</span></span></span></span></span></span></span></p>
+<p style="background: white"><span style="color:black; font-family:Consolas; font-size:10pt">&nbsp;&nbsp;&nbsp;&nbsp;rootFrame.FlowDirection&nbsp;=&nbsp;flowDirection;<br>
+</span></p>
+<p>in the attached example application the code is located in the <span style="color:black; font-family:Consolas; font-size:10pt">OnLaunched </span>event handler of the <span style="color:#2b91af; font-family:Consolas; font-size:10pt">App </span>class so that when the application starts the initialization it looks for the resource “ApplicationFlowDirection” (which contains the value RightToLeft or LeftToRight) And if it finds it then changes the root frame FlowDirection.
+</p>
+<p>Otherwise, the FlowDirection is LeftToRight
+</p>
+<h1>Testing the Localization<br>
+</h1>
+<p>In order to see how the UI changes for different locales, I’ve added a code (that runs only in debug mode) where u declare the current locale – default is en-US
+</p>
+<p style="background: white">
+</p><pre><code><span style="color:blue; font-family:Consolas">#if<span style="color:black">&nbsp;DEBUG 
+</span></span></code></pre>
+<p></p>
+<p style="background: white">
+</p><pre><code><span style="color:black; font-family:Consolas">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">var<span style="color:black">&nbsp;locale&nbsp;=&nbsp;<span style="color:#a31515">"en-US"<span style="color:black">;
+</span></span></span></span></span></code></pre>
+<p></p>
+<p style="background: white">
+</p><pre><code><span style="color:black; font-family:Consolas">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:green">//var&nbsp;locale="he-IL";<span style="color:black">
+						</span></span></span></code></pre>
+<p></p>
+<p style="background: white">
+</p><pre><code><span style="color:black; font-family:Consolas">&nbsp;&nbsp;&nbsp;&nbsp;Windows.Globalization.<span style="color:#2b91af">ApplicationLanguages<span style="color:black">.PrimaryLanguageOverride=locale;
+</span></span></span></code></pre>
+<p></p>
+<p style="background: white">
+</p><pre><code><span style="color:blue; font-family:Consolas">#endif<span style="color:black">
+					</span></span></code></pre>
+<p></p>
+<p>
+</p><p></p>
+			<iframe src="./adding-localization-support-to-winrt-c-application_files/like.html" scrolling="no" frameborder="0" style="border:none; overflow:hidden; height:80px;" allowtransparency="true"></iframe>
+
+							  <div class="clearfix entry-options">
+                        <a href="javascript:void(0)" class="bp-add-comment">Add comment</a>
+                        <div class="bp-social_i">
+                           <a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://blogs.microsoft.co.il/iblogger/2013/01/02/adding-localization-support-to-winrt-c-application/" class="ir icon-fb">facebook</a>
+                            <a target="_blank" href="http://www.linkedin.com/shareArticle?mini=true&amp;url=http://blogs.microsoft.co.il/iblogger/2013/01/02/adding-localization-support-to-winrt-c-application/&amp;title=Adding%20Localization%20support%20to%20WinRT%20C#%20Application&amp;summary=%3Cp%3EWhen%20we%20create%20applications%20we%20usually%20want%20to%20make%20them%20easy%20to%20use%20by%20our%20users.%20One%20way%20to%20make%20application%20more%20accessible%20internationally%20is%20to%20make%20it%20localized%20to%20the%20users%E2%80%99%20language%20and%20regional%20settings.%20In%20this%20post%20I%20wish%20to%20show%20how%20to%20add%20localization%20support%20to%20your%20WinRT%20C#%20application.%20All%20the%20[%E2%80%A6]%3C/p%3E" class="ir icon-in">linkedin</a>
+                            <a target="_blank" href="https://twitter.com/share" class="tweet ir icon-twitter" data-lang="he">twitter</a>
+                            <a href="mailto:?subject=Adding%20Localization%20support%20to%20WinRT%20C%23%20Application&amp;body=Check%20out%20this%20post%20http://blogs.microsoft.co.il/iblogger/2013/01/02/adding-localization-support-to-winrt-c-application/" class="ir icon-email">email</a>
+                            <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="https://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+                        </div>
+                    </div>
+
+				
+
+		
