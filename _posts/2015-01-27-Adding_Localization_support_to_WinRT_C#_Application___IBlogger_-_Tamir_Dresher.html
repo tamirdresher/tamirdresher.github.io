@@ -18,19 +18,19 @@ msblogurl: "http://blogs.microsoft.co.il/iblogger/2015/01/27/catching-exceptions
 <TBODY vAlign=top>
 <TR>
 <TD style="PADDING-LEFT: 7px; PADDING-RIGHT: 7px">
-<P style="TEXT-ALIGN: center"><IMG src="./Adding Localization support to WinRT C# Application _ IBlogger - Tamir Dresher_files/en_version.png"> </P>
+<P style="TEXT-ALIGN: center"><IMG src="{{ site.url }}/assets/Adding Localization support to WinRT C# Application _ IBlogger - Tamir Dresher_files/en_version.png"> </P>
 <P style="TEXT-ALIGN: center">English version</P></TD>
 <TD style="PADDING-LEFT: 7px; PADDING-RIGHT: 7px">
-<P style="TEXT-ALIGN: center"><IMG src="./Adding Localization support to WinRT C# Application _ IBlogger - Tamir Dresher_files/he_version.png"> </P>
+<P style="TEXT-ALIGN: center"><IMG src="{{ site.url }}/assets/Adding Localization support to WinRT C# Application _ IBlogger - Tamir Dresher_files/he_version.png"> </P>
 <P style="TEXT-ALIGN: center">Hebrew version</P></TD></TR></TBODY></TABLE></DIV>
 <P style="TEXT-ALIGN: justify">&nbsp;</P>
 <H1>How does it work?<BR></H1>
 <P>Create a new Windows Store project – I used the Blank App template </P>
 <P></P>
-<P><IMG src="./Adding Localization support to WinRT C# Application _ IBlogger - Tamir Dresher_files/newproject.png"></P>
+<P><IMG src="{{ site.url }}/assets/Adding Localization support to WinRT C# Application _ IBlogger - Tamir Dresher_files/newproject.png"></P>
 <P>&nbsp;</P>
 <P>In the project Add a directory called “Strings” that includes sub directory for every locale you wish to support. </P>
-<P><IMG src="./Adding Localization support to WinRT C# Application _ IBlogger - Tamir Dresher_files/projStructure.png"></P>
+<P><IMG src="{{ site.url }}/assets/Adding Localization support to WinRT C# Application _ IBlogger - Tamir Dresher_files/projStructure.png"></P>
 <P>Each sub directory needs to contain a *.resw file (or more) with the localized values. </P>
 <P>&nbsp;</P>
 <P>In the XAML file we need to give each element that is localized a<SPAN style="COLOR: red"><BR><STRONG>x:UID </STRONG></SPAN>unique<SPAN style="COLOR: red"><STRONG><BR></STRONG></SPAN>value. </P>
@@ -47,7 +47,7 @@ msblogurl: "http://blogs.microsoft.co.il/iblogger/2015/01/27/catching-exceptions
 <P style="BACKGROUND: white">&nbsp;</P>
 <P>Later, in the *.resw files we define the appropriate value for each localized property </P>
 <P></P>
-<P><IMG src="./Adding Localization support to WinRT C# Application _ IBlogger - Tamir Dresher_files/reswFiles.png"></P>
+<P><IMG src="{{ site.url }}/assets/Adding Localization support to WinRT C# Application _ IBlogger - Tamir Dresher_files/reswFiles.png"></P>
 <P>&nbsp;</P>
 <P>That’s all you need to do in order to make that UI element localized. </P>
 <P>Note that this doesn’t end with Text value but we can control any property on the element such as width, height etc. </P>
@@ -81,4 +81,4 @@ msblogurl: "http://blogs.microsoft.co.il/iblogger/2015/01/27/catching-exceptions
 					</SPAN></SPAN></CODE></PRE>
 <P></P>
 <P></P>
-<P></P><IFRAME style="OVERFLOW: hidden; BORDER-TOP: medium none; HEIGHT: 80px; BORDER-RIGHT: medium none; BORDER-BOTTOM: medium none; BORDER-LEFT: medium none" src="./Adding Localization support to WinRT C# Application _ IBlogger - Tamir Dresher_files/like.html" frameBorder=0 allowTransparency scrolling=no></IFRAME>
+<P></P><IFRAME style="OVERFLOW: hidden; BORDER-TOP: medium none; HEIGHT: 80px; BORDER-RIGHT: medium none; BORDER-BOTTOM: medium none; BORDER-LEFT: medium none" src="{{ site.url }}/assets/Adding Localization support to WinRT C# Application _ IBlogger - Tamir Dresher_files/like.html" frameBorder=0 allowTransparency scrolling=no></IFRAME>
