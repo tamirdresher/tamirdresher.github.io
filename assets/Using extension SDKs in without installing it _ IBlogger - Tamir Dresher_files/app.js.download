@@ -1,0 +1,20 @@
+jQuery(function ($) {
+    
+    if ($('.widget_archive li').size() > 5) {
+        var toHide = $('.widget_archive li:gt(4)').hide();
+        var btn = $('<li><a class="a-txt" href="javascript:void(0)">Full Arcive</a></li>').appendTo('.widget_archive ul');
+
+        btn.on('click', function () {
+           
+            toHide.slideDown();
+            btn.hide();
+        });
+    }
+
+    $('.tagcloud a').each(function () {
+
+        if ($(this).css('font-size').replace(/[^-\d\.]/g, '') > 38) {
+            $(this).css('color', '#03b194');
+        }
+    });
+});

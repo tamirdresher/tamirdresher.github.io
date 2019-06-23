@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<!-- saved from url=(0084)http://blogs.microsoft.co.il/iblogger/2014/05/19/dealing-reentrancy-delegatecommand/ -->
+<html lang="en-US"><!--<![endif]--><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="initial-scale=1.0, width=device-width">
+<title>Dealing with reentrancy with DelegateCommand | IBlogger - Tamir Dresher</title>
+<link rel="profile" href="http://gmpg.org/xfn/11">
+<link rel="pingback" href="http://blogs.microsoft.co.il/iblogger/xmlrpc.php">
+
+
+<!--[if lt IE 9]>
+           <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+           <script>window.html5 || document.write('<script src="http://blogs.microsoft.co.il/iblogger/wp-content/themes/MS_englishjs/vendor/html5shiv.js"><\/script>')</script>
+    <![endif]-->
+			 
+ <script src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/all.js.download" async="" crossorigin="anonymous"></script><script src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/track.js.download"></script><script id="twitter-wjs" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/widgets.js.download"></script><script id="facebook-jssdk" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/all.js(1).download"></script><script async="" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/analytics.js.download"></script><script src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/jquery.min.js.download"></script>
+ <script src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/app.js.download"></script>
+<link rel="dns-prefetch" href="http://s.w.org/">
+<link rel="alternate" type="application/rss+xml" title="IBlogger - Tamir Dresher » Feed" href="http://blogs.microsoft.co.il/iblogger/feed/">
+<link rel="alternate" type="application/rss+xml" title="IBlogger - Tamir Dresher » Comments Feed" href="http://blogs.microsoft.co.il/iblogger/comments/feed/">
+<link rel="alternate" type="application/rss+xml" title="IBlogger - Tamir Dresher » Dealing with reentrancy with DelegateCommand Comments Feed" href="http://blogs.microsoft.co.il/iblogger/2014/05/19/dealing-reentrancy-delegatecommand/feed/">
+		<script type="text/javascript">
+			window._wpemojiSettings = {"baseUrl":"https:\/\/s.w.org\/images\/core\/emoji\/11\/72x72\/","ext":".png","svgUrl":"https:\/\/s.w.org\/images\/core\/emoji\/11\/svg\/","svgExt":".svg","source":{"concatemoji":"http:\/\/blogs.microsoft.co.il\/iblogger\/wp-includes\/js\/wp-emoji-release.min.js?ver=5.0.2"}};
+			!function(a,b,c){function d(a,b){var c=String.fromCharCode;l.clearRect(0,0,k.width,k.height),l.fillText(c.apply(this,a),0,0);var d=k.toDataURL();l.clearRect(0,0,k.width,k.height),l.fillText(c.apply(this,b),0,0);var e=k.toDataURL();return d===e}function e(a){var b;if(!l||!l.fillText)return!1;switch(l.textBaseline="top",l.font="600 32px Arial",a){case"flag":return!(b=d([55356,56826,55356,56819],[55356,56826,8203,55356,56819]))&&(b=d([55356,57332,56128,56423,56128,56418,56128,56421,56128,56430,56128,56423,56128,56447],[55356,57332,8203,56128,56423,8203,56128,56418,8203,56128,56421,8203,56128,56430,8203,56128,56423,8203,56128,56447]),!b);case"emoji":return b=d([55358,56760,9792,65039],[55358,56760,8203,9792,65039]),!b}return!1}function f(a){var c=b.createElement("script");c.src=a,c.defer=c.type="text/javascript",b.getElementsByTagName("head")[0].appendChild(c)}var g,h,i,j,k=b.createElement("canvas"),l=k.getContext&&k.getContext("2d");for(j=Array("flag","emoji"),c.supports={everything:!0,everythingExceptFlag:!0},i=0;i<j.length;i++)c.supports[j[i]]=e(j[i]),c.supports.everything=c.supports.everything&&c.supports[j[i]],"flag"!==j[i]&&(c.supports.everythingExceptFlag=c.supports.everythingExceptFlag&&c.supports[j[i]]);c.supports.everythingExceptFlag=c.supports.everythingExceptFlag&&!c.supports.flag,c.DOMReady=!1,c.readyCallback=function(){c.DOMReady=!0},c.supports.everything||(h=function(){c.readyCallback()},b.addEventListener?(b.addEventListener("DOMContentLoaded",h,!1),a.addEventListener("load",h,!1)):(a.attachEvent("onload",h),b.attachEvent("onreadystatechange",function(){"complete"===b.readyState&&c.readyCallback()})),g=c.source||{},g.concatemoji?f(g.concatemoji):g.wpemoji&&g.twemoji&&(f(g.twemoji),f(g.wpemoji)))}(window,document,window._wpemojiSettings);
+		</script><script src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/wp-emoji-release.min.js.download" type="text/javascript" defer=""></script>
+		<style type="text/css">
+img.wp-smiley,
+img.emoji {
+	display: inline !important;
+	border: none !important;
+	box-shadow: none !important;
+	height: 1em !important;
+	width: 1em !important;
+	margin: 0 .07em !important;
+	vertical-align: -0.1em !important;
+	background: none !important;
+	padding: 0 !important;
+}
+</style>
+<link rel="stylesheet" id="wp-block-library-css" href="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/style.min.css" type="text/css" media="all">
+<link rel="stylesheet" id="microsoft-hebrew-normalize-css" href="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/normalize.css" type="text/css" media="all">
+<link rel="stylesheet" id="MS_english-style-css" href="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/style.css" type="text/css" media="all">
+<link rel="stylesheet" id="ms_global_search_css_style-css" href="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/style(1).css" type="text/css" media="all">
+<link rel="https://api.w.org/" href="http://blogs.microsoft.co.il/iblogger/wp-json/">
+<link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://blogs.microsoft.co.il/iblogger/xmlrpc.php?rsd">
+<link rel="wlwmanifest" type="application/wlwmanifest+xml" href="http://blogs.microsoft.co.il/iblogger/wp-includes/wlwmanifest.xml"> 
+<link rel="prev" title="Azure vs Amazon vs Rackspace vs HP vs Google: Cloud Storage Infographic from apterainc blog" href="http://blogs.microsoft.co.il/iblogger/2014/05/14/azure-vs-amazon-vs-rackspace-vs-hp-vs-google-cloud-storage-infographic-apterainc-blog/">
+<link rel="next" title="Slides from “Where is my Data? (in the cloud)” Webinar – 19/05/2014" href="http://blogs.microsoft.co.il/iblogger/2014/05/22/slides-from-where-is-my-data-in-the-cloud-webinar-19052014/">
+<meta name="generator" content="WordPress 5.0.2">
+<link rel="canonical" href="http://blogs.microsoft.co.il/iblogger/2014/05/19/dealing-reentrancy-delegatecommand/">
+<link rel="shortlink" href="http://blogs.microsoft.co.il/iblogger/?p=2746743">
+<link rel="alternate" type="application/json+oembed" href="http://blogs.microsoft.co.il/iblogger/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fblogs.microsoft.co.il%2Fiblogger%2F2014%2F05%2F19%2Fdealing-reentrancy-delegatecommand%2F">
+<link rel="alternate" type="text/xml+oembed" href="http://blogs.microsoft.co.il/iblogger/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fblogs.microsoft.co.il%2Fiblogger%2F2014%2F05%2F19%2Fdealing-reentrancy-delegatecommand%2F&amp;format=xml">
+
+<!-- ADD TO HEADER - START -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-67213620-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+<!-- ADD TO HEADER - END -->
+<meta name="google-site-verification" content="2Y9QuXw0MMYL8Kq8RIZ-N_lVubDeehILCkhSkmPp1y0"><link rel="stylesheet" type="text/css" href="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shCore.css"><link rel="stylesheet" type="text/css" href="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shThemeEmacs.css"><style type="text/css" id="syntaxhighlighteranchor"></style>
+<meta data-pso-pv="1.2.1" data-pso-pt="singlePost" data-pso-th="d1bf338e192ac56181c1552d8e7193ec">
+<!--Wise pixel Microsoft Blogs-->
+<script language="JavaScript1.1" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/js"></script>
+
+<style type="text/css">.fb_hidden{position:absolute;top:-10000px;z-index:10001}.fb_reposition{overflow:hidden;position:relative}.fb_invisible{display:none}.fb_reset{background:none;border:0;border-spacing:0;color:#000;cursor:auto;direction:ltr;font-family:"lucida grande", tahoma, verdana, arial, sans-serif;font-size:11px;font-style:normal;font-variant:normal;font-weight:normal;letter-spacing:normal;line-height:1;margin:0;overflow:visible;padding:0;text-align:right;text-decoration:none;text-indent:0;text-shadow:none;text-transform:none;visibility:visible;white-space:normal;word-spacing:normal}.fb_reset>div{overflow:hidden}@keyframes fb_transform{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}.fb_animate{animation:fb_transform .3s forwards}
+.fb_dialog{background:rgba(82, 82, 82, .7);position:absolute;top:-10000px;z-index:10001}.fb_dialog_advanced{border-radius:8px;padding:10px}.fb_dialog_content{background:#fff;color:#373737}.fb_dialog_close_icon{background:url(https://static.xx.fbcdn.net/rsrc.php/v3/yq/r/IE9JII6Z1Ys.png) no-repeat scroll 0 0 transparent;cursor:pointer;display:block;height:15px;position:absolute;left:18px;top:17px;width:15px}.fb_dialog_mobile .fb_dialog_close_icon{right:5px;left:auto;top:5px}.fb_dialog_padding{background-color:transparent;position:absolute;width:1px;z-index:-1}.fb_dialog_close_icon:hover{background:url(https://static.xx.fbcdn.net/rsrc.php/v3/yq/r/IE9JII6Z1Ys.png) no-repeat scroll 0 -15px transparent}.fb_dialog_close_icon:active{background:url(https://static.xx.fbcdn.net/rsrc.php/v3/yq/r/IE9JII6Z1Ys.png) no-repeat scroll 0 -30px transparent}.fb_dialog_iframe{line-height:0}.fb_dialog_content .dialog_title{background:#6d84b4;border:1px solid #365899;color:#fff;font-size:14px;font-weight:bold;margin:0}.fb_dialog_content .dialog_title>span{background:url(https://static.xx.fbcdn.net/rsrc.php/v3/yd/r/Cou7n-nqK52.gif) no-repeat 5px 50%;float:right;padding:5px 26px 7px 0}body.fb_hidden{height:100%;right:0;margin:0;overflow:visible;position:absolute;top:-10000px;transform:none;width:100%}.fb_dialog.fb_dialog_mobile.loading{background:url(https://static.xx.fbcdn.net/rsrc.php/v3/ya/r/3rhSv5V8j3o.gif) white no-repeat 50% 50%;min-height:100%;min-width:100%;overflow:hidden;position:absolute;top:0;z-index:10001}.fb_dialog.fb_dialog_mobile.loading.centered{background:none;height:auto;min-height:initial;min-width:initial;width:auto}.fb_dialog.fb_dialog_mobile.loading.centered #fb_dialog_loader_spinner{width:100%}.fb_dialog.fb_dialog_mobile.loading.centered .fb_dialog_content{background:none}.loading.centered #fb_dialog_loader_close{clear:both;color:#fff;display:block;font-size:18px;padding-top:20px}#fb-root #fb_dialog_ipad_overlay{background:rgba(0, 0, 0, .4);bottom:0;right:0;min-height:100%;position:absolute;left:0;top:0;width:100%;z-index:10000}#fb-root #fb_dialog_ipad_overlay.hidden{display:none}.fb_dialog.fb_dialog_mobile.loading iframe{visibility:hidden}.fb_dialog_mobile .fb_dialog_iframe{position:sticky;top:0}.fb_dialog_content .dialog_header{background:linear-gradient(from(#738aba), to(#2c4987));border-bottom:1px solid;border-color:#1d3c78;box-shadow:white 0 1px 1px -1px inset;color:#fff;font:bold 14px Helvetica, sans-serif;text-overflow:ellipsis;text-shadow:rgba(0, 30, 84, .296875) 0 -1px 0;vertical-align:middle;white-space:nowrap}.fb_dialog_content .dialog_header table{height:43px;width:100%}.fb_dialog_content .dialog_header td.header_left{font-size:12px;padding-right:5px;vertical-align:middle;width:60px}.fb_dialog_content .dialog_header td.header_right{font-size:12px;padding-left:5px;vertical-align:middle;width:60px}.fb_dialog_content .touchable_button{background:linear-gradient(from(#4267B2), to(#2a4887));background-clip:padding-box;border:1px solid #29487d;border-radius:3px;display:inline-block;line-height:18px;margin-top:3px;max-width:85px;padding:4px 12px;position:relative}.fb_dialog_content .dialog_header .touchable_button input{background:none;border:none;color:#fff;font:bold 12px Helvetica, sans-serif;margin:2px -12px;padding:2px 6px 3px 6px;text-shadow:rgba(0, 30, 84, .296875) 0 -1px 0}.fb_dialog_content .dialog_header .header_center{color:#fff;font-size:16px;font-weight:bold;line-height:18px;text-align:center;vertical-align:middle}.fb_dialog_content .dialog_content{background:url(https://static.xx.fbcdn.net/rsrc.php/v3/y9/r/jKEcVPZFk-2.gif) no-repeat 50% 50%;border:1px solid #4a4a4a;border-bottom:0;border-top:0;height:150px}.fb_dialog_content .dialog_footer{background:#f5f6f7;border:1px solid #4a4a4a;border-top-color:#ccc;height:40px}#fb_dialog_loader_close{float:right}.fb_dialog.fb_dialog_mobile .fb_dialog_close_button{text-shadow:rgba(0, 30, 84, .296875) 0 -1px 0}.fb_dialog.fb_dialog_mobile .fb_dialog_close_icon{visibility:hidden}#fb_dialog_loader_spinner{animation:rotateSpinner 1.2s linear infinite;background-color:transparent;background-image:url(https://static.xx.fbcdn.net/rsrc.php/v3/yD/r/t-wz8gw1xG1.png);background-position:50% 50%;background-repeat:no-repeat;height:24px;width:24px}@keyframes rotateSpinner{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.fb_iframe_widget{display:inline-block;position:relative}.fb_iframe_widget span{display:inline-block;position:relative;text-align:justify}.fb_iframe_widget iframe{position:absolute}.fb_iframe_widget_fluid_desktop,.fb_iframe_widget_fluid_desktop span,.fb_iframe_widget_fluid_desktop iframe{max-width:100%}.fb_iframe_widget_fluid_desktop iframe{min-width:220px;position:relative}.fb_iframe_widget_lift{z-index:1}.fb_iframe_widget_fluid{display:inline}.fb_iframe_widget_fluid span{width:100%}</style></head>
+<body class="post-template-default single single-post postid-2746743 single-format-standard single-author " style="">
+<div id="fb-root" class=" fb_reset"><div style="position: absolute; top: -10000px; width: 0px; height: 0px;"><div><iframe name="fb_xdm_frame_https" id="fb_xdm_frame_https" aria-hidden="true" title="Facebook Cross Domain Communication Frame" tabindex="-1" frameborder="0" allowtransparency="true" allowfullscreen="true" scrolling="no" allow="encrypted-media" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/xd_arbiter.html" style="border: none;"></iframe></div><div><iframe name="f3a0fed9ba7af8" frameborder="0" allowtransparency="true" allowfullscreen="true" scrolling="no" allow="encrypted-media" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/ping.html" style="display: none;"></iframe></div></div></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/he_IL/all.js#xfbml=1&appId=171021386433126";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+	
+
+<div id="top-bar" class="wrapper clearfix">
+        <a href="http://blogs.microsoft.co.il/" id="blogs-logo" class="ir">Israel Blogging Community</a>
+        <div id="user-options">
+                            
+            <a href="http://blogs.microsoft.co.il/iblogger/wp-admin">Sign in</a>
+                      </div>
+</div>
+  <header>
+      
+		
+        <div id="header-banner" style="background-image: url(http://blogs.microsoft.co.il/iblogger/wp-content/themes/MS_english/images/default_header.jpg)">
+            <div class="wrapper">
+                <h1 id="blog-title">
+                     
+                    <span class="sub-title">IBlogger - Tamir Dresher</span>
+                </h1>
+                            </div>
+        </div>
+        <div id="header-nav" class="clearfix">
+            <div class="wrapper">
+                <div id="user-avatar">
+                    <img src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/profile.png" alt="">
+                </div>
+                <div id="header-nav-box">
+                    <a href="http://blogs.microsoft.co.il/iblogger/2014/05/19/dealing-reentrancy-delegatecommand/#" class="ir" id="m-nav">menu</a>
+                    <nav id="heder-nav-warpper">
+                        <a href="http://blogs.microsoft.co.il/iblogger">Home page</a>
+
+                                        </nav>
+                    <div id="header-nav-icons">
+                                                                        <a href="http://il.linkedin.com/in/tamirdresher" target="_blank" class="ir icon-in">linkedin</a>
+                                                <a href="http://blogs.microsoft.co.il/iblogger/rss2" target="_blank" class="ir icon-rss">RSS</a>
+                    </div>
+                </div>
+                <script>
+                    (function (window) {
+                        if (!document.addEventListener)
+                            return;
+
+                        var navBtn = document.getElementById("m-nav");
+                        var nav = document.getElementById("heder-nav-warpper");
+
+                        navBtn.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            var display = window.getComputedStyle(nav, null).getPropertyValue("display");
+                            if (display === 'none')
+                                nav.style.display = 'block';
+                            else
+                                nav.style.display = 'none';
+
+                        }, false);
+
+                        window.addEventListener('resize', function () {
+                            nav.style.display = "";
+                        }, false);
+
+                    })(window);
+                </script>
+            </div>
+        </div>
+
+    </header>
+<!-- #masthead -->
+ <div id="main" role="main" class="clearfix">
+	<div id="primary_blog" class="wrapper clearfix">
+        <section id="blog_post_info" style="min-height: 4418px;">			
+			<script>
+jQuery(document).ready(function(){
+jQuery('.bp-add-comment').click(function(event){
+event.preventDefault();
+jQuery('#respond').show();
+});
+});
+</script>
+	<article id="post-2746743" class="bp clearfix post-2746743 post type-post status-publish format-standard hentry category-dev category-wp8 category-wpf tag-c tag-dev tag-windows-phone-8 tag-wp8 tag-wpf">
+		         
+			            <h2 class="bp-title">
+                <a href="http://blogs.microsoft.co.il/iblogger/2014/05/19/dealing-reentrancy-delegatecommand/">Dealing with reentrancy with DelegateCommand</a>
+            </h2>
+            <h3 class="bp-date">May 19, 2014</h3>
+            <div class="clearfix">
+            <div class="bp-thumb clearfix">
+                                                <div class="bp-social_i">
+                            <a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://blogs.microsoft.co.il/iblogger/2014/05/19/dealing-reentrancy-delegatecommand/" class="ir icon-fb">facebook</a>
+                            <a target="_blank" href="http://www.linkedin.com/shareArticle?mini=true&amp;url=http://blogs.microsoft.co.il/iblogger/2014/05/19/dealing-reentrancy-delegatecommand/&amp;title=Dealing%20with%20reentrancy%20with%20DelegateCommand&amp;summary=%3Cp%3Emany%20times%20in%20our%20application%20we%20have%20some%20button%20(or%20another%20command%20invoker)%20that%20is%20executing%20a%20long%20processing%20operation.%20today,%20with%20the%20power%20of%20Async%20Await%20its%20even%20easier%20to%20run%20these%20long%20operations%20while%20keeping%20the%20UI%20responsive.%20usually%20we%20will%20use%20some%20kind%20of%20DelegateCommand%20to%20bind%20our%20button%20to%20the%20ViewModels%E2%80%99%20[%E2%80%A6]%3C/p%3E" class="ir icon-in">linkedin</a>
+                            <a target="_blank" href="https://twitter.com/share" class="tweet ir icon-twitter" data-lang="he">twitter</a>
+                            <a href="mailto:?subject=Dealing%20with%20reentrancy%20with%20DelegateCommand&amp;body=Check%20out%20this%20post%20http://blogs.microsoft.co.il/iblogger/2014/05/19/dealing-reentrancy-delegatecommand/" class="ir icon-email">email</a>
+                        </div>
+              </div>
+             </div>
+	
+				<div class="clearfix">
+			        <div class="tagsx">tags:   <a href="http://blogs.microsoft.co.il/iblogger/tag/c/" rel="tag">c#</a>, <a href="http://blogs.microsoft.co.il/iblogger/tag/dev/" rel="tag">DEV</a>, <a href="http://blogs.microsoft.co.il/iblogger/tag/windows-phone-8/" rel="tag">Windows Phone 8</a>, <a href="http://blogs.microsoft.co.il/iblogger/tag/wp8/" rel="tag">WP8</a>, <a href="http://blogs.microsoft.co.il/iblogger/tag/wpf/" rel="tag">WPF</a></div>
+				    <div class="cmts"> no comments </div>
+			    </div>
+		
+						
+		<!-- .entry-header -->
+
+				<div class="contx entry-content clearfix">
+			<p><span class="GINGER_SOFTWARE_mark" id="b1e141aa-fc45-4e46-86bf-41d1d74acd73">many</span> times in our <span class="GINGER_SOFTWARE_mark" id="404af282-71d8-42a4-b87f-62e807c15c3c">application we</span> have some button (or another command invoker) that is executing a long processing operation.</p>
+<p><span class="GINGER_SOFTWARE_mark" id="df534ee8-e58f-4e47-8dbf-04a710248d77">today</span>, with the power of Async Await <span class="GINGER_SOFTWARE_mark" id="4992282c-88c0-432e-8b3b-6e48c59859f2">its</span> even easier to run these long operations while keeping the UI responsive. <span class="GINGER_SOFTWARE_mark" id="41670dcf-6270-47ac-bbd7-3e9627de749f">usually</span> we will use some kind of DelegateCommand to bind our button to the ViewModels’ operation</p>
+<h4><span style="text-decoration: underline"><span class="GINGER_SOFTWARE_mark" id="76a3948b-75b1-4c4a-87bd-98e9e7520db3">MissleLauncherView</span><span class="GINGER_SOFTWARE_mark" id="eec8fe49-74f2-4a56-9452-bad38e72426e">.</span><span class="GINGER_SOFTWARE_mark" id="57c3e46a-1087-4cf6-8071-8cb8e21e8b5b">xaml</span></span></h4>
+<blockquote><p><span style="font-family: Consolas"><span><span style="color: #0000ff"><span style="font-size: 10pt">&lt;</span></span></span><span style="font-size: 10pt"><span><span style="color: #a31515">Button</span></span><span><span><span style="color: #000000">&nbsp; </span></span></span><span><span style="color: #ff0000">Command</span></span><span><span style="color: #0000ff">=”{</span></span><span><span style="color: #a31515">Binding</span></span><span><span style="color: #ff0000">&nbsp;</span></span><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="1ff141b0-32e1-4bcb-a5f9-cf5fb5095caa">LaunchMissiles</span>,</span></span><span><span style="color: #ff0000"> Mode</span></span></span><span><span style="font-size: 10pt;color: #0000ff">=OneTime}”/&gt;</span></span></span></p>
+<p class="MsoNormal" style="background: white;direction: ltr;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #0000ff">&nbsp;</span></span></span></p>
+</blockquote>
+<h4 align="left"><span style="text-decoration: underline"><span class="GINGER_SOFTWARE_mark" id="2c4da916-6f54-4851-a998-e8fe33dee68d">MissleLauncherViewModel</span><span class="GINGER_SOFTWARE_mark" id="3d05e2aa-de9c-4a5a-b886-18d504028e2d">.</span><span class="GINGER_SOFTWARE_mark" id="600bbf8e-55d7-440a-8be5-71c27ecfbf74">cs</span></span></h4>
+<blockquote><p><span style="font-family: Consolas"><span><span style="color: #0000ff"><span style="font-size: 10pt"><span class="GINGER_SOFTWARE_mark" id="63aab15e-5014-4f6a-88fe-694920f8600d">private</span></span></span></span><span style="font-size: 10pt"><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #2b91af">ICommand</span></span></span><span><span style="font-size: 10pt;color: #000000"> _launchMissilesCommand;</span></span></span><span style="font-family: Consolas"><span><span style="color: #0000ff"><span style="font-size: 10pt">public</span></span></span><span style="font-size: 10pt"><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #2b91af">ICommand</span></span></span><span><span style="font-size: 10pt;color: #000000"> LaunchMissilesCommand</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">{</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp; </span></span></span><span><span style="font-size: 10pt;color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="b3d4d34a-492a-4927-816e-ecaa0c6c4e8b">get</span></span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp; {</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="ddd80717-f7c8-49b0-9628-cd33aba75eae">return</span></span></span><span><span style="color: #000000"> _ <span class="GINGER_SOFTWARE_mark" id="0580a75d-707c-40b5-a315-ebfd1ebf4ec8">launchMissilesCommand</span><span class="GINGER_SOFTWARE_mark" id="ee09c66d-690b-416d-b5bf-946e0d7f2140"> ?</span>? (_launchMissilesCommand = </span></span><span><span style="color: #0000ff">new</span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #2b91af">DelegateCommand</span></span></span></span><span class="GINGER_SOFTWARE_mark" id="73aedaac-b6c1-4df9-87f9-071f75c6c848"><span style="font-family: Consolas"><span><span style="font-size: 10pt;color: #000000">(</span></span></span><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span></span></span><span style="font-family: Consolas"><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="a1ee5792-fecc-4544-811d-9915208dc6c8">async</span></span></span></span><span><span style="font-size: 10pt;color: #000000"> (_) =&gt;</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="77d2d3ec-dc7d-4579-ba73-0226d0ad870a">await</span></span></span></span><span><span style="font-size: 10pt;color: #000000"> LaunchLongMissileAttack<span class="GINGER_SOFTWARE_mark" id="5b4038de-f45d-477d-a228-f765235b52a8">(</span>);</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }));</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp; }</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">}</span></span></span></pre>
+</blockquote>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"></pre>
+<p><span><span class="GINGER_SOFTWARE_mark" id="a0877480-5149-4311-9630-66b19f4c9f17">this</span> <span class="GINGER_SOFTWARE_mark" id="48be6c58-90db-4be1-922e-dec0c4867aa9">impose</span> a very serious problem, while the LaunchLongMissileAttack method is working, nothing is preventing the command from being called again<span class="GINGER_SOFTWARE_mark" id="aaf2fd1a-9f2c-4b12-8a60-7356ec910609">…</span>and again<span class="GINGER_SOFTWARE_mark" id="2fd2b800-a748-4638-b923-9bc6f40b6ee6">…</span>and again<br>
+ <span class="GINGER_SOFTWARE_mark" id="9014e35e-9815-4984-991c-77e86411cd3b">in</span> fact, we can tap repeatedly on the button (even by mistake).</span></p>
+<p><span><span class="GINGER_SOFTWARE_mark" id="35eaa470-f7e2-4a02-a9d8-12f18e019455">of</span> course, some application <span class="GINGER_SOFTWARE_mark" id="04fc2800-e5c7-44b3-9212-9689ede8bdd1">do need</span> this ability, but many <span class="GINGER_SOFTWARE_mark" id="8f0722eb-d037-4583-bd0f-edadb5852453">application</span> don’t.<br>
+ <span class="GINGER_SOFTWARE_mark" id="8c1b550f-4188-4b73-a866-973a256b353c">what</span> we need here is some kind of <span class="GINGER_SOFTWARE_mark" id="a32d4f16-f59a-4f5c-acd9-9ab210337bc0">reentrancy</span> prevention, this is accomplished by using the </span><em>NonReenterantDelegateCommand.</em></p>
+<p>Credit: <span class="GINGER_SOFTWARE_mark" id="885ea7fe-3d67-4082-88b0-93d910ca14f2">i</span>‘ve based my solution on my good friend Dror Helper post – <a title="http://blog.drorhelper.com/2014/02/callonce-for-c.html" href="http://blog.drorhelper.com/2014/02/callonce-for-c.html">http://blog.drorhelper.com/2014/02/callonce-for-c.html</a><br>
+<span class="GINGER_SOFTWARE_mark" id="4cfa7937-fd52-4d9f-b0c7-f1ab4d71355f">you</span> should <span class="GINGER_SOFTWARE_mark" id="c3722404-2dc1-4213-9535-1bc073ee5cde">definitly</span> read it</p>
+<blockquote><p>
+<span style="font-family: Consolas"><span><span style="color: #0000ff"><span style="font-size: 10pt"><span class="GINGER_SOFTWARE_mark" id="a9229921-a44b-43db-ad82-568386186b32">public</span></span></span></span><span style="font-size: 10pt"><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #0000ff">class</span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #2b91af">NonReenterantDelegateCommand</span></span><span><span style="color: #000000">&lt;T<span class="GINGER_SOFTWARE_mark" id="48dbe5f0-6b4f-4a7b-a231-83acfaf2a820">&gt; :</span> </span></span></span><span><span style="font-size: 10pt;color: #2b91af">ICommand</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">{</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="f8284bfd-cadf-4fd7-8672-2f08048df857">private</span></span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="83c70d63-e34f-4309-bb9f-7629457aaefc">const</span></span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="0aa954d5-c5fb-4a49-a7d1-b6f38e32a341">int</span></span></span></span><span><span style="font-size: 10pt;color: #000000"> <span class="GINGER_SOFTWARE_mark" id="f1ba1ce4-5e1f-483b-b3fb-a2befbf955fb">NotCalled</span> = 0;</span></span></span><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff">private</span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #0000ff">const</span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #0000ff">int</span></span></span><span><span style="font-size: 10pt;color: #000000"> Called = 1;</span></span></span><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff">private</span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="e7b84ad2-774d-4c6d-b496-032fe68a5646">int</span></span></span></span><span><span style="font-size: 10pt;color: #000000"> _state = <span class="GINGER_SOFTWARE_mark" id="1a32c480-4f46-4744-b26a-942f08456e36">NotCalled</span>;</span></span></span><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="8e022d5a-fc58-430e-867a-a5ea032c3c3a">readonly</span></span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #2b91af">Func</span></span><span><span style="color: #000000">&lt;T, </span></span><span><span style="color: #2b91af">Task</span></span></span><span><span style="font-size: 10pt;color: #000000">&gt; _execute;</span></span></span><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #2b91af">Func</span></span><span><span style="color: #000000">&lt;T, </span></span><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="f1ccc5bf-6fff-461f-84a2-a7e5ebbeac51">bool</span></span></span></span><span><span style="font-size: 10pt;color: #000000">&gt; _canExecute;</span></span></span><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff">private</span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="5463ae61-3b9b-4b41-87e4-cd163b7a7cf3">bool</span></span></span><span><span style="color: #000000"> _isExecuting = </span></span><span><span style="color: #0000ff">false</span></span></span><span><span style="font-size: 10pt;color: #000000">;</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="c72ecf18-b9b0-4630-a33a-17ae87b929a6">public</span></span></span><span><span style="color: #000000"> NonReenterantDelegateCommand<span class="GINGER_SOFTWARE_mark" id="10e2f23a-9afa-41ac-95f0-dcafe1ce00b0">(</span></span></span><span><span style="color: #2b91af">Action</span></span><span><span style="color: #000000">&lt;T&gt; <span class="GINGER_SOFTWARE_mark" id="d340b396-1082-494c-afb7-83d043661e3e">execute</span>, </span></span><span><span style="color: #2b91af">Func</span></span><span><span style="color: #000000">&lt;T, </span></span><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="a9668d5c-c806-49f3-9e38-04bc6a0231e8">bool</span></span></span><span><span style="color: #000000">&gt; <span class="GINGER_SOFTWARE_mark" id="87858649-c10b-4565-9861-3d25a9c54407">canExecute</span> = </span></span><span><span style="color: #0000ff">null</span></span></span><span><span style="font-size: 10pt;color: #000000">)</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp; {</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="88ed247b-4e54-41d9-9a05-d09d64a63914">if</span></span></span><span><span style="color: #000000"> (execute == </span></span><span><span style="color: #0000ff">null</span></span></span><span><span style="font-size: 10pt;color: #000000">)</span></span></span><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff">throw</span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #0000ff">new</span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #2b91af">ArgumentNullException</span></span><span><span style="color: #000000"><span class="GINGER_SOFTWARE_mark" id="6fd73ea9-21a1-476d-b3d6-d6ae3be79ecc">(</span></span></span><span><span style="color: #a31515">“execute”</span></span></span><span><span style="font-size: 10pt;color: #000000">);</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; _execute = (_) =&gt;</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="GINGER_SOFTWARE_mark" id="20420e56-baa7-4175-83df-0c3035cfc1f9">execute</span><span class="GINGER_SOFTWARE_mark" id="4a8d1127-989e-4c44-b24d-484a1b8c2ffd">(</span>_); </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff">return</span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #2b91af">Task</span></span><span><span style="color: #000000"><span class="GINGER_SOFTWARE_mark" id="4230ca9f-ae9c-48f6-bb76-bf665d8d5682">.</span>FromResult<span class="GINGER_SOFTWARE_mark" id="7c26e4a0-312e-47e6-998e-54962b75bb71">(</span></span></span><span><span style="color: #0000ff">true</span></span></span><span><span style="font-size: 10pt;color: #000000">);</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; };</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="GINGER_SOFTWARE_mark" id="021c893d-e3a7-4937-96e6-4c42c16e1bff">SetCanExecute</span><span class="GINGER_SOFTWARE_mark" id="8d269ede-ee27-4418-a1e3-a2fe3444d6a4">(</span><span class="GINGER_SOFTWARE_mark" id="1ba240e6-cc4d-4c82-a340-22649ebcfa06">canExecute</span>);</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp; }</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="9b172a5c-aa25-4e91-91c3-557a6022c28b">private</span></span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #0000ff">void</span></span><span><span style="color: #000000"> SetCanExecute<span class="GINGER_SOFTWARE_mark" id="174452cf-7079-431f-b8ab-680c7b1e6849">(</span></span></span><span><span style="color: #2b91af">Func</span></span><span><span style="color: #000000">&lt;T, </span></span><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="009ed794-f88f-4e31-af97-89208ae33853">bool</span></span></span></span><span><span style="font-size: 10pt;color: #000000">&gt; <span class="GINGER_SOFTWARE_mark" id="785111ca-346e-4799-99ae-93c6a91887af">canExecute</span>)</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp; {</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; _canExecute = <span class="GINGER_SOFTWARE_mark" id="c6183152-7af7-456f-b02f-8fb8a2b6f3c1">canExecute</span>;</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp; }</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="514a134b-7553-4935-8ccc-a38d4969cfae">public</span></span></span><span><span style="color: #000000"> NonReenterantDelegateCommand<span class="GINGER_SOFTWARE_mark" id="c77b1bc2-ac9d-437a-b051-5a8b5b6a3bad">(</span></span></span><span><span style="color: #2b91af">Func</span></span><span><span style="color: #000000">&lt;T, </span></span><span><span style="color: #2b91af">Task</span></span><span><span style="color: #000000">&gt; <span class="GINGER_SOFTWARE_mark" id="3e8fac9c-4d02-4c3c-b987-277b5ca4a461">execute</span>, </span></span><span><span style="color: #2b91af">Func</span></span><span><span style="color: #000000">&lt;T, </span></span><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="4ca35708-2e27-4635-b15f-bcc0d4ec3c37">bool</span></span></span><span><span style="color: #000000">&gt; <span class="GINGER_SOFTWARE_mark" id="770570cc-53d2-41e9-b8d4-5c169675456b">canExecute</span> = </span></span><span><span style="color: #0000ff">null</span></span></span><span><span style="font-size: 10pt;color: #000000">)</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp; {</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="5ca04130-d73f-41a6-b06c-5dd172741ac8">if</span></span></span><span><span style="color: #000000"> (execute == </span></span><span><span style="color: #0000ff">null</span></span></span><span><span style="font-size: 10pt;color: #000000">)</span></span></span><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff">throw</span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #0000ff">new</span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #2b91af">ArgumentNullException</span></span><span><span style="color: #000000"><span class="GINGER_SOFTWARE_mark" id="eeddbc69-1562-4857-a959-d0b886b6bea2">(</span></span></span><span><span style="color: #a31515">“execute”</span></span></span><span><span style="font-size: 10pt;color: #000000">);</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; _execute = execute;</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; _canExecute = <span class="GINGER_SOFTWARE_mark" id="b80e06f0-b0d9-4634-86d4-a93b3b1793df">canExecute</span>;</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp; }</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span class="GINGER_SOFTWARE_mark" id="6867e679-504a-4159-a5b6-766b45772a00"><span><span style="color: #0000ff">public</span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #0000ff">bool</span></span></span><span><span style="color: #000000"> CanExecute<span class="GINGER_SOFTWARE_mark" id="a468f474-a902-4bcc-b9e1-57f6861a0e43">(</span></span></span><span><span style="color: #0000ff">object</span></span></span><span><span style="font-size: 10pt;color: #000000"> parameter)</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp; {</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="c25d045e-73d6-47d0-a6b4-73f5deeaea54">if</span></span></span></span><span><span style="font-size: 10pt;color: #000000"> (_isExecuting)</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="393da6de-6a49-4904-8212-c436c669b46b">return</span></span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #0000ff">false</span></span></span><span><span style="font-size: 10pt;color: #000000">;</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="eee5a7da-f844-423f-9253-a501f8f4a360">if</span></span></span><span><span style="color: #000000"> (_canExecute == </span></span><span><span style="color: #0000ff">null</span></span></span><span><span style="font-size: 10pt;color: #000000">)</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="964ca92d-18d7-43da-bee5-9eaa2de94d39">return</span></span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #0000ff">true</span></span></span><span><span style="font-size: 10pt;color: #000000">;</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="ed7c4cd7-d7ed-4d13-bf84-05213122862e">return</span></span></span></span><span><span style="font-size: 10pt;color: #000000"> _canExecute<span class="GINGER_SOFTWARE_mark" id="93d39be9-a898-43aa-9202-39dc1a6192f8">(</span>(T<span class="GINGER_SOFTWARE_mark" id="c372075e-0281-4efa-8f5f-6d554e8c141b">)</span>parameter);</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp; }</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="58204665-4363-41ae-8df3-fb3b01cb0e85">public</span></span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #0000ff">void</span></span></span><span><span style="font-size: 10pt;color: #000000"> RaiseCanExecuteChanged<span class="GINGER_SOFTWARE_mark" id="e4169bdf-eea5-471e-a665-ec0a690e060f">(</span>)</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp; {</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="c819ecd2-0be9-463f-91d9-822b0b08dc09">if</span></span></span><span><span style="color: #000000"> (CanExecuteChanged<span class="GINGER_SOFTWARE_mark" id="12e64fb7-42d8-44b8-9a4a-306c36d69796"> !</span>= </span></span><span><span style="color: #0000ff">null</span></span></span><span><span style="font-size: 10pt;color: #000000">)</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #2b91af">Deployment</span></span><span><span style="color: #000000"><span class="GINGER_SOFTWARE_mark" id="afacb9c2-0489-4e89-b97d-a46c67438c3e">.</span>Current<span class="GINGER_SOFTWARE_mark" id="db2d8ce4-665d-4d0b-bfce-9ab3414a61cd">.</span>Dispatcher<span class="GINGER_SOFTWARE_mark" id="9110dc6f-a56d-4153-b016-8ba3d3d08f62">.</span>BeginInvoke<span class="GINGER_SOFTWARE_mark" id="ccf72e7c-28e0-4d73-bd70-550766708126">(</span>() =&gt; CanExecuteChanged<span class="GINGER_SOFTWARE_mark" id="d4e18b9b-e9e4-41be-b619-8ca4c243a5aa">(</span></span></span><span><span style="color: #0000ff">this</span></span><span><span style="color: #000000">, </span></span><span><span style="color: #2b91af">EventArgs</span></span></span><span><span style="font-size: 10pt;color: #000000"><span class="GINGER_SOFTWARE_mark" id="722abccd-0993-47d9-9717-b1c28d287e49">.</span>Empty));</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp; }</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="f603b91a-2b96-4543-861e-8a078ced0789">public</span></span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #0000ff">event</span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #2b91af">EventHandler</span></span></span><span><span style="font-size: 10pt;color: #000000"> CanExecuteChanged;</span></span></span><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff">public</span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="93044663-7902-498c-9c4b-2b751011c328">async</span></span></span><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #0000ff">void</span></span><span><span style="color: #000000"> Execute<span class="GINGER_SOFTWARE_mark" id="bf107fda-8753-47a3-bf3c-ddedd7c9ab6a">(</span></span></span><span><span style="color: #0000ff">object</span></span></span><span><span style="font-size: 10pt;color: #000000"> parameter)</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp; {</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="f56534dc-1df6-4daa-b058-3225fe1eb79c">var</span></span></span><span><span style="color: #000000"> <span class="GINGER_SOFTWARE_mark" id="2213509d-9b29-42d7-a0f7-7b1065732bed">oldValue</span> = </span></span><span><span style="color: #2b91af">Interlocked</span></span><span><span style="color: #000000"><span class="GINGER_SOFTWARE_mark" id="0eb5184d-028b-4937-a69a-5ab6d62a2b16">.</span>Exchange<span class="GINGER_SOFTWARE_mark" id="fc6b8cfe-0e9a-480c-ae46-1a3afb7fee65">(</span></span></span><span><span style="color: #0000ff">ref</span></span></span><span><span style="font-size: 10pt;color: #000000"> _state, Called);</span></span></span><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff">if</span></span></span><span><span style="font-size: 10pt;color: #000000"> (<span class="GINGER_SOFTWARE_mark" id="521593bf-de51-4c84-bbd9-2e3f5fb7c450">oldValue</span> == Called)</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="d7331694-0645-4be4-8c22-500349ae9bc0">return</span></span></span></span><span><span style="font-size: 10pt;color: #000000">;</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; _isExecuting = </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff">true</span></span></span><span><span style="font-size: 10pt;color: #000000">;</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="GINGER_SOFTWARE_mark" id="b758cbdf-b4d7-4501-b3a7-c7ee1e64b173">RaiseCanExecuteChanged</span><span class="GINGER_SOFTWARE_mark" id="7944c824-ba30-4f08-a02b-6ee0a397eb84">(</span>);</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #2b91af">IDisposable</span></span><span><span style="color: #000000"> <span class="GINGER_SOFTWARE_mark" id="2b15aec7-10f4-4274-b4aa-e7fa2eff9f57">finishExecutingDisposable</span> = </span></span><span><span style="color: #2b91af">Disposable</span></span></span><span><span style="font-size: 10pt;color: #000000"><span class="GINGER_SOFTWARE_mark" id="9c0921bb-7656-4e48-adf9-6325ffcff6eb">.</span>Create<span class="GINGER_SOFTWARE_mark" id="86cc13c2-2349-4d13-8af2-83d1d247178d">(</span>() =&gt;</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #2b91af">Interlocked</span></span><span><span style="color: #000000"><span class="GINGER_SOFTWARE_mark" id="e2574838-4cf1-43b0-bcb7-f5a9984c9040">.</span>Exchange<span class="GINGER_SOFTWARE_mark" id="43c89a45-bdf9-4291-98ad-de940cf391a8">(</span></span></span><span><span style="color: #0000ff">ref</span></span></span><span><span style="font-size: 10pt;color: #000000"> _state, <span class="GINGER_SOFTWARE_mark" id="dc217fcd-5a53-474f-a1b8-def7a8b72ee1">NotCalled</span>);</span></span></span><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; _isExecuting = </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff">false</span></span></span><span><span style="font-size: 10pt;color: #000000">;</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="GINGER_SOFTWARE_mark" id="0c9b13dd-15db-4146-82af-afec726bb6a9">RaiseCanExecuteChanged</span><span class="GINGER_SOFTWARE_mark" id="9529f3c1-f86e-4cd5-9025-d3742f54ef6b">(</span>);</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; });</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="7b0ba0fb-9b21-40bf-bb5d-9d21bf9b388c">using</span></span></span></span><span><span style="font-size: 10pt;color: #000000"> (<span class="GINGER_SOFTWARE_mark" id="7ddc56b2-a59e-4a60-850b-8e361395b71f">finishExecutingDisposable</span>)</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="ba1a9845-7362-4118-a68e-759b7f0739f5">await</span></span></span></span><span><span style="font-size: 10pt;color: #000000"> _execute<span class="GINGER_SOFTWARE_mark" id="f4c19e4b-70e6-4c6b-8393-25107f652244">(</span>(T<span class="GINGER_SOFTWARE_mark" id="f07112ba-0fff-4031-a761-628b36a80418">)</span>parameter);</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp; }</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">}</span></span></span></pre>
+</blockquote>
+<p><span><span class="GINGER_SOFTWARE_mark" id="8cd971c4-f44a-43be-84ff-f2c173a3cdb5">lets</span> explain what happens here. <span class="GINGER_SOFTWARE_mark" id="759b2bd9-7081-47be-8bcf-a3340ec2219c">the</span> magic takes place inside the Execute method, we use Interlocked on <span class="GINGER_SOFTWARE_mark" id="14ca7f37-8ffa-4e7e-8d4b-3bad1c1e782f">member field</span> called _state, <a href="http://msdn.microsoft.com/en-us/library/system.threading.interlocked.exchange.aspx">Interlocked<span class="GINGER_SOFTWARE_mark" id="edba7cf2-dd6b-4d95-ae2c-0d6bf75b34c5">.</span>Exchange<span class="GINGER_SOFTWARE_mark" id="00123d0a-635a-4a18-8c86-117834087054">(</span>)</a> method Sets a variable to a specified value as an atomic operation (meaning there will be no context switching) what makes it a thread-safe operation. <span class="GINGER_SOFTWARE_mark" id="c947d083-b68b-4ee2-b3db-51cb174540ff">the</span> Exchange method returns the old value that was in the _state member.</span></p>
+<p><span><span class="GINGER_SOFTWARE_mark" id="6cef1f58-f3bd-4d90-8a4e-299d4e3782d9">if</span> the old value was 1 (which is represented as the <span class="GINGER_SOFTWARE_mark" id="97d6254b-4747-4dc2-93e9-7e7d9d522cea">const</span> Called) this means that there is already an execution taking place which means this is a <span class="GINGER_SOFTWARE_mark" id="ae443fcb-116d-4070-9608-5f09b535f7e2">reentrancy</span>, so we just return.</span></p>
+<p><span><span class="GINGER_SOFTWARE_mark" id="c4627c52-330f-4be6-b427-a05a610c2ab5">if</span> the old value is 0 (represented as the <span class="GINGER_SOFTWARE_mark" id="f73d55bd-8fe5-4452-a789-6c227ebae22b">const</span> <span class="GINGER_SOFTWARE_mark" id="ab3608fa-a56f-49cd-a85f-d9beafee2e28">NotCalled</span>) this means we got here without any previous execution still going on. <span class="GINGER_SOFTWARE_mark" id="85eae541-3983-44b7-8697-8302892a1655">in</span> this case we will set an internal flag that mark that there is an execution (this will be used in the CanExecute method) and raise the CanExecuteChanged event – this will cause the <span class="GINGER_SOFTWARE_mark" id="0efeafa8-e45a-48aa-8ddd-37d679183032">binded</span> button to be disabled <span class="GINGER_SOFTWARE_mark" id="b070fb75-bcfa-418b-b872-44a2e69b8a21">from</span> this moment<span class="GINGER_SOFTWARE_mark" id="469c73ae-bdd3-490e-b223-eaffb3e5218a"> .</span><br>
+Then, We create a disposable that when disposed will revert the _state to <span class="GINGER_SOFTWARE_mark" id="c363f9bb-56f1-4084-8ce1-5b52ec85617a">NotCalled</span> (<span class="GINGER_SOFTWARE_mark" id="a26e4e33-3c95-471b-ba0e-0a6fdec3e506">thread</span> safely) and raise the CanExecuteChanged event – this will cause the <span class="GINGER_SOFTWARE_mark" id="f7d7c653-e4ce-41b2-99bb-9a2e9ebf32fa">binded</span> button to be enabled again.</span></p>
+<p><span><span class="GINGER_SOFTWARE_mark" id="68b4d8ea-3f82-43e7-ac5c-3d194cbfc683">finally we</span> execute <span class="GINGER_SOFTWARE_mark" id="88ec449c-37cd-4303-b731-3c66b9761a34">the the</span> _execute delegate, the execution takes place inside a using block – this makes sure that the dispose will be called on the previously create disposable even if <span class="GINGER_SOFTWARE_mark" id="5b2f1438-d284-47d0-b4ae-26576455a51e">and</span> exception happens (and prevent an infinitely locked button).</span></p>
+<p><span><span class="GINGER_SOFTWARE_mark" id="6c229ff8-233b-4d44-830d-c72be39121a4">now</span> we can change our ViewModel to use this new command.</span></p>
+<h4 align="left"><span style="text-decoration: underline"><span class="GINGER_SOFTWARE_mark" id="f2d3a1af-172a-4ab3-9ec1-80ae9dc049db">MissleLauncherViewModel</span><span class="GINGER_SOFTWARE_mark" id="c9473402-7bb5-4579-bb15-c2c33c0ff069">.</span><span class="GINGER_SOFTWARE_mark" id="88f7fa4c-18ad-4830-b624-bf3c08c6b189">cs</span></span></h4>
+<blockquote><p><span style="font-family: Consolas"><span><span style="color: #0000ff"><span style="font-size: 10pt"><span class="GINGER_SOFTWARE_mark" id="718a1680-926e-4186-a948-db5a6fd43da5">private</span></span></span></span><span style="font-size: 10pt"><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #2b91af">ICommand</span></span></span><span><span style="font-size: 10pt;color: #000000"> _launchMissilesCommand;</span></span></span><span style="font-family: Consolas"><span><span style="color: #0000ff"><span style="font-size: 10pt">public</span></span></span><span style="font-size: 10pt"><span><span style="color: #000000">&nbsp;</span></span><span><span style="color: #2b91af">ICommand</span></span></span><span><span style="font-size: 10pt;color: #000000"> LaunchMissilesCommand</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">{</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp; </span></span></span><span><span style="font-size: 10pt;color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="7d7292d4-8077-4c5e-8f6c-01506b8f7333">get</span></span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp; {</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="8f79b076-f0bd-4c66-ae71-e8024f7d9993">return</span></span></span><span><span style="color: #000000"> _ <span class="GINGER_SOFTWARE_mark" id="220217b7-96a6-41fe-a324-b0480edde75e">launchMissilesCommand</span><span class="GINGER_SOFTWARE_mark" id="74f70a61-1554-4834-a7ad-2c6ff063c6e1"> ?</span>? (_launchMissilesCommand = </span></span><span><span style="color: #0000ff">new </span></span></span></span><span style="font-family: Consolas"><span><span style="color: #2b91af"><span style="font-size: 9.8pt">NonReenterantDelegateCommand&lt;Object&gt;</span></span></span></span><span class="GINGER_SOFTWARE_mark" id="b541eb6a-9a2f-4a74-b329-9659f0e2bcd0"><span style="font-family: Consolas"><span><span style="font-size: 10pt;color: #000000">(</span></span></span><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span></span></span><span style="font-family: Consolas"><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="374fb163-b479-4fe5-be6a-04af2fbcdcbe">async</span></span></span></span><span><span style="font-size: 10pt;color: #000000"> (_) =&gt;</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></span></span></pre>
+<p><span style="font-family: Consolas"><span><span style="color: #000000"><span style="font-size: 10pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt"><span><span style="color: #0000ff"><span class="GINGER_SOFTWARE_mark" id="a87e4d82-91c2-42c4-8ee9-c2be6c0f40a0">await</span></span></span></span><span><span style="font-size: 10pt;color: #000000"> LaunchLongMissileAttack<span class="GINGER_SOFTWARE_mark" id="eb486c22-8ef2-48c8-9cc7-a602f40a84db">(</span>);</span></span></span></p>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }));</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">&nbsp;&nbsp; }</span></span></span></pre>
+<pre style="background: white;margin: 0cm 0cm 0pt;line-height: normal"><span><span style="font-family: Consolas"><span style="font-size: 10pt;color: #000000">}</span></span></span></pre>
+</blockquote>
+			<iframe src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/like.html" scrolling="no" frameborder="0" style="border:none; overflow:hidden; height:80px;" allowtransparency="true"></iframe>
+
+							  <div class="clearfix entry-options">
+                        <a href="javascript:void(0)" class="bp-add-comment">Add comment</a>
+                        <div class="bp-social_i">
+                           <a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://blogs.microsoft.co.il/iblogger/2014/05/19/dealing-reentrancy-delegatecommand/" class="ir icon-fb">facebook</a>
+                            <a target="_blank" href="http://www.linkedin.com/shareArticle?mini=true&amp;url=http://blogs.microsoft.co.il/iblogger/2014/05/19/dealing-reentrancy-delegatecommand/&amp;title=Dealing%20with%20reentrancy%20with%20DelegateCommand&amp;summary=%3Cp%3Emany%20times%20in%20our%20application%20we%20have%20some%20button%20(or%20another%20command%20invoker)%20that%20is%20executing%20a%20long%20processing%20operation.%20today,%20with%20the%20power%20of%20Async%20Await%20its%20even%20easier%20to%20run%20these%20long%20operations%20while%20keeping%20the%20UI%20responsive.%20usually%20we%20will%20use%20some%20kind%20of%20DelegateCommand%20to%20bind%20our%20button%20to%20the%20ViewModels%E2%80%99%20[%E2%80%A6]%3C/p%3E" class="ir icon-in">linkedin</a>
+                            <a target="_blank" href="https://twitter.com/share" class="tweet ir icon-twitter" data-lang="he">twitter</a>
+                            <a href="mailto:?subject=Dealing%20with%20reentrancy%20with%20DelegateCommand&amp;body=Check%20out%20this%20post%20http://blogs.microsoft.co.il/iblogger/2014/05/19/dealing-reentrancy-delegatecommand/" class="ir icon-email">email</a>
+                            <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="https://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+                        </div>
+                    </div>
+
+				
+		</div><!-- .entry-content -->
+		
+
+        
+<div id="comments" class="comments-area">
+	<div id="respond" class="comment-respond">
+		<h3 id="reply-title" class="comment-reply-title">Leave a Reply <small><a rel="nofollow" id="cancel-comment-reply-link" href="http://blogs.microsoft.co.il/iblogger/2014/05/19/dealing-reentrancy-delegatecommand/#respond" style="display:none;">Cancel Reply</a></small></h3>			<form action="http://blogs.microsoft.co.il/iblogger/wp-comments-post.php" method="post" id="commentform" class="comment-form">
+				<p class="comment-notes">Your email address will not be published.</p><p class="comment-form-comment"><label for="comment">Comment</label><textarea id="comment" name="comment" cols="45" rows="8" aria-required="true"></textarea></p><p class="form-allowed-tags">You may use these <abbr title="HyperText Markup Language">HTML</abbr> tags and attributes:  <code>&lt;a href="" title=""&gt; &lt;abbr title=""&gt; &lt;acronym title=""&gt; &lt;b&gt; &lt;blockquote cite=""&gt; &lt;cite&gt; &lt;code&gt; &lt;del datetime=""&gt; &lt;em&gt; &lt;i&gt; &lt;q cite=""&gt; &lt;s&gt; &lt;strike&gt; &lt;strong&gt; </code></p><p class="comment-form-author"><label for="author">Name</label> <span class="required">*</span><input id="author" name="author" type="text" value="" size="30"></p>
+<p class="comment-form-email"><label for="email">Email</label> <span class="required">*</span><input id="email" name="email" type="text" value="" size="30"></p>
+<p class="comment-form-url"><label for="url">Website</label><input id="url" name="url" type="text" value="" size="30"></p>
+<p class="form-submit"><input name="submit" type="submit" id="submit" class="submit" value="Post Comment"> <input type="hidden" name="comment_post_ID" value="2746743" id="comment_post_ID">
+<input type="hidden" name="comment_parent" id="comment_parent" value="0">
+</p><p style="display: none;"><input type="hidden" id="akismet_comment_nonce" name="akismet_comment_nonce" value="bceecdf49f"></p><script type="text/javascript">var RecaptchaOptions = {theme : "blackglass"};</script><script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/challenge"></script>
+
+	<noscript>
+  		<iframe src="http://www.google.com/recaptcha/api/noscript?k=6Ld4OuwSAAAAAC2pOGX1-HLYusMoy9UuR5_I91Eo" height="300" width="500" frameborder="0"></iframe><br/>
+  		<textarea name="recaptcha_challenge_field" rows="3" cols="40"></textarea>
+  		<input type="hidden" name="recaptcha_response_field" value="manual_challenge"/>
+	</noscript><!-- AVH First Defense Against Spam - WPMU DEV Version version 2.3.2  --><input type="hidden" id="_avh_first_defense_against_spam" name="_avh_first_defense_against_spam" value="7735ebbd39"><p style="display: none;"></p>			<input type="hidden" id="ak_js" name="ak_js" value="1561231581901"></form>
+			</div><!-- #respond -->
+	<div class="clearfix"></div>
+	
+	
+	
+
+</div><!-- #comments .comments-area -->
+	<!--<div class="fb-comments" data-href="http://guideme.co.il/comments" data-colorscheme="The color scheme used in the plugin" data-numposts="5" data-width="The pixel width of the plugin"></div>-->
+
+				
+	
+	</article><!-- #post -->
+				
+				
+						
+	
+
+</section>
+		
+			<div id="secondary" class="widget-area" role="complementary">
+			<aside id="text-2" class="widget widget_text"><h3 class="widget-title">Rx.NET in Action</h3>			<div class="textwidget"><a href="http://manning.com/dresher/?a_aid=8ec75026&amp;a_bid=8ec75026" target="_blank"><img src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/y3mQPH46YWqzxTr8PrdrPA2SVdvdPzmfPpqowzdr-9CZYYbZyRwDKkzoErUW54TRjZzHhe6ISV4Unmh7qX" border="0" alt="Rx.NET in Action"></a></div>
+		</aside><aside id="text-4" class="widget widget_text">			<div class="textwidget"><p><a href="https://mvp.microsoft.com/en-us/PublicProfile/5002689" target="_blank" rel="noopener"><img src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/MVP_Logo_Horizontal_Preferred_Cyan300_CMYK_300ppi.png" alt="Rx.NET in Action" border="0"></a></p>
+</div>
+		</aside><aside id="search-2" class="widget widget_search"><form role="search" method="get" id="searchform" class="searchform" action="http://blogs.microsoft.co.il/iblogger/">
+				<div>
+					<label class="screen-reader-text" for="s">Search for:</label>
+					<input type="text" value="" name="s" id="s">
+					<input type="submit" id="searchsubmit" value="Search">
+				</div>
+			</form></aside>		<aside id="recent-posts-2" class="widget widget_recent_entries">		<h3 class="widget-title">Recent Posts</h3>		<ul>
+											<li>
+					<a href="http://blogs.microsoft.co.il/iblogger/2018/01/11/connect-2017-recap-event-recordings/">Connect(); 2017 recap event – Recordings</a>
+									</li>
+											<li>
+					<a href="http://blogs.microsoft.co.il/iblogger/2017/09/27/net-conf-il-2017/">.NET Conf IL 2017</a>
+									</li>
+											<li>
+					<a href="http://blogs.microsoft.co.il/iblogger/2017/07/02/im-a-microsoft-mvp/">I’m a Microsoft MVP</a>
+									</li>
+											<li>
+					<a href="http://blogs.microsoft.co.il/iblogger/2017/07/02/final-projects-at-ruppin-software-engineering-workshop-2017/">Final Projects at Ruppin Software Engineering Workshop 2017</a>
+									</li>
+											<li>
+					<a href="http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/">Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget</a>
+									</li>
+					</ul>
+		</aside><aside id="archives-2" class="widget widget_archive"><h3 class="widget-title">Archives</h3>		<ul>
+			<li><a href="http://blogs.microsoft.co.il/iblogger/2018/01/">January 2018</a></li>
+	<li><a href="http://blogs.microsoft.co.il/iblogger/2017/09/">September 2017</a></li>
+	<li><a href="http://blogs.microsoft.co.il/iblogger/2017/07/">July 2017</a></li>
+	<li><a href="http://blogs.microsoft.co.il/iblogger/2017/04/">April 2017</a></li>
+	<li><a href="http://blogs.microsoft.co.il/iblogger/2016/10/">October 2016</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2016/09/">September 2016</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2016/08/">August 2016</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2016/06/">June 2016</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2016/03/">March 2016</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2016/01/">January 2016</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/12/">December 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/11/">November 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/10/">October 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/08/">August 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/07/">July 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/06/">June 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/05/">May 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/03/">March 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/02/">February 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/01/">January 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2014/12/">December 2014</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2014/11/">November 2014</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2014/10/">October 2014</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2014/09/">September 2014</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2014/08/">August 2014</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2014/07/">July 2014</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2014/06/">June 2014</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2014/05/">May 2014</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2014/01/">January 2014</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2013/12/">December 2013</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2013/10/">October 2013</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2013/06/">June 2013</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2013/04/">April 2013</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2013/01/">January 2013</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2012/12/">December 2012</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2012/09/">September 2012</a></li>
+		<li><a class="a-txt" href="javascript:void(0)">Full Arcive</a></li></ul>
+		</aside><aside id="tag_cloud-2" class="widget widget_tag_cloud"><h3 class="widget-title">Tags</h3><div class="tagcloud"><a href="http://blogs.microsoft.co.il/iblogger/tag/animation/" class="tag-cloud-link tag-link-20963 tag-link-position-1" style="font-size: 18.391608391608px;" aria-label="Animation (4 items)">Animation</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/architecture/" class="tag-cloud-link tag-link-20912 tag-link-position-2" style="font-size: 16.293706293706px;" aria-label="Architecture (3 items)">Architecture</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/aws/" class="tag-cloud-link tag-link-20983 tag-link-position-3" style="font-size: 16.293706293706px;" aria-label="AWS (3 items)">AWS</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/azure/" class="tag-cloud-link tag-link-20981 tag-link-position-4" style="font-size: 23.636363636364px;" aria-label="Azure (8 items)">Azure</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/book/" class="tag-cloud-link tag-link-19747 tag-link-position-5" style="font-size: 10px;" aria-label="Book (1 item)">Book</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/c/" class="tag-cloud-link tag-link-20332 tag-link-position-6" style="font-size: 30.559440559441px;" aria-label="c# (18 items)">c#</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/c1/" class="tag-cloud-link tag-link-20894 tag-link-position-7" style="font-size: 10px;" aria-label="C++ (1 item)">C++</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/caliburn-micro/" class="tag-cloud-link tag-link-20991 tag-link-position-8" style="font-size: 13.776223776224px;" aria-label="Caliburn.Micro (2 items)">Caliburn.Micro</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/cloud/" class="tag-cloud-link tag-link-20980 tag-link-position-9" style="font-size: 21.538461538462px;" aria-label="Cloud (6 items)">Cloud</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/codemotion/" class="tag-cloud-link tag-link-20973 tag-link-position-10" style="font-size: 13.776223776224px;" aria-label="Codemotion (2 items)">Codemotion</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/conference/" class="tag-cloud-link tag-link-20939 tag-link-position-11" style="font-size: 20.06993006993px;" aria-label="conference (5 items)">conference</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/confoo/" class="tag-cloud-link tag-link-20968 tag-link-position-12" style="font-size: 16.293706293706px;" aria-label="ConFoo (3 items)">ConFoo</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/debugging/" class="tag-cloud-link tag-link-21004 tag-link-position-13" style="font-size: 13.776223776224px;" aria-label="Debugging (2 items)">Debugging</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/dependency-injection/" class="tag-cloud-link tag-link-20941 tag-link-position-14" style="font-size: 13.776223776224px;" aria-label="dependency injection (2 items)">dependency injection</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/dev/" class="tag-cloud-link tag-link-19749 tag-link-position-15" style="font-size: 40px; color: rgb(3, 177, 148);" aria-label="DEV (53 items)">DEV</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/dev-azure-aws-rackspace-storage/" class="tag-cloud-link tag-link-20901 tag-link-position-16" style="font-size: 10px;" aria-label="DEV Azure AWS Rackspace Storage (1 item)">DEV Azure AWS Rackspace Storage</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/dev-c-wp8-windows8-winrt-pcl/" class="tag-cloud-link tag-link-20896 tag-link-position-17" style="font-size: 10px;" aria-label="DEV C# WP8 windows8 WinRT PCL (1 item)">DEV C# WP8 windows8 WinRT PCL</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/devgeekweek/" class="tag-cloud-link tag-link-20908 tag-link-position-18" style="font-size: 10px;" aria-label="DevGeekWeek (1 item)">DevGeekWeek</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/dev-rx-c-wp8-windows-phone/" class="tag-cloud-link tag-link-20900 tag-link-position-19" style="font-size: 10px;" aria-label="DEV RX C# WP8 windows phone (1 item)">DEV RX C# WP8 windows phone</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/di/" class="tag-cloud-link tag-link-20992 tag-link-position-20" style="font-size: 16.293706293706px;" aria-label="DI (3 items)">DI</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/groupby/" class="tag-cloud-link tag-link-20962 tag-link-position-21" style="font-size: 18.391608391608px;" aria-label="GroupBy (4 items)">GroupBy</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/iltam/" class="tag-cloud-link tag-link-20910 tag-link-position-22" style="font-size: 10px;" aria-label="ILTAM (1 item)">ILTAM</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/iot/" class="tag-cloud-link tag-link-20957 tag-link-position-23" style="font-size: 13.776223776224px;" aria-label="IoT (2 items)">IoT</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/localization/" class="tag-cloud-link tag-link-20486 tag-link-position-24" style="font-size: 13.776223776224px;" aria-label="Localization (2 items)">Localization</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/locking/" class="tag-cloud-link tag-link-20565 tag-link-position-25" style="font-size: 10px;" aria-label="Locking (1 item)">Locking</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/manning/" class="tag-cloud-link tag-link-20949 tag-link-position-26" style="font-size: 21.538461538462px;" aria-label="Manning (6 items)">Manning</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/msbuild/" class="tag-cloud-link tag-link-20990 tag-link-position-27" style="font-size: 13.776223776224px;" aria-label="MSBuild (2 items)">MSBuild</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/multithreading/" class="tag-cloud-link tag-link-20564 tag-link-position-28" style="font-size: 13.776223776224px;" aria-label="MultiThreading (2 items)">MultiThreading</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/nuget/" class="tag-cloud-link tag-link-20928 tag-link-position-29" style="font-size: 13.776223776224px;" aria-label="Nuget (2 items)">Nuget</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/patterns/" class="tag-cloud-link tag-link-20982 tag-link-position-30" style="font-size: 10px;" aria-label="Patterns (1 item)">Patterns</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/presentations/" class="tag-cloud-link tag-link-20972 tag-link-position-31" style="font-size: 13.776223776224px;" aria-label="Presentations (2 items)">Presentations</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/raspberrypi/" class="tag-cloud-link tag-link-20959 tag-link-position-32" style="font-size: 13.776223776224px;" aria-label="RaspberryPI (2 items)">RaspberryPI</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/reactive-extensions/" class="tag-cloud-link tag-link-19750 tag-link-position-33" style="font-size: 24.685314685315px;" aria-label="Reactive Extensions (9 items)">Reactive Extensions</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/reactive-extensions-in-action/" class="tag-cloud-link tag-link-20950 tag-link-position-34" style="font-size: 27.832167832168px;" aria-label="Reactive Extensions in Action (13 items)">Reactive Extensions in Action</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/ruppin/" class="tag-cloud-link tag-link-20906 tag-link-position-35" style="font-size: 13.776223776224px;" aria-label="Ruppin (2 items)">Ruppin</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/rx/" class="tag-cloud-link tag-link-19748 tag-link-position-36" style="font-size: 30.13986013986px;" aria-label="RX (17 items)">RX</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/software-engineering/" class="tag-cloud-link tag-link-20905 tag-link-position-37" style="font-size: 10px;" aria-label="Software Engineering (1 item)">Software Engineering</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/sqlite/" class="tag-cloud-link tag-link-20976 tag-link-position-38" style="font-size: 13.776223776224px;" aria-label="SQLite (2 items)">SQLite</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/storage/" class="tag-cloud-link tag-link-20911 tag-link-position-39" style="font-size: 10px;" aria-label="Storage (1 item)">Storage</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/tasks/" class="tag-cloud-link tag-link-20895 tag-link-position-40" style="font-size: 10px;" aria-label="Tasks (1 item)">Tasks</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/visual-studio/" class="tag-cloud-link tag-link-20986 tag-link-position-41" style="font-size: 16.293706293706px;" aria-label="Visual Studio (3 items)">Visual Studio</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/windows-8/" class="tag-cloud-link tag-link-20335 tag-link-position-42" style="font-size: 18.391608391608px;" aria-label="Windows 8 (4 items)">Windows 8</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/windows-8-1/" class="tag-cloud-link tag-link-20988 tag-link-position-43" style="font-size: 16.293706293706px;" aria-label="Windows 8.1 (3 items)">Windows 8.1</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/windows-10/" class="tag-cloud-link tag-link-20953 tag-link-position-44" style="font-size: 13.776223776224px;" aria-label="Windows 10 (2 items)">Windows 10</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/windows-phone-8/" class="tag-cloud-link tag-link-20899 tag-link-position-45" style="font-size: 18.391608391608px;" aria-label="Windows Phone 8 (4 items)">Windows Phone 8</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/windows-runtime/" class="tag-cloud-link tag-link-20334 tag-link-position-46" style="font-size: 20.06993006993px;" aria-label="Windows Runtime (5 items)">Windows Runtime</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/winrt/" class="tag-cloud-link tag-link-20330 tag-link-position-47" style="font-size: 23.636363636364px;" aria-label="WinRT (8 items)">WinRT</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/wp8/" class="tag-cloud-link tag-link-20975 tag-link-position-48" style="font-size: 16.293706293706px;" aria-label="WP8 (3 items)">WP8</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/wpf/" class="tag-cloud-link tag-link-20979 tag-link-position-49" style="font-size: 16.293706293706px;" aria-label="WPF (3 items)">WPF</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/xaml/" class="tag-cloud-link tag-link-20916 tag-link-position-50" style="font-size: 20.06993006993px;" aria-label="xaml (5 items)">xaml</a></div>
+</aside><aside id="categories-2" class="widget widget_categories"><h3 class="widget-title">Categories</h3>		<ul>
+	<li class="cat-item cat-item-21017"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/net/">.NET</a>
+</li>
+	<li class="cat-item cat-item-20965"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/akka-net/">Akka.NET</a>
+</li>
+	<li class="cat-item cat-item-20964"><a href="http://blogs.microsoft.co.il/iblogger/category/animations/">Animations</a>
+</li>
+	<li class="cat-item cat-item-20966"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/architecture/">Architecture</a>
+</li>
+	<li class="cat-item cat-item-20909"><a href="http://blogs.microsoft.co.il/iblogger/category/aws/">AWS</a>
+</li>
+	<li class="cat-item cat-item-20903"><a href="http://blogs.microsoft.co.il/iblogger/category/azure/">Azure</a>
+</li>
+	<li class="cat-item cat-item-20929"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/caliburn-micro/">Caliburn.Micro</a>
+</li>
+	<li class="cat-item cat-item-20904"><a href="http://blogs.microsoft.co.il/iblogger/category/cloud/">Cloud</a>
+</li>
+	<li class="cat-item cat-item-20969"><a href="http://blogs.microsoft.co.il/iblogger/category/conference/">Conference</a>
+</li>
+	<li class="cat-item cat-item-21003"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/debugging/">Debugging</a>
+</li>
+	<li class="cat-item cat-item-20913"><a href="http://blogs.microsoft.co.il/iblogger/category/demo/">Demo</a>
+</li>
+	<li class="cat-item cat-item-20977"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/">DEV</a>
+</li>
+	<li class="cat-item cat-item-20938"><a href="http://blogs.microsoft.co.il/iblogger/category/di/">DI</a>
+</li>
+	<li class="cat-item cat-item-20942"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/di-dev/">DI</a>
+</li>
+	<li class="cat-item cat-item-20985"><a href="http://blogs.microsoft.co.il/iblogger/category/iltam/">ILTAM</a>
+</li>
+	<li class="cat-item cat-item-20943"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/ioc/">IoC</a>
+</li>
+	<li class="cat-item cat-item-20955"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/iot/">IoT</a>
+</li>
+	<li class="cat-item cat-item-20944"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/log4net/">log4net</a>
+</li>
+	<li class="cat-item cat-item-20947"><a href="http://blogs.microsoft.co.il/iblogger/category/manning/">Manning</a>
+</li>
+	<li class="cat-item cat-item-20926"><a href="http://blogs.microsoft.co.il/iblogger/category/msbuild/">MSBuild</a>
+</li>
+	<li class="cat-item cat-item-20930"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/mvvm/">MVVM</a>
+</li>
+	<li class="cat-item cat-item-20945"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/ninject/">Ninject</a>
+</li>
+	<li class="cat-item cat-item-20914"><a href="http://blogs.microsoft.co.il/iblogger/category/nosql/">NoSql</a>
+</li>
+	<li class="cat-item cat-item-20907"><a href="http://blogs.microsoft.co.il/iblogger/category/patterns/">Patterns</a>
+</li>
+	<li class="cat-item cat-item-20918"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/performance/">Performance</a>
+</li>
+	<li class="cat-item cat-item-21007"><a href="http://blogs.microsoft.co.il/iblogger/category/rabbitmq/">RabbitMQ</a>
+</li>
+	<li class="cat-item cat-item-20956"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/iot/raspberry-pi/">Raspberry PI</a>
+</li>
+	<li class="cat-item cat-item-20946"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/reactive-extensions/">Reactive Extensions</a>
+</li>
+	<li class="cat-item cat-item-20948"><a href="http://blogs.microsoft.co.il/iblogger/category/reactive-extensions-in-action/">Reactive Extensions in Action</a>
+</li>
+	<li class="cat-item cat-item-20978"><a href="http://blogs.microsoft.co.il/iblogger/category/rx/">RX</a>
+</li>
+	<li class="cat-item cat-item-20927"><a href="http://blogs.microsoft.co.il/iblogger/category/sdk/">SDK</a>
+</li>
+	<li class="cat-item cat-item-20898"><a href="http://blogs.microsoft.co.il/iblogger/category/sqlite/">SQLite</a>
+</li>
+	<li class="cat-item cat-item-21015"><a href="http://blogs.microsoft.co.il/iblogger/category/teaching/">Teaching</a>
+</li>
+	<li class="cat-item cat-item-20915"><a href="http://blogs.microsoft.co.il/iblogger/category/visual-studio/">Visual Studio</a>
+</li>
+	<li class="cat-item cat-item-20952"><a href="http://blogs.microsoft.co.il/iblogger/category/vpn/">VPN</a>
+</li>
+	<li class="cat-item cat-item-20951"><a href="http://blogs.microsoft.co.il/iblogger/category/windows-10/">Windows 10</a>
+</li>
+	<li class="cat-item cat-item-20925"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/windows-8-1/">Windows 8.1</a>
+</li>
+	<li class="cat-item cat-item-20984"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/winrt/">WinRT</a>
+</li>
+	<li class="cat-item cat-item-20897"><a href="http://blogs.microsoft.co.il/iblogger/category/wp8/">WP8</a>
+</li>
+	<li class="cat-item cat-item-20902"><a href="http://blogs.microsoft.co.il/iblogger/category/wpf/">WPF</a>
+</li>
+	<li class="cat-item cat-item-20922"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/xaml-dev/">XAML</a>
+</li>
+		</ul>
+</aside><aside id="meta-2" class="widget widget_meta"><h3 class="widget-title">Meta</h3>			<ul>
+			<li><a href="https://blogs.microsoft.co.il/iblogger/wp-login.php?action=register">Register</a></li>			<li><a href="https://blogs.microsoft.co.il/iblogger/wp-login.php">Log in</a></li>
+			<li><a href="http://blogs.microsoft.co.il/iblogger/feed/">Entries <abbr title="Really Simple Syndication">RSS</abbr></a></li>
+			<li><a href="http://blogs.microsoft.co.il/iblogger/comments/feed/">Comments <abbr title="Really Simple Syndication">RSS</abbr></a></li>
+			<li><a href="https://wordpress.org/" title="Powered by WordPress, state-of-the-art semantic personal publishing platform.">WordPress.org</a></li>			</ul>
+			</aside>			<aside class="widget mrg">
+		
+			<div class="moposts">
+			<h3 class="widget-title"> Additional Posts </h3>
+								  <a href="http://blogs.microsoft.co.il/iblogger/2018/01/11/connect-2017-recap-event-recordings/" class="latest_art">
+					<div class="la-date">January 11, 2018</div>
+					<h4>Connect(); 2017 recap event – Recordings</h4>
+		
+                    <p>Last month i organized a small local event for the Israeli .NET community where we talked about all the latest announcement and news in the .NET world. The recordings from the event are now live (courtesy of Alon Fliess). Since this was a local event in Israel, all the talks were in Hebrew Connect(); 2017 […]</p>
+			      </a>
+								  <a href="http://blogs.microsoft.co.il/iblogger/2017/09/27/net-conf-il-2017/" class="latest_art">
+					<div class="la-date">September 27, 2017</div>
+					<h4>.NET Conf IL 2017</h4>
+		
+                    <p>Big thank you to everyone who came to the local event of the .NET Conf global celebrations. You can find the slides from all the talks here Here is the list of sessions and speakers bio: .NET Conf highlightsThe .NET world has never been so exciting, and new stuff are being announced on a daily […]</p>
+			      </a>
+								  <a href="http://blogs.microsoft.co.il/iblogger/2017/07/02/im-a-microsoft-mvp/" class="latest_art">
+					<div class="la-date">July 2, 2017</div>
+					<h4>I’m a Microsoft MVP</h4>
+		
+                    <p>I’m so honored and proud to receive the Microsoft MVP Award. It has always been a dream to be part of such a respected and talented group of people who share their knowledge and expertise with the community. During the time that i practice software development professionally, I’ve read blogs and articles written by MVPs, […]</p>
+			      </a>
+								</div>
+				
+				</aside>
+		</div><!-- #secondary -->
+	</div>
+	</div>
+
+	<footer class="footer_main clearfix">
+	<section class="wrapper clearfix">
+		<article id="first_fl" class="footer_list">
+		<h3>משאבים לקהילת המפתחים</h3>
+			<div class="menu-footer1-container">
+				<ul id="menu-footer-menu-2">
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://blogs.microsoft.co.il/msdn" title="MSDN בלוג" target="_blank">בלוג MSDN</a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.microsoft.com/israel/msdn/pulse/" title="ניוזלטר  MSDN" target="_blank">ניוזלטר  MSDN</a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://www.facebook.com/msdnisrael" title="MSDN בפייסבוק" target="_blank">בפייסבוק MSDN</a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.youtube.com/channel/UCp6wuFkya3jOETs_nM7z3Fw?feature=watch" target="_blank">יוטיוב  MSDN</a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.microsoftvirtualacademy.com/" target="_blank">האקדמיה הוירטואלית</a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://msdn.microsoft.com/en-us/evalcenter/default" target="_blank">התנסות חינם</a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.microsoft.com/israel/4steps/" target="_blank">אתר פיתוח אפליקציות</a></li>
+				</ul>
+			</div>
+		</article>
+			<article id="sec_fl" class="footer_list">
+		<h3>משאבים לקהילת IT</h3>
+				<ul id="menu-footer-menu-2">
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://blogs.microsoft.co.il/technet" title="TechNet בלוג" target="_blank">בלוג TechNet </a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.microsoft.com/israel/technetflash/Prev_vers/index.htm" target="_blank">ניוזלטר  TechNet </a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://www.facebook.com/technetil" title="TechNet בפייסבוק" target="_blank">בפייסבוק TechNet</a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.youtube.com/user/TechNetIsrael/videos" target="_blank">יוטיוב  TechNet</a></li>
+								<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.microsoftvirtualacademy.com/" target="_blank">האקדמיה הוירטואלית</a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://technet.microsoft.com/en-us/evalcenter/default" target="_blank">התנסות חינם</a></li>
+				</ul>
+			</article>
+			<article id="thrd_fl" class="footer_list">
+		<h3>משאבים כללים </h3>
+					<ul id="menu-footer-menu-2">
+						<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.microsoft.com/he-il/default.aspx" target="_blank" title="אתר מיקרוסופט ישראל">אתר מיקרוסופט ישראל</a></li>
+						<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.facebook.com/microsoftisrael" target="_blank" title="מיקרוסופט ישראל בפייסבוק">מיקרוסופט ישראל בפייסבוק</a></li>
+						<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://social.msdn.microsoft.com/Forums/he-il/categories" target="_blank" title="&gt;אתר הפורומים">אתר הפורומים</a></li>
+						<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.microsoft.com/israel/communities/usergroups/default.aspx" target="_blank" title="&gt;קבוצות משתמשים">קבוצות משתמשים</a></li>
+						<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.microsoft.com/israel/traincert/" target="_blank" title="הדרכות והסמכות מיקרוסופט">הדרכות והסמכות מיקרוסופט</a></li>
+						<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://msevents.microsoft.com/CUI/default.aspx?culture=he-IL" target="_blank">אירועים </a></li>
+					
+					<!--
+					<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://blogs.microsoft.co.il/סימנים-מסחריים/" title=" סימנים מסחריים"> סימנים מסחריים</a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://blogs.microsoft.co.il/תנאי-שימוש/" title="תנאי שימוש">תנאי שימוש</a></li>
+-->
+				</ul>	</article>
+		</section>
+		<section class="sfooter">
+                <div class="content">
+                    <div class="footer-bottom">                        
+                        <ul class="legal">
+                            <li><a href="http://choice.microsoft.com/">אודות הפרסומות שלנו</a></li>
+                            <li><a href="http://www.microsoft.com/About/Legal/EN/US/IntellectualProperty/Trademarks/EN-US.aspx">סימנים מסחריים</a></li>
+                            <li><a href="http://www.microsoft.com/en-us/legal/intellectualproperty/copyright/default.aspx">תנאי השימוש</a></li>
+                            <li><a href="http://go.microsoft.com/fwlink/?LinkId=248681">הצהרת פרטיות</a></li>
+                        </ul>
+                        <div class="footer-copyright">
+                            <a href="http://www.microsoft.com/">
+                                <img alt="Microsoft" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/microsoft-logo-heb.png">
+                            </a><span>© 2014 Microsoft</span>
+                        </div>
+                    </div>
+                </div>
+</section>
+	</footer><!-- #colophon -->
+    <script>
+        (function (window) {
+            var rSide = document.getElementById("blog_post_info");
+            var lSide = document.getElementById("secondary");
+			
+			setTimeout(function(){
+				rSide = document.getElementById("blog_post_info");
+				lSide = document.getElementById("secondary");
+				if (lSide.offsetHeight > rSide.offsetHeight) {
+					rSide.style.minHeight = lSide.offsetHeight + "px";
+				}
+			},1000);
+
+            window.onresize = function () {
+                if (lSide.offsetHeight > rSide.offsetHeight) {
+                    rSide.style.minHeight = lSide.offsetHeight + "px";
+                }
+            }
+        })(window);
+
+
+    </script>
+	
+<!-- Do Not Remove - Turn Tracking Beacon Code - Do Not Remove -->
+<!-- Advertiser Name : microsoft -->
+<!-- Beacon Name : Microsoft_ blogs general -->
+<!-- START OF WEDCS TAG -->
+<script type="text/javascript">
+    var varSegmentation = 0;
+    var varClickTracking = 1;
+    var varCustomerTracking = 1;
+    var varAutoFirePV = 1;
+    var Route = "LE020";
+    document.write("<script type='text/javascript' src='" +
+    (window.location.protocol) + "//c.microsoft.com/ms.js'" + "'><\/script>");
+</script><script type="text/javascript" src="http://c.microsoft.com/ms.js" '=""></script>
+<noscript>
+    <img alt="" width="1" height="1" src="http://c.microsoft.com/trans_pixel.aspx" />
+</noscript>
+<!-- END OF WEDCS TAG -->
+
+
+
+
+
+<!-- If Beacon is placed on a Transaction or Lead Generation based page, please populate the turn_client_track_id with your order/confirmation ID -->
+<script type="text/javascript">
+  turn_client_track_id = "";
+</script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/beacon_call.js.download">
+</script>
+<noscript>
+  <img border="0" src="http://r.turn.com/r/beacon?b2=PGyOFcFmMNXjqLZWhsqf0IYBbGja1CD2b3Qxz0EXcZ4jZElP3T1utc_BawhZaoxwRafeYDFgKVEXkxLRf3dk_A&cid=">
+</noscript>
+<!-- End Turn Tracking Beacon Code Do Not Remove -->
+
+<script>
+(function() { // Redistats, track version 1.0
+	var global_id = 147;
+	var property_id = 1458;
+	var url = encodeURIComponent(window.location.href.split('#')[0]);
+	var referrer = encodeURIComponent(document.referrer);
+	var x = document.createElement('script'), s = document.getElementsByTagName('script')[0];
+	x.src = '//redistats.com/track.js?gid='+global_id+'&pid='+property_id+'&url='+url+'&referrer='+referrer;
+	s.parentNode.insertBefore(x, s);
+})();
+</script><script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shCore.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushAS3.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushBash.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushColdFusion.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushClojure.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushCpp.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushCSharp.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushCss.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushDelphi.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushDiff.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushErlang.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushFSharp.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushGroovy.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushJava.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushJavaFX.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushJScript.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushLatex.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushMatlabKey.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushObjC.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushPerl.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushPhp.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushPlain.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushPowerShell.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushPython.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushR.js.download"></script><iframe src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/iframe.html" id="mm_sync_back_ground" style="visibility: hidden; display: none;"></iframe>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushRuby.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushScala.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushSql.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushVb.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/shBrushXml.js.download"></script>
+<script type="text/javascript">
+	(function(){
+		var corecss = document.createElement('link');
+		var themecss = document.createElement('link');
+		var corecssurl = "http://blogs.microsoft.co.il/iblogger/wp-content/plugins/syntaxhighlighter/syntaxhighlighter3/styles/shCore.css?ver=3.0.9b";
+		if ( corecss.setAttribute ) {
+				corecss.setAttribute( "rel", "stylesheet" );
+				corecss.setAttribute( "type", "text/css" );
+				corecss.setAttribute( "href", corecssurl );
+		} else {
+				corecss.rel = "stylesheet";
+				corecss.href = corecssurl;
+		}
+		document.getElementsByTagName("head")[0].insertBefore( corecss, document.getElementById("syntaxhighlighteranchor") );
+		var themecssurl = "http://blogs.microsoft.co.il/iblogger/wp-content/plugins/syntaxhighlighter/syntaxhighlighter3/styles/shThemeEmacs.css?ver=3.0.9b";
+		if ( themecss.setAttribute ) {
+				themecss.setAttribute( "rel", "stylesheet" );
+				themecss.setAttribute( "type", "text/css" );
+				themecss.setAttribute( "href", themecssurl );
+		} else {
+				themecss.rel = "stylesheet";
+				themecss.href = themecssurl;
+		}
+		//document.getElementById("syntaxhighlighteranchor").appendChild(themecss);
+		document.getElementsByTagName("head")[0].insertBefore( themecss, document.getElementById("syntaxhighlighteranchor") );
+	})();
+	SyntaxHighlighter.config.strings.expandSource = '+ expand source';
+	SyntaxHighlighter.config.strings.help = '?';
+	SyntaxHighlighter.config.strings.alert = 'SyntaxHighlighter\n\n';
+	SyntaxHighlighter.config.strings.noBrush = 'Can\'t find brush for: ';
+	SyntaxHighlighter.config.strings.brushNotHtmlScript = 'Brush wasn\'t configured for html-script option: ';
+	SyntaxHighlighter.defaults['pad-line-numbers'] = false;
+	SyntaxHighlighter.all();
+</script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/comment-reply.min.js.download"></script>
+<script type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/wp-embed.min.js.download"></script>
+<script async="async" type="text/javascript" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/form.js.download"></script>
+
+<iframe scrolling="no" frameborder="0" allowtransparency="true" src="./Dealing with reentrancy with DelegateCommand _ IBlogger - Tamir Dresher_files/widget_iframe.d753e00c3e838c1b2558149bd3f6ecb8.html" title="Twitter settings iframe" style="display: none;"></iframe><span id="buffer-extension-hover-button" style="display: none; position: absolute; z-index: 8675309; width: 100px; height: 25px; background-image: url(&quot;chrome-extension://noojglkidnpfjbincgijbaiedldjfbhh/data/shared/img/buffer-hover-icon@2x.png&quot;); background-size: 100px 25px; opacity: 0.9; cursor: pointer; top: 620.2px; left: 1267.8px;"></span></body></html>

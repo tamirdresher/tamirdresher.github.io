@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<!-- saved from url=(0121)http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/ -->
+<html lang="en-US"><!--<![endif]--><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="initial-scale=1.0, width=device-width">
+<title>Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget | IBlogger - Tamir Dresher</title>
+<link rel="profile" href="http://gmpg.org/xfn/11">
+<link rel="pingback" href="http://blogs.microsoft.co.il/iblogger/xmlrpc.php">
+
+
+<!--[if lt IE 9]>
+           <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+           <script>window.html5 || document.write('<script src="http://blogs.microsoft.co.il/iblogger/wp-content/themes/MS_englishjs/vendor/html5shiv.js"><\/script>')</script>
+    <![endif]-->
+			 
+ <script src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/all.js.download" async="" crossorigin="anonymous"></script><script src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/track.js.download"></script><script id="twitter-wjs" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/widgets.js.download"></script><script id="facebook-jssdk" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/all.js(1).download"></script><script async="" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/analytics.js.download"></script><script src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/jquery.min.js.download"></script>
+ <script src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/app.js.download"></script>
+<link rel="dns-prefetch" href="http://s.w.org/">
+<link rel="alternate" type="application/rss+xml" title="IBlogger - Tamir Dresher » Feed" href="http://blogs.microsoft.co.il/iblogger/feed/">
+<link rel="alternate" type="application/rss+xml" title="IBlogger - Tamir Dresher » Comments Feed" href="http://blogs.microsoft.co.il/iblogger/comments/feed/">
+<link rel="alternate" type="application/rss+xml" title="IBlogger - Tamir Dresher » Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget Comments Feed" href="http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/feed/">
+		<script type="text/javascript">
+			window._wpemojiSettings = {"baseUrl":"https:\/\/s.w.org\/images\/core\/emoji\/11\/72x72\/","ext":".png","svgUrl":"https:\/\/s.w.org\/images\/core\/emoji\/11\/svg\/","svgExt":".svg","source":{"concatemoji":"http:\/\/blogs.microsoft.co.il\/iblogger\/wp-includes\/js\/wp-emoji-release.min.js?ver=5.0.2"}};
+			!function(a,b,c){function d(a,b){var c=String.fromCharCode;l.clearRect(0,0,k.width,k.height),l.fillText(c.apply(this,a),0,0);var d=k.toDataURL();l.clearRect(0,0,k.width,k.height),l.fillText(c.apply(this,b),0,0);var e=k.toDataURL();return d===e}function e(a){var b;if(!l||!l.fillText)return!1;switch(l.textBaseline="top",l.font="600 32px Arial",a){case"flag":return!(b=d([55356,56826,55356,56819],[55356,56826,8203,55356,56819]))&&(b=d([55356,57332,56128,56423,56128,56418,56128,56421,56128,56430,56128,56423,56128,56447],[55356,57332,8203,56128,56423,8203,56128,56418,8203,56128,56421,8203,56128,56430,8203,56128,56423,8203,56128,56447]),!b);case"emoji":return b=d([55358,56760,9792,65039],[55358,56760,8203,9792,65039]),!b}return!1}function f(a){var c=b.createElement("script");c.src=a,c.defer=c.type="text/javascript",b.getElementsByTagName("head")[0].appendChild(c)}var g,h,i,j,k=b.createElement("canvas"),l=k.getContext&&k.getContext("2d");for(j=Array("flag","emoji"),c.supports={everything:!0,everythingExceptFlag:!0},i=0;i<j.length;i++)c.supports[j[i]]=e(j[i]),c.supports.everything=c.supports.everything&&c.supports[j[i]],"flag"!==j[i]&&(c.supports.everythingExceptFlag=c.supports.everythingExceptFlag&&c.supports[j[i]]);c.supports.everythingExceptFlag=c.supports.everythingExceptFlag&&!c.supports.flag,c.DOMReady=!1,c.readyCallback=function(){c.DOMReady=!0},c.supports.everything||(h=function(){c.readyCallback()},b.addEventListener?(b.addEventListener("DOMContentLoaded",h,!1),a.addEventListener("load",h,!1)):(a.attachEvent("onload",h),b.attachEvent("onreadystatechange",function(){"complete"===b.readyState&&c.readyCallback()})),g=c.source||{},g.concatemoji?f(g.concatemoji):g.wpemoji&&g.twemoji&&(f(g.twemoji),f(g.wpemoji)))}(window,document,window._wpemojiSettings);
+		</script><script src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/wp-emoji-releas.download" type="text/javascript" defer=""></script>
+		<style type="text/css">
+img.wp-smiley,
+img.emoji {
+	display: inline !important;
+	border: none !important;
+	box-shadow: none !important;
+	height: 1em !important;
+	width: 1em !important;
+	margin: 0 .07em !important;
+	vertical-align: -0.1em !important;
+	background: none !important;
+	padding: 0 !important;
+}
+</style>
+<link rel="stylesheet" id="wp-block-library-css" href="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/style.min.css" type="text/css" media="all">
+<link rel="stylesheet" id="microsoft-hebrew-normalize-css" href="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/normalize.css" type="text/css" media="all">
+<link rel="stylesheet" id="MS_english-style-css" href="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/style.css" type="text/css" media="all">
+<link rel="stylesheet" id="ms_global_search_css_style-css" href="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/style(1).css" type="text/css" media="all">
+<link rel="https://api.w.org/" href="http://blogs.microsoft.co.il/iblogger/wp-json/">
+<link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://blogs.microsoft.co.il/iblogger/xmlrpc.php?rsd">
+<link rel="wlwmanifest" type="application/wlwmanifest+xml" href="http://blogs.microsoft.co.il/iblogger/wp-includes/wlwmanifest.xml"> 
+<link rel="prev" title="New Speaking Engagements – CodeMash Ohio and ConFoo Montreal" href="http://blogs.microsoft.co.il/iblogger/2016/10/20/new-speaking-engagements-codemash-ohio-and-confoo-montreal/">
+<link rel="next" title="Final Projects at Ruppin Software Engineering Workshop 2017" href="http://blogs.microsoft.co.il/iblogger/2017/07/02/final-projects-at-ruppin-software-engineering-workshop-2017/">
+<meta name="generator" content="WordPress 5.0.2">
+<link rel="canonical" href="http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/">
+<link rel="shortlink" href="http://blogs.microsoft.co.il/iblogger/?p=2747078">
+<link rel="alternate" type="application/json+oembed" href="http://blogs.microsoft.co.il/iblogger/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fblogs.microsoft.co.il%2Fiblogger%2F2017%2F04%2F05%2Feasily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget%2F">
+<link rel="alternate" type="text/xml+oembed" href="http://blogs.microsoft.co.il/iblogger/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fblogs.microsoft.co.il%2Fiblogger%2F2017%2F04%2F05%2Feasily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget%2F&amp;format=xml">
+
+<!-- ADD TO HEADER - START -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-67213620-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+<!-- ADD TO HEADER - END -->
+<meta name="google-site-verification" content="2Y9QuXw0MMYL8Kq8RIZ-N_lVubDeehILCkhSkmPp1y0"><link rel="stylesheet" type="text/css" href="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shCore.css"><link rel="stylesheet" type="text/css" href="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shThemeEmacs.css"><style type="text/css" id="syntaxhighlighteranchor"></style>
+<meta data-pso-pv="1.2.1" data-pso-pt="singlePost" data-pso-th="d1bf338e192ac56181c1552d8e7193ec">
+<!--Wise pixel Microsoft Blogs-->
+<script language="JavaScript1.1" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/js"></script>
+
+<style type="text/css">.fb_hidden{position:absolute;top:-10000px;z-index:10001}.fb_reposition{overflow:hidden;position:relative}.fb_invisible{display:none}.fb_reset{background:none;border:0;border-spacing:0;color:#000;cursor:auto;direction:ltr;font-family:"lucida grande", tahoma, verdana, arial, sans-serif;font-size:11px;font-style:normal;font-variant:normal;font-weight:normal;letter-spacing:normal;line-height:1;margin:0;overflow:visible;padding:0;text-align:right;text-decoration:none;text-indent:0;text-shadow:none;text-transform:none;visibility:visible;white-space:normal;word-spacing:normal}.fb_reset>div{overflow:hidden}@keyframes fb_transform{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}.fb_animate{animation:fb_transform .3s forwards}
+.fb_dialog{background:rgba(82, 82, 82, .7);position:absolute;top:-10000px;z-index:10001}.fb_dialog_advanced{border-radius:8px;padding:10px}.fb_dialog_content{background:#fff;color:#373737}.fb_dialog_close_icon{background:url(https://static.xx.fbcdn.net/rsrc.php/v3/yq/r/IE9JII6Z1Ys.png) no-repeat scroll 0 0 transparent;cursor:pointer;display:block;height:15px;position:absolute;left:18px;top:17px;width:15px}.fb_dialog_mobile .fb_dialog_close_icon{right:5px;left:auto;top:5px}.fb_dialog_padding{background-color:transparent;position:absolute;width:1px;z-index:-1}.fb_dialog_close_icon:hover{background:url(https://static.xx.fbcdn.net/rsrc.php/v3/yq/r/IE9JII6Z1Ys.png) no-repeat scroll 0 -15px transparent}.fb_dialog_close_icon:active{background:url(https://static.xx.fbcdn.net/rsrc.php/v3/yq/r/IE9JII6Z1Ys.png) no-repeat scroll 0 -30px transparent}.fb_dialog_iframe{line-height:0}.fb_dialog_content .dialog_title{background:#6d84b4;border:1px solid #365899;color:#fff;font-size:14px;font-weight:bold;margin:0}.fb_dialog_content .dialog_title>span{background:url(https://static.xx.fbcdn.net/rsrc.php/v3/yd/r/Cou7n-nqK52.gif) no-repeat 5px 50%;float:right;padding:5px 26px 7px 0}body.fb_hidden{height:100%;right:0;margin:0;overflow:visible;position:absolute;top:-10000px;transform:none;width:100%}.fb_dialog.fb_dialog_mobile.loading{background:url(https://static.xx.fbcdn.net/rsrc.php/v3/ya/r/3rhSv5V8j3o.gif) white no-repeat 50% 50%;min-height:100%;min-width:100%;overflow:hidden;position:absolute;top:0;z-index:10001}.fb_dialog.fb_dialog_mobile.loading.centered{background:none;height:auto;min-height:initial;min-width:initial;width:auto}.fb_dialog.fb_dialog_mobile.loading.centered #fb_dialog_loader_spinner{width:100%}.fb_dialog.fb_dialog_mobile.loading.centered .fb_dialog_content{background:none}.loading.centered #fb_dialog_loader_close{clear:both;color:#fff;display:block;font-size:18px;padding-top:20px}#fb-root #fb_dialog_ipad_overlay{background:rgba(0, 0, 0, .4);bottom:0;right:0;min-height:100%;position:absolute;left:0;top:0;width:100%;z-index:10000}#fb-root #fb_dialog_ipad_overlay.hidden{display:none}.fb_dialog.fb_dialog_mobile.loading iframe{visibility:hidden}.fb_dialog_mobile .fb_dialog_iframe{position:sticky;top:0}.fb_dialog_content .dialog_header{background:linear-gradient(from(#738aba), to(#2c4987));border-bottom:1px solid;border-color:#1d3c78;box-shadow:white 0 1px 1px -1px inset;color:#fff;font:bold 14px Helvetica, sans-serif;text-overflow:ellipsis;text-shadow:rgba(0, 30, 84, .296875) 0 -1px 0;vertical-align:middle;white-space:nowrap}.fb_dialog_content .dialog_header table{height:43px;width:100%}.fb_dialog_content .dialog_header td.header_left{font-size:12px;padding-right:5px;vertical-align:middle;width:60px}.fb_dialog_content .dialog_header td.header_right{font-size:12px;padding-left:5px;vertical-align:middle;width:60px}.fb_dialog_content .touchable_button{background:linear-gradient(from(#4267B2), to(#2a4887));background-clip:padding-box;border:1px solid #29487d;border-radius:3px;display:inline-block;line-height:18px;margin-top:3px;max-width:85px;padding:4px 12px;position:relative}.fb_dialog_content .dialog_header .touchable_button input{background:none;border:none;color:#fff;font:bold 12px Helvetica, sans-serif;margin:2px -12px;padding:2px 6px 3px 6px;text-shadow:rgba(0, 30, 84, .296875) 0 -1px 0}.fb_dialog_content .dialog_header .header_center{color:#fff;font-size:16px;font-weight:bold;line-height:18px;text-align:center;vertical-align:middle}.fb_dialog_content .dialog_content{background:url(https://static.xx.fbcdn.net/rsrc.php/v3/y9/r/jKEcVPZFk-2.gif) no-repeat 50% 50%;border:1px solid #4a4a4a;border-bottom:0;border-top:0;height:150px}.fb_dialog_content .dialog_footer{background:#f5f6f7;border:1px solid #4a4a4a;border-top-color:#ccc;height:40px}#fb_dialog_loader_close{float:right}.fb_dialog.fb_dialog_mobile .fb_dialog_close_button{text-shadow:rgba(0, 30, 84, .296875) 0 -1px 0}.fb_dialog.fb_dialog_mobile .fb_dialog_close_icon{visibility:hidden}#fb_dialog_loader_spinner{animation:rotateSpinner 1.2s linear infinite;background-color:transparent;background-image:url(https://static.xx.fbcdn.net/rsrc.php/v3/yD/r/t-wz8gw1xG1.png);background-position:50% 50%;background-repeat:no-repeat;height:24px;width:24px}@keyframes rotateSpinner{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.fb_iframe_widget{display:inline-block;position:relative}.fb_iframe_widget span{display:inline-block;position:relative;text-align:justify}.fb_iframe_widget iframe{position:absolute}.fb_iframe_widget_fluid_desktop,.fb_iframe_widget_fluid_desktop span,.fb_iframe_widget_fluid_desktop iframe{max-width:100%}.fb_iframe_widget_fluid_desktop iframe{min-width:220px;position:relative}.fb_iframe_widget_lift{z-index:1}.fb_iframe_widget_fluid{display:inline}.fb_iframe_widget_fluid span{width:100%}</style></head>
+<body class="post-template-default single single-post postid-2747078 single-format-standard single-author " style="">
+<div id="fb-root" class=" fb_reset"><div style="position: absolute; top: -10000px; width: 0px; height: 0px;"><div><iframe name="fb_xdm_frame_https" id="fb_xdm_frame_https" aria-hidden="true" title="Facebook Cross Domain Communication Frame" tabindex="-1" frameborder="0" allowtransparency="true" allowfullscreen="true" scrolling="no" allow="encrypted-media" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/xd_arbiter.html" style="border: none;"></iframe></div><div><iframe name="f35cfafe4f44744" frameborder="0" allowtransparency="true" allowfullscreen="true" scrolling="no" allow="encrypted-media" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/ping.html" style="display: none;"></iframe></div></div></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/he_IL/all.js#xfbml=1&appId=171021386433126";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+	
+
+<div id="top-bar" class="wrapper clearfix">
+        <a href="http://blogs.microsoft.co.il/" id="blogs-logo" class="ir">Israel Blogging Community</a>
+        <div id="user-options">
+                            
+            <a href="http://blogs.microsoft.co.il/iblogger/wp-admin">Sign in</a>
+                      </div>
+</div>
+  <header>
+      
+		
+        <div id="header-banner" style="background-image: url(http://blogs.microsoft.co.il/iblogger/wp-content/themes/MS_english/images/default_header.jpg)">
+            <div class="wrapper">
+                <h1 id="blog-title">
+                     
+                    <span class="sub-title">IBlogger - Tamir Dresher</span>
+                </h1>
+                            </div>
+        </div>
+        <div id="header-nav" class="clearfix">
+            <div class="wrapper">
+                <div id="user-avatar">
+                    <img src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/profile.png" alt="">
+                </div>
+                <div id="header-nav-box">
+                    <a href="http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/#" class="ir" id="m-nav">menu</a>
+                    <nav id="heder-nav-warpper">
+                        <a href="http://blogs.microsoft.co.il/iblogger">Home page</a>
+
+                                        </nav>
+                    <div id="header-nav-icons">
+                                                                        <a href="http://il.linkedin.com/in/tamirdresher" target="_blank" class="ir icon-in">linkedin</a>
+                                                <a href="http://blogs.microsoft.co.il/iblogger/rss2" target="_blank" class="ir icon-rss">RSS</a>
+                    </div>
+                </div>
+                <script>
+                    (function (window) {
+                        if (!document.addEventListener)
+                            return;
+
+                        var navBtn = document.getElementById("m-nav");
+                        var nav = document.getElementById("heder-nav-warpper");
+
+                        navBtn.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            var display = window.getComputedStyle(nav, null).getPropertyValue("display");
+                            if (display === 'none')
+                                nav.style.display = 'block';
+                            else
+                                nav.style.display = 'none';
+
+                        }, false);
+
+                        window.addEventListener('resize', function () {
+                            nav.style.display = "";
+                        }, false);
+
+                    })(window);
+                </script>
+            </div>
+        </div>
+
+    </header>
+<!-- #masthead -->
+ <div id="main" role="main" class="clearfix">
+	<div id="primary_blog" class="wrapper clearfix">
+        <section id="blog_post_info" style="min-height: 4418px;">			
+			<script>
+jQuery(document).ready(function(){
+jQuery('.bp-add-comment').click(function(event){
+event.preventDefault();
+jQuery('#respond').show();
+});
+});
+</script>
+	<article id="post-2747078" class="bp clearfix post-2747078 post type-post status-publish format-standard hentry category-dev tag-net tag-dev tag-msbuild tag-netcore tag-nuget">
+		         
+			            <h2 class="bp-title">
+                <a href="http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/">Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget</a>
+            </h2>
+            <h3 class="bp-date">April 5, 2017</h3>
+            <div class="clearfix">
+            <div class="bp-thumb clearfix">
+                                                <div class="bp-social_i">
+                            <a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/" class="ir icon-fb">facebook</a>
+                            <a target="_blank" href="http://www.linkedin.com/shareArticle?mini=true&amp;url=http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/&amp;title=Easily%20supporting%20multiple%20target%20frameworks%20(TFMs)%20with%20VS2017%20and%20Nuget&amp;summary=%3Cp%3EIn%20VS2017%20it%20much%20easier%20now%20to%20support%20multiple%20frameworks%20inside%20a%20single%20.csproj%20file.%20When%20you%20create%20a%20new%20project%20VS2017%20(that%20target%20.NET%20Core%20or%20.NET%20Standard)%20this%20is%20what%20you%E2%80%99ll%20get%20inside%20your%20*.csproj%20%3CProject%20Sdk=%E2%80%9DMicrosoft.NET.Sdk%E2%80%9D%3E%20%3CPropertyGroup%3E%20%3CTargetFramework%3Enetstandard1.4%3C/TargetFramework%3E%20%3C/PropertyGroup%3E%20%3C/Project%3E%20Cool%20right?%20A%20lot%20of%20the%20boilerplate%20configuration%20was%20removed%20in%20order%20[%E2%80%A6]%3C/p%3E" class="ir icon-in">linkedin</a>
+                            <a target="_blank" href="https://twitter.com/share" class="tweet ir icon-twitter" data-lang="he">twitter</a>
+                            <a href="mailto:?subject=Easily%20supporting%20multiple%20target%20frameworks%20(TFMs)%20with%20VS2017%20and%20Nuget&amp;body=Check%20out%20this%20post%20http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/" class="ir icon-email">email</a>
+                        </div>
+              </div>
+             </div>
+	
+				<div class="clearfix">
+			        <div class="tagsx">tags:   <a href="http://blogs.microsoft.co.il/iblogger/tag/net/" rel="tag">.NET</a>, <a href="http://blogs.microsoft.co.il/iblogger/tag/dev/" rel="tag">DEV</a>, <a href="http://blogs.microsoft.co.il/iblogger/tag/msbuild/" rel="tag">MSBuild</a>, <a href="http://blogs.microsoft.co.il/iblogger/tag/netcore/" rel="tag">NETCore</a>, <a href="http://blogs.microsoft.co.il/iblogger/tag/nuget/" rel="tag">Nuget</a></div>
+				    <div class="cmts"> 2 comments </div>
+			    </div>
+		
+						
+		<!-- .entry-header -->
+
+				<div class="contx entry-content clearfix">
+			<p>In VS2017 it much easier now to support multiple frameworks inside a single .csproj file.<br>
+When you create a new project VS2017 (that target .NET Core or .NET Standard) this is what you’ll get inside your *.csproj</p>
+<div><div id="highlighter_269005" class="syntaxhighlighter  xml"><div class="toolbar"><span><a href="http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div><div class="line number5 index4 alt2">5</div><div class="line number6 index5 alt1">6</div><div class="line number7 index6 alt2">7</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="xml plain">&lt;</code><code class="xml keyword">Project</code> <code class="xml color1">Sdk</code><code class="xml plain">=</code><code class="xml string">"Microsoft.NET.Sdk"</code><code class="xml plain">&gt;</code></div><div class="line number2 index1 alt1">&nbsp;</div><div class="line number3 index2 alt2"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">PropertyGroup</code><code class="xml plain">&gt;</code></div><div class="line number4 index3 alt1"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">TargetFramework</code><code class="xml plain">&gt;netstandard1.4&lt;/</code><code class="xml keyword">TargetFramework</code><code class="xml plain">&gt;</code></div><div class="line number5 index4 alt2"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;/</code><code class="xml keyword">PropertyGroup</code><code class="xml plain">&gt;</code></div><div class="line number6 index5 alt1">&nbsp;</div><div class="line number7 index6 alt2"><code class="xml plain">&lt;/</code><code class="xml keyword">Project</code><code class="xml plain">&gt;</code></div></div></td></tr></tbody></table></div></div>
+<p>Cool right? A lot of the boilerplate configuration was removed in order to make the MSBuild format clean and readable.<br>
+By default, all the files inside your project folder will be added. If you want to make adjustment you can always add (or remove some of the files).<br>
+For example, this is how it will look if I want to explicitly add the Properties folder to my project but exclude the AssemblyInfo.cs file.</p>
+<div><div id="highlighter_418970" class="syntaxhighlighter  xml"><div class="toolbar"><span><a href="http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div><div class="line number5 index4 alt2">5</div><div class="line number6 index5 alt1">6</div><div class="line number7 index6 alt2 highlighted">7</div><div class="line number8 index7 alt1 highlighted">8</div><div class="line number9 index8 alt2 highlighted">9</div><div class="line number10 index9 alt1 highlighted">10</div><div class="line number11 index10 alt2">11</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="xml plain">&lt;</code><code class="xml keyword">Project</code> <code class="xml color1">Sdk</code><code class="xml plain">=</code><code class="xml string">"Microsoft.NET.Sdk"</code><code class="xml plain">&gt;</code></div><div class="line number2 index1 alt1">&nbsp;</div><div class="line number3 index2 alt2"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">PropertyGroup</code><code class="xml plain">&gt;</code></div><div class="line number4 index3 alt1"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">TargetFramework</code><code class="xml plain">&gt;netstandard1.4&lt;/</code><code class="xml keyword">TargetFramework</code><code class="xml plain">&gt;</code></div><div class="line number5 index4 alt2"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;/</code><code class="xml keyword">PropertyGroup</code><code class="xml plain">&gt;</code></div><div class="line number6 index5 alt1"><code class="xml spaces">&nbsp;</code>&nbsp;</div><div class="line number7 index6 alt2 highlighted"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">ItemGroup</code><code class="xml plain">&gt;</code></div><div class="line number8 index7 alt1 highlighted"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">Folder</code> <code class="xml color1">Include</code><code class="xml plain">=</code><code class="xml string">"Properties\"</code> <code class="xml plain">/&gt;</code></div><div class="line number9 index8 alt2 highlighted"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">Compile</code> <code class="xml color1">Remove</code><code class="xml plain">=</code><code class="xml string">"Properties\AssemblyInfo.cs"</code> <code class="xml plain">/&gt;</code></div><div class="line number10 index9 alt1 highlighted"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;/</code><code class="xml keyword">ItemGroup</code><code class="xml plain">&gt;</code></div><div class="line number11 index10 alt2"><code class="xml plain">&lt;/</code><code class="xml keyword">Project</code><code class="xml plain">&gt;</code></div></div></td></tr></tbody></table></div></div>
+<h3><u>Target Framework Moniker TFM</u></h3>
+<p>The new MSBuild format support declaration of multiple framework targets inside the same property group. If you need you library to support .NET 4.0, .NET 4.5, .NET Standard 1.6 and .NET Core 1.1, the only change you need to make is to change <em>TargetFramework</em> into plural form&nbsp;<em>TargetFramework<strong>s</strong></em>&nbsp; and add the framework monikers you wish to support:</p>
+<div><div id="highlighter_565851" class="syntaxhighlighter  xml"><div class="toolbar"><span><a href="http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1 highlighted">4</div><div class="line number5 index4 alt2">5</div><div class="line number6 index5 alt1">6</div><div class="line number7 index6 alt2">7</div><div class="line number8 index7 alt1">8</div><div class="line number9 index8 alt2">9</div><div class="line number10 index9 alt1">10</div><div class="line number11 index10 alt2">11</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="xml plain">&lt;</code><code class="xml keyword">Project</code> <code class="xml color1">Sdk</code><code class="xml plain">=</code><code class="xml string">"Microsoft.NET.Sdk"</code><code class="xml plain">&gt;</code></div><div class="line number2 index1 alt1"><code class="xml spaces">&nbsp;</code>&nbsp;</div><div class="line number3 index2 alt2"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">PropertyGroup</code><code class="xml plain">&gt;</code></div><div class="line number4 index3 alt1 highlighted"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">TargetFrameworks</code><code class="xml plain">&gt;netcoreapp1.1;netstandard1.6;net45;net40&lt;/</code><code class="xml keyword">TargetFrameworks</code><code class="xml plain">&gt;</code></div><div class="line number5 index4 alt2"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;/</code><code class="xml keyword">PropertyGroup</code><code class="xml plain">&gt;</code></div><div class="line number6 index5 alt1"><code class="xml spaces">&nbsp;</code>&nbsp;</div><div class="line number7 index6 alt2"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">ItemGroup</code><code class="xml plain">&gt;</code></div><div class="line number8 index7 alt1"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">Folder</code> <code class="xml color1">Include</code><code class="xml plain">=</code><code class="xml string">"Properties\"</code> <code class="xml plain">/&gt;</code></div><div class="line number9 index8 alt2"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">Compile</code> <code class="xml color1">Remove</code><code class="xml plain">=</code><code class="xml string">"Properties\AssemblyInfo.cs"</code> <code class="xml plain">/&gt;</code></div><div class="line number10 index9 alt1"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;/</code><code class="xml keyword">ItemGroup</code><code class="xml plain">&gt;</code></div><div class="line number11 index10 alt2"><code class="xml plain">&lt;/</code><code class="xml keyword">Project</code><code class="xml plain">&gt;</code></div></div></td></tr></tbody></table></div></div>
+<p>The full list of target frameworks (AKA framework moniker) can be found at: <a href="https://docs.microsoft.com/en-us/nuget/schema/target-frameworks#supported-frameworks">https://docs.microsoft.com/en-us/nuget/schema/target-frameworks#supported-frameworks</a></p>
+<p>Of course, not everything is supported in every framework, so we need to add some conditions inside our code and inside our *.csproj file</p>
+<h3><u><br>
+MSBuild conditions to the rescue<br>
+</u></h3>
+<p>Suppose our library has a dependency on <a href="http://restsharp.org/">RestSharp</a>&nbsp; Nuget package.<br>
+At the time of this writing, the RestSharp package for .NET Core is called <a href="https://www.nuget.org/packages/RestSharp.NetCore/">RestSharp.NetCore</a>&nbsp; while the package for the full .NET Framework is called <a href="https://www.nuget.org/packages/RestSharp/">RestSharp</a>&nbsp;.<br>
+So in order to had the dependency into our *.csproj &nbsp;file we need to separate the reference into two sections. Fortunately, now that MSBuild support the<a href="http://blog.nuget.org/20170316/NuGet-now-fully-integrated-into-MSBuild.html"><em> &lt;PackageReference&gt;</em> tag </a>&nbsp;this job becomes so much easier</p>
+<div><div id="highlighter_418547" class="syntaxhighlighter  xml"><div class="toolbar"><span><a href="http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div><div class="line number5 index4 alt2">5</div><div class="line number6 index5 alt1">6</div><div class="line number7 index6 alt2">7</div><div class="line number8 index7 alt1">8</div><div class="line number9 index8 alt2">9</div><div class="line number10 index9 alt1">10</div><div class="line number11 index10 alt2">11</div><div class="line number12 index11 alt1 highlighted">12</div><div class="line number13 index12 alt2 highlighted">13</div><div class="line number14 index13 alt1 highlighted">14</div><div class="line number15 index14 alt2 highlighted">15</div><div class="line number16 index15 alt1 highlighted">16</div><div class="line number17 index16 alt2 highlighted">17</div><div class="line number18 index17 alt1 highlighted">18</div><div class="line number19 index18 alt2">19</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="xml plain">&lt;</code><code class="xml keyword">Project</code> <code class="xml color1">Sdk</code><code class="xml plain">=</code><code class="xml string">"Microsoft.NET.Sdk"</code><code class="xml plain">&gt;</code></div><div class="line number2 index1 alt1"><code class="xml spaces">&nbsp;</code>&nbsp;</div><div class="line number3 index2 alt2"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">PropertyGroup</code><code class="xml plain">&gt;</code></div><div class="line number4 index3 alt1"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">TargetFrameworks</code><code class="xml plain">&gt;netcoreapp1.1;netstandard1.6;net45;net40&lt;/</code><code class="xml keyword">TargetFrameworks</code><code class="xml plain">&gt;</code></div><div class="line number5 index4 alt2"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;/</code><code class="xml keyword">PropertyGroup</code><code class="xml plain">&gt;</code></div><div class="line number6 index5 alt1"><code class="xml spaces">&nbsp;</code>&nbsp;</div><div class="line number7 index6 alt2"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">ItemGroup</code><code class="xml plain">&gt;</code></div><div class="line number8 index7 alt1"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">Folder</code> <code class="xml color1">Include</code><code class="xml plain">=</code><code class="xml string">"Properties\"</code> <code class="xml plain">/&gt;</code></div><div class="line number9 index8 alt2"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">Compile</code> <code class="xml color1">Remove</code><code class="xml plain">=</code><code class="xml string">"Properties\AssemblyInfo.cs"</code> <code class="xml plain">/&gt;</code></div><div class="line number10 index9 alt1"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;/</code><code class="xml keyword">ItemGroup</code><code class="xml plain">&gt;</code></div><div class="line number11 index10 alt2"><code class="xml spaces">&nbsp;</code>&nbsp;</div><div class="line number12 index11 alt1 highlighted"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">ItemGroup</code> <code class="xml color1">Condition</code><code class="xml plain">=</code><code class="xml string">"'$(TargetFramework)' == 'netcoreapp1.1' or '$(TargetFramework)' == 'netstandard1.6' "</code><code class="xml plain">&gt;</code></div><div class="line number13 index12 alt2 highlighted"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">PackageReference</code> <code class="xml color1">Include</code><code class="xml plain">=</code><code class="xml string">"RestSharp.NetCore"</code> <code class="xml color1">Version</code><code class="xml plain">=</code><code class="xml string">"105.2.3"</code> <code class="xml plain">/&gt;</code></div><div class="line number14 index13 alt1 highlighted"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;/</code><code class="xml keyword">ItemGroup</code><code class="xml plain">&gt;</code></div><div class="line number15 index14 alt2 highlighted">&nbsp;</div><div class="line number16 index15 alt1 highlighted"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">ItemGroup</code> <code class="xml color1">Condition</code><code class="xml plain">=</code><code class="xml string">"'$(TargetFramework)' == 'net45' or '$(TargetFramework)' == 'net40' "</code><code class="xml plain">&gt;</code></div><div class="line number17 index16 alt2 highlighted"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">PackageReference</code> <code class="xml color1">Include</code><code class="xml plain">=</code><code class="xml string">"RestSharp"</code> <code class="xml color1">Version</code><code class="xml plain">=</code><code class="xml string">"105.2.3"</code> <code class="xml plain">/&gt;</code></div><div class="line number18 index17 alt1 highlighted"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;/</code><code class="xml keyword">ItemGroup</code><code class="xml plain">&gt;</code></div><div class="line number19 index18 alt2"><code class="xml plain">&lt;/</code><code class="xml keyword">Project</code><code class="xml plain">&gt;</code></div></div></td></tr></tbody></table></div></div>
+<h3><u> Auto Nuget packaging<br>
+</u></h3>
+<p>One of the greatest pains that was with the old version of Nuget and MSBuild was the separation of the Nuget packaging from the project build. Basically, you had to create a *.nuspec file, add all the frameworks configuration into it and then add all the build artifacts into each of the sub-framework configuration. This was tedious.<br>
+Now, VS2017 integrates Nuget into the project itself</p>
+<div style="width: 869px" class="wp-caption alignnone"><img class="size-medium" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/nuspecprops.gif" width="859" height="497"><p class="wp-caption-text">Embedded nuspec inside your *.csproj (Image taken from http://blog.nuget.org/20170316/NuGet-now-fully-integrated-into-MSBuild.html)</p></div>
+<p>After I filled the fields and checked the ‘Generate Nuget Package on build’, this how my *.csproj look</p>
+<div><div id="highlighter_731249" class="syntaxhighlighter  xml"><div class="toolbar"><span><a href="http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1 highlighted">4</div><div class="line number5 index4 alt2 highlighted">5</div><div class="line number6 index5 alt1 highlighted">6</div><div class="line number7 index6 alt2 highlighted">7</div><div class="line number8 index7 alt1 highlighted">8</div><div class="line number9 index8 alt2 highlighted">9</div><div class="line number10 index9 alt1">10</div><div class="line number11 index10 alt2">11</div><div class="line number12 index11 alt1">12</div><div class="line number13 index12 alt2">13</div><div class="line number14 index13 alt1">14</div><div class="line number15 index14 alt2">15</div><div class="line number16 index15 alt1">16</div><div class="line number17 index16 alt2">17</div><div class="line number18 index17 alt1">18</div><div class="line number19 index18 alt2">19</div><div class="line number20 index19 alt1">20</div><div class="line number21 index20 alt2">21</div><div class="line number22 index21 alt1">22</div><div class="line number23 index22 alt2">23</div><div class="line number24 index23 alt1">24</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="xml plain">&lt;</code><code class="xml keyword">Project</code> <code class="xml color1">Sdk</code><code class="xml plain">=</code><code class="xml string">"Microsoft.NET.Sdk"</code><code class="xml plain">&gt;</code></div><div class="line number2 index1 alt1"><code class="xml spaces">&nbsp;</code>&nbsp;</div><div class="line number3 index2 alt2"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">PropertyGroup</code><code class="xml plain">&gt;</code></div><div class="line number4 index3 alt1 highlighted"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">TargetFrameworks</code><code class="xml plain">&gt;netcoreapp1.1;netstandard1.6;net45;net40&lt;/</code><code class="xml keyword">TargetFrameworks</code><code class="xml plain">&gt;</code></div><div class="line number5 index4 alt2 highlighted"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">GeneratePackageOnBuild</code><code class="xml plain">&gt;True&lt;/</code><code class="xml keyword">GeneratePackageOnBuild</code><code class="xml plain">&gt;</code></div><div class="line number6 index5 alt1 highlighted"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">Company</code><code class="xml plain">&gt;TamirDresher&lt;/</code><code class="xml keyword">Company</code><code class="xml plain">&gt;</code></div><div class="line number7 index6 alt2 highlighted"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">Authors</code><code class="xml plain">&gt;TamirDresher&lt;/</code><code class="xml keyword">Authors</code><code class="xml plain">&gt;</code></div><div class="line number8 index7 alt1 highlighted"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">Description</code><code class="xml plain">&gt;A very impressive package&lt;/</code><code class="xml keyword">Description</code><code class="xml plain">&gt;</code></div><div class="line number9 index8 alt2 highlighted"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">Version</code><code class="xml plain">&gt;1.2.3&lt;/</code><code class="xml keyword">Version</code><code class="xml plain">&gt;</code></div><div class="line number10 index9 alt1"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;/</code><code class="xml keyword">PropertyGroup</code><code class="xml plain">&gt;</code></div><div class="line number11 index10 alt2"><code class="xml spaces">&nbsp;</code>&nbsp;</div><div class="line number12 index11 alt1"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">ItemGroup</code><code class="xml plain">&gt;</code></div><div class="line number13 index12 alt2"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">Folder</code> <code class="xml color1">Include</code><code class="xml plain">=</code><code class="xml string">"Properties\"</code> <code class="xml plain">/&gt;</code></div><div class="line number14 index13 alt1"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">Compile</code> <code class="xml color1">Remove</code><code class="xml plain">=</code><code class="xml string">"Properties\AssemblyInfo.cs"</code> <code class="xml plain">/&gt;</code></div><div class="line number15 index14 alt2"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;/</code><code class="xml keyword">ItemGroup</code><code class="xml plain">&gt;</code></div><div class="line number16 index15 alt1"><code class="xml spaces">&nbsp;</code>&nbsp;</div><div class="line number17 index16 alt2"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">ItemGroup</code> <code class="xml color1">Condition</code><code class="xml plain">=</code><code class="xml string">"'$(TargetFramework)' == 'netcoreapp1.1' or '$(TargetFramework)' == 'netstandard1.6' "</code><code class="xml plain">&gt;</code></div><div class="line number18 index17 alt1"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">PackageReference</code> <code class="xml color1">Include</code><code class="xml plain">=</code><code class="xml string">"RestSharp.NetCore"</code> <code class="xml color1">Version</code><code class="xml plain">=</code><code class="xml string">"105.2.3"</code> <code class="xml plain">/&gt;</code></div><div class="line number19 index18 alt2"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;/</code><code class="xml keyword">ItemGroup</code><code class="xml plain">&gt;</code></div><div class="line number20 index19 alt1">&nbsp;</div><div class="line number21 index20 alt2"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">ItemGroup</code> <code class="xml color1">Condition</code><code class="xml plain">=</code><code class="xml string">"'$(TargetFramework)' == 'net45' or '$(TargetFramework)' == 'net40' "</code><code class="xml plain">&gt;</code></div><div class="line number22 index21 alt1"><code class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="xml plain">&lt;</code><code class="xml keyword">PackageReference</code> <code class="xml color1">Include</code><code class="xml plain">=</code><code class="xml string">"RestSharp"</code> <code class="xml color1">Version</code><code class="xml plain">=</code><code class="xml string">"105.2.3"</code> <code class="xml plain">/&gt;</code></div><div class="line number23 index22 alt2"><code class="xml spaces">&nbsp;&nbsp;</code><code class="xml plain">&lt;/</code><code class="xml keyword">ItemGroup</code><code class="xml plain">&gt;</code></div><div class="line number24 index23 alt1"><code class="xml plain">&lt;/</code><code class="xml keyword">Project</code><code class="xml plain">&gt;</code></div></div></td></tr></tbody></table></div></div>
+<p>Now, when I build my project or click on ‘Package’ from the project context menu, a Nuget package will be created for all the supported frameworks<br>
+You can read about other configuration you can now make to your *.csproj here: <a href="https://docs.microsoft.com/en-us/dotnet/articles/core/tools/csproj">https://docs.microsoft.com/en-us/dotnet/articles/core/tools/csproj</a></p>
+			<iframe src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/like.html" scrolling="no" frameborder="0" style="border:none; overflow:hidden; height:80px;" allowtransparency="true"></iframe>
+
+							  <div class="clearfix entry-options">
+                        <a href="javascript:void(0)" class="bp-add-comment">Add comment</a>
+                        <div class="bp-social_i">
+                           <a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/" class="ir icon-fb">facebook</a>
+                            <a target="_blank" href="http://www.linkedin.com/shareArticle?mini=true&amp;url=http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/&amp;title=Easily%20supporting%20multiple%20target%20frameworks%20(TFMs)%20with%20VS2017%20and%20Nuget&amp;summary=%3Cp%3EIn%20VS2017%20it%20much%20easier%20now%20to%20support%20multiple%20frameworks%20inside%20a%20single%20.csproj%20file.%20When%20you%20create%20a%20new%20project%20VS2017%20(that%20target%20.NET%20Core%20or%20.NET%20Standard)%20this%20is%20what%20you%E2%80%99ll%20get%20inside%20your%20*.csproj%20%3CProject%20Sdk=%E2%80%9DMicrosoft.NET.Sdk%E2%80%9D%3E%20%3CPropertyGroup%3E%20%3CTargetFramework%3Enetstandard1.4%3C/TargetFramework%3E%20%3C/PropertyGroup%3E%20%3C/Project%3E%20Cool%20right?%20A%20lot%20of%20the%20boilerplate%20configuration%20was%20removed%20in%20order%20[%E2%80%A6]%3C/p%3E" class="ir icon-in">linkedin</a>
+                            <a target="_blank" href="https://twitter.com/share" class="tweet ir icon-twitter" data-lang="he">twitter</a>
+                            <a href="mailto:?subject=Easily%20supporting%20multiple%20target%20frameworks%20(TFMs)%20with%20VS2017%20and%20Nuget&amp;body=Check%20out%20this%20post%20http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/" class="ir icon-email">email</a>
+                            <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="https://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+                        </div>
+                    </div>
+
+				
+		</div><!-- .entry-content -->
+		
+
+        
+<div id="comments" class="comments-area">
+	<div id="respond" class="comment-respond">
+		<h3 id="reply-title" class="comment-reply-title">Leave a Reply <small><a rel="nofollow" id="cancel-comment-reply-link" href="http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/#respond" style="display:none;">Cancel Reply</a></small></h3>			<form action="http://blogs.microsoft.co.il/iblogger/wp-comments-post.php" method="post" id="commentform" class="comment-form">
+				<p class="comment-notes">Your email address will not be published.</p><p class="comment-form-comment"><label for="comment">Comment</label><textarea id="comment" name="comment" cols="45" rows="8" aria-required="true"></textarea></p><p class="form-allowed-tags">You may use these <abbr title="HyperText Markup Language">HTML</abbr> tags and attributes:  <code>&lt;a href="" title=""&gt; &lt;abbr title=""&gt; &lt;acronym title=""&gt; &lt;b&gt; &lt;blockquote cite=""&gt; &lt;cite&gt; &lt;code&gt; &lt;del datetime=""&gt; &lt;em&gt; &lt;i&gt; &lt;q cite=""&gt; &lt;s&gt; &lt;strike&gt; &lt;strong&gt; </code></p><p class="comment-form-author"><label for="author">Name</label> <span class="required">*</span><input id="author" name="author" type="text" value="" size="30"></p>
+<p class="comment-form-email"><label for="email">Email</label> <span class="required">*</span><input id="email" name="email" type="text" value="" size="30"></p>
+<p class="comment-form-url"><label for="url">Website</label><input id="url" name="url" type="text" value="" size="30"></p>
+<p class="form-submit"><input name="submit" type="submit" id="submit" class="submit" value="Post Comment"> <input type="hidden" name="comment_post_ID" value="2747078" id="comment_post_ID">
+<input type="hidden" name="comment_parent" id="comment_parent" value="0">
+</p><p style="display: none;"><input type="hidden" id="akismet_comment_nonce" name="akismet_comment_nonce" value="e5349c3357"></p><script type="text/javascript">var RecaptchaOptions = {theme : "blackglass"};</script><script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/challenge"></script>
+
+	<noscript>
+  		<iframe src="http://www.google.com/recaptcha/api/noscript?k=6Ld4OuwSAAAAAC2pOGX1-HLYusMoy9UuR5_I91Eo" height="300" width="500" frameborder="0"></iframe><br/>
+  		<textarea name="recaptcha_challenge_field" rows="3" cols="40"></textarea>
+  		<input type="hidden" name="recaptcha_response_field" value="manual_challenge"/>
+	</noscript><!-- AVH First Defense Against Spam - WPMU DEV Version version 2.3.2  --><input type="hidden" id="_avh_first_defense_against_spam" name="_avh_first_defense_against_spam" value="5a50eecd34"><p style="display: none;"></p>			<input type="hidden" id="ak_js" name="ak_js" value="1561228995618"></form>
+			</div><!-- #respond -->
+	<div class="clearfix"></div>
+	
+			
+			 <h1 class="comments-title">2 comments</h1>
+
+		<ol class="commentlist">
+			    <li class="comment even thread-even depth-1" id="li-comment-2826283">
+       <div class="clearfix">
+        <div class="comment-avatar">
+            <img src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/00266ff14a605bf99cb6.png" width="50" height="50" alt="" class="avatar avatar-50wp-user-avatar wp-user-avatar-50 alignnone photo avatar-default">        </div>
+        <div class="comment-post-body">
+            <span class="comment-author">Stef Heyenrath</span><a class="comment-date" href="http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/#comment-2826283" data-datetime="2017-04-12T22:16:30+00:00">April 12, 2017 ב 22:16</a>
+                
+			    <div class="comment-content comment">
+				    <p>Did you also manage to build a uap10.0 version with appveyor ?</p>
+				                        <a rel="nofollow" class="comment-reply-link" href="http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/?replytocom=2826283#respond" onclick="return addComment.moveForm( &quot;comment-2826283&quot;, &quot;2826283&quot;, &quot;respond&quot;, &quot;2747078&quot; )" aria-label="Reply to Stef Heyenrath">Reply</a>			    </div><!-- .comment-content -->
+        </div>
+ 
+       </div>
+
+
+	<ol class="children">
+    <li class="comment byuser comment-author-iblogger bypostauthor odd alt depth-2" id="li-comment-2826284">
+       <div class="clearfix">
+        <div class="comment-avatar">
+            <img src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/profile-150x150.png" width="50" height="50" alt="IBlogger" class="avatar avatar-50 wp-user-avatar wp-user-avatar-50 alignnone photo">        </div>
+        <div class="comment-post-body">
+            <span class="comment-author"><a href="http://hackhands.com/tamirdresher" rel="external nofollow" class="url">IBlogger</a></span><a class="comment-date" href="http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/#comment-2826284" data-datetime="2017-05-01T09:52:08+00:00">May 1, 2017 ב 09:52</a>
+                
+			    <div class="comment-content comment">
+				    <p>I havent tried. But it should work in the very same way</p>
+				                        <a rel="nofollow" class="comment-reply-link" href="http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/?replytocom=2826284#respond" onclick="return addComment.moveForm( &quot;comment-2826284&quot;, &quot;2826284&quot;, &quot;respond&quot;, &quot;2747078&quot; )" aria-label="Reply to IBlogger">Reply</a>			    </div><!-- .comment-content -->
+        </div>
+ 
+       </div>
+
+
+	</li><!-- #comment-## -->
+</ol><!-- .children -->
+</li><!-- #comment-## -->
+		</ol><!-- .commentlist -->
+
+		
+		
+	
+	
+
+</div><!-- #comments .comments-area -->
+	<!--<div class="fb-comments" data-href="http://guideme.co.il/comments" data-colorscheme="The color scheme used in the plugin" data-numposts="5" data-width="The pixel width of the plugin"></div>-->
+
+				
+	
+	</article><!-- #post -->
+				
+				
+						
+	
+
+</section>
+		
+			<div id="secondary" class="widget-area" role="complementary">
+			<aside id="text-2" class="widget widget_text"><h3 class="widget-title">Rx.NET in Action</h3>			<div class="textwidget"><a href="http://manning.com/dresher/?a_aid=8ec75026&amp;a_bid=8ec75026" target="_blank"><img src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/y3mQPH46YWqzxTr8PrdrPA2S" border="0" alt="Rx.NET in Action"></a></div>
+		</aside><aside id="text-4" class="widget widget_text">			<div class="textwidget"><p><a href="https://mvp.microsoft.com/en-us/PublicProfile/5002689" target="_blank" rel="noopener"><img src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/MVP_Logo_Horizontal_.png" alt="Rx.NET in Action" border="0"></a></p>
+</div>
+		</aside><aside id="search-2" class="widget widget_search"><form role="search" method="get" id="searchform" class="searchform" action="http://blogs.microsoft.co.il/iblogger/">
+				<div>
+					<label class="screen-reader-text" for="s">Search for:</label>
+					<input type="text" value="" name="s" id="s">
+					<input type="submit" id="searchsubmit" value="Search">
+				</div>
+			</form></aside>		<aside id="recent-posts-2" class="widget widget_recent_entries">		<h3 class="widget-title">Recent Posts</h3>		<ul>
+											<li>
+					<a href="http://blogs.microsoft.co.il/iblogger/2018/01/11/connect-2017-recap-event-recordings/">Connect(); 2017 recap event – Recordings</a>
+									</li>
+											<li>
+					<a href="http://blogs.microsoft.co.il/iblogger/2017/09/27/net-conf-il-2017/">.NET Conf IL 2017</a>
+									</li>
+											<li>
+					<a href="http://blogs.microsoft.co.il/iblogger/2017/07/02/im-a-microsoft-mvp/">I’m a Microsoft MVP</a>
+									</li>
+											<li>
+					<a href="http://blogs.microsoft.co.il/iblogger/2017/07/02/final-projects-at-ruppin-software-engineering-workshop-2017/">Final Projects at Ruppin Software Engineering Workshop 2017</a>
+									</li>
+											<li>
+					<a href="http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/">Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget</a>
+									</li>
+					</ul>
+		</aside><aside id="archives-2" class="widget widget_archive"><h3 class="widget-title">Archives</h3>		<ul>
+			<li><a href="http://blogs.microsoft.co.il/iblogger/2018/01/">January 2018</a></li>
+	<li><a href="http://blogs.microsoft.co.il/iblogger/2017/09/">September 2017</a></li>
+	<li><a href="http://blogs.microsoft.co.il/iblogger/2017/07/">July 2017</a></li>
+	<li><a href="http://blogs.microsoft.co.il/iblogger/2017/04/">April 2017</a></li>
+	<li><a href="http://blogs.microsoft.co.il/iblogger/2016/10/">October 2016</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2016/09/">September 2016</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2016/08/">August 2016</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2016/06/">June 2016</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2016/03/">March 2016</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2016/01/">January 2016</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/12/">December 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/11/">November 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/10/">October 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/08/">August 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/07/">July 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/06/">June 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/05/">May 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/03/">March 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/02/">February 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2015/01/">January 2015</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2014/12/">December 2014</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2014/11/">November 2014</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2014/10/">October 2014</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2014/09/">September 2014</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2014/08/">August 2014</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2014/07/">July 2014</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2014/06/">June 2014</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2014/05/">May 2014</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2014/01/">January 2014</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2013/12/">December 2013</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2013/10/">October 2013</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2013/06/">June 2013</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2013/04/">April 2013</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2013/01/">January 2013</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2012/12/">December 2012</a></li>
+	<li style="display: none;"><a href="http://blogs.microsoft.co.il/iblogger/2012/09/">September 2012</a></li>
+		<li><a class="a-txt" href="javascript:void(0)">Full Arcive</a></li></ul>
+		</aside><aside id="tag_cloud-2" class="widget widget_tag_cloud"><h3 class="widget-title">Tags</h3><div class="tagcloud"><a href="http://blogs.microsoft.co.il/iblogger/tag/animation/" class="tag-cloud-link tag-link-20963 tag-link-position-1" style="font-size: 18.391608391608px;" aria-label="Animation (4 items)">Animation</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/architecture/" class="tag-cloud-link tag-link-20912 tag-link-position-2" style="font-size: 16.293706293706px;" aria-label="Architecture (3 items)">Architecture</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/aws/" class="tag-cloud-link tag-link-20983 tag-link-position-3" style="font-size: 16.293706293706px;" aria-label="AWS (3 items)">AWS</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/azure/" class="tag-cloud-link tag-link-20981 tag-link-position-4" style="font-size: 23.636363636364px;" aria-label="Azure (8 items)">Azure</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/book/" class="tag-cloud-link tag-link-19747 tag-link-position-5" style="font-size: 10px;" aria-label="Book (1 item)">Book</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/c/" class="tag-cloud-link tag-link-20332 tag-link-position-6" style="font-size: 30.559440559441px;" aria-label="c# (18 items)">c#</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/c1/" class="tag-cloud-link tag-link-20894 tag-link-position-7" style="font-size: 10px;" aria-label="C++ (1 item)">C++</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/caliburn-micro/" class="tag-cloud-link tag-link-20991 tag-link-position-8" style="font-size: 13.776223776224px;" aria-label="Caliburn.Micro (2 items)">Caliburn.Micro</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/cloud/" class="tag-cloud-link tag-link-20980 tag-link-position-9" style="font-size: 21.538461538462px;" aria-label="Cloud (6 items)">Cloud</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/codemotion/" class="tag-cloud-link tag-link-20973 tag-link-position-10" style="font-size: 13.776223776224px;" aria-label="Codemotion (2 items)">Codemotion</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/conference/" class="tag-cloud-link tag-link-20939 tag-link-position-11" style="font-size: 20.06993006993px;" aria-label="conference (5 items)">conference</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/confoo/" class="tag-cloud-link tag-link-20968 tag-link-position-12" style="font-size: 16.293706293706px;" aria-label="ConFoo (3 items)">ConFoo</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/debugging/" class="tag-cloud-link tag-link-21004 tag-link-position-13" style="font-size: 13.776223776224px;" aria-label="Debugging (2 items)">Debugging</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/dependency-injection/" class="tag-cloud-link tag-link-20941 tag-link-position-14" style="font-size: 13.776223776224px;" aria-label="dependency injection (2 items)">dependency injection</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/dev/" class="tag-cloud-link tag-link-19749 tag-link-position-15" style="font-size: 40px; color: rgb(3, 177, 148);" aria-label="DEV (53 items)">DEV</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/dev-azure-aws-rackspace-storage/" class="tag-cloud-link tag-link-20901 tag-link-position-16" style="font-size: 10px;" aria-label="DEV Azure AWS Rackspace Storage (1 item)">DEV Azure AWS Rackspace Storage</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/dev-c-wp8-windows8-winrt-pcl/" class="tag-cloud-link tag-link-20896 tag-link-position-17" style="font-size: 10px;" aria-label="DEV C# WP8 windows8 WinRT PCL (1 item)">DEV C# WP8 windows8 WinRT PCL</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/devgeekweek/" class="tag-cloud-link tag-link-20908 tag-link-position-18" style="font-size: 10px;" aria-label="DevGeekWeek (1 item)">DevGeekWeek</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/dev-rx-c-wp8-windows-phone/" class="tag-cloud-link tag-link-20900 tag-link-position-19" style="font-size: 10px;" aria-label="DEV RX C# WP8 windows phone (1 item)">DEV RX C# WP8 windows phone</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/di/" class="tag-cloud-link tag-link-20992 tag-link-position-20" style="font-size: 16.293706293706px;" aria-label="DI (3 items)">DI</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/groupby/" class="tag-cloud-link tag-link-20962 tag-link-position-21" style="font-size: 18.391608391608px;" aria-label="GroupBy (4 items)">GroupBy</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/iltam/" class="tag-cloud-link tag-link-20910 tag-link-position-22" style="font-size: 10px;" aria-label="ILTAM (1 item)">ILTAM</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/iot/" class="tag-cloud-link tag-link-20957 tag-link-position-23" style="font-size: 13.776223776224px;" aria-label="IoT (2 items)">IoT</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/localization/" class="tag-cloud-link tag-link-20486 tag-link-position-24" style="font-size: 13.776223776224px;" aria-label="Localization (2 items)">Localization</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/locking/" class="tag-cloud-link tag-link-20565 tag-link-position-25" style="font-size: 10px;" aria-label="Locking (1 item)">Locking</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/manning/" class="tag-cloud-link tag-link-20949 tag-link-position-26" style="font-size: 21.538461538462px;" aria-label="Manning (6 items)">Manning</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/msbuild/" class="tag-cloud-link tag-link-20990 tag-link-position-27" style="font-size: 13.776223776224px;" aria-label="MSBuild (2 items)">MSBuild</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/multithreading/" class="tag-cloud-link tag-link-20564 tag-link-position-28" style="font-size: 13.776223776224px;" aria-label="MultiThreading (2 items)">MultiThreading</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/nuget/" class="tag-cloud-link tag-link-20928 tag-link-position-29" style="font-size: 13.776223776224px;" aria-label="Nuget (2 items)">Nuget</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/patterns/" class="tag-cloud-link tag-link-20982 tag-link-position-30" style="font-size: 10px;" aria-label="Patterns (1 item)">Patterns</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/presentations/" class="tag-cloud-link tag-link-20972 tag-link-position-31" style="font-size: 13.776223776224px;" aria-label="Presentations (2 items)">Presentations</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/raspberrypi/" class="tag-cloud-link tag-link-20959 tag-link-position-32" style="font-size: 13.776223776224px;" aria-label="RaspberryPI (2 items)">RaspberryPI</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/reactive-extensions/" class="tag-cloud-link tag-link-19750 tag-link-position-33" style="font-size: 24.685314685315px;" aria-label="Reactive Extensions (9 items)">Reactive Extensions</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/reactive-extensions-in-action/" class="tag-cloud-link tag-link-20950 tag-link-position-34" style="font-size: 27.832167832168px;" aria-label="Reactive Extensions in Action (13 items)">Reactive Extensions in Action</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/ruppin/" class="tag-cloud-link tag-link-20906 tag-link-position-35" style="font-size: 13.776223776224px;" aria-label="Ruppin (2 items)">Ruppin</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/rx/" class="tag-cloud-link tag-link-19748 tag-link-position-36" style="font-size: 30.13986013986px;" aria-label="RX (17 items)">RX</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/software-engineering/" class="tag-cloud-link tag-link-20905 tag-link-position-37" style="font-size: 10px;" aria-label="Software Engineering (1 item)">Software Engineering</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/sqlite/" class="tag-cloud-link tag-link-20976 tag-link-position-38" style="font-size: 13.776223776224px;" aria-label="SQLite (2 items)">SQLite</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/storage/" class="tag-cloud-link tag-link-20911 tag-link-position-39" style="font-size: 10px;" aria-label="Storage (1 item)">Storage</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/tasks/" class="tag-cloud-link tag-link-20895 tag-link-position-40" style="font-size: 10px;" aria-label="Tasks (1 item)">Tasks</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/visual-studio/" class="tag-cloud-link tag-link-20986 tag-link-position-41" style="font-size: 16.293706293706px;" aria-label="Visual Studio (3 items)">Visual Studio</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/windows-8/" class="tag-cloud-link tag-link-20335 tag-link-position-42" style="font-size: 18.391608391608px;" aria-label="Windows 8 (4 items)">Windows 8</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/windows-8-1/" class="tag-cloud-link tag-link-20988 tag-link-position-43" style="font-size: 16.293706293706px;" aria-label="Windows 8.1 (3 items)">Windows 8.1</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/windows-10/" class="tag-cloud-link tag-link-20953 tag-link-position-44" style="font-size: 13.776223776224px;" aria-label="Windows 10 (2 items)">Windows 10</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/windows-phone-8/" class="tag-cloud-link tag-link-20899 tag-link-position-45" style="font-size: 18.391608391608px;" aria-label="Windows Phone 8 (4 items)">Windows Phone 8</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/windows-runtime/" class="tag-cloud-link tag-link-20334 tag-link-position-46" style="font-size: 20.06993006993px;" aria-label="Windows Runtime (5 items)">Windows Runtime</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/winrt/" class="tag-cloud-link tag-link-20330 tag-link-position-47" style="font-size: 23.636363636364px;" aria-label="WinRT (8 items)">WinRT</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/wp8/" class="tag-cloud-link tag-link-20975 tag-link-position-48" style="font-size: 16.293706293706px;" aria-label="WP8 (3 items)">WP8</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/wpf/" class="tag-cloud-link tag-link-20979 tag-link-position-49" style="font-size: 16.293706293706px;" aria-label="WPF (3 items)">WPF</a>
+<a href="http://blogs.microsoft.co.il/iblogger/tag/xaml/" class="tag-cloud-link tag-link-20916 tag-link-position-50" style="font-size: 20.06993006993px;" aria-label="xaml (5 items)">xaml</a></div>
+</aside><aside id="categories-2" class="widget widget_categories"><h3 class="widget-title">Categories</h3>		<ul>
+	<li class="cat-item cat-item-21017"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/net/">.NET</a>
+</li>
+	<li class="cat-item cat-item-20965"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/akka-net/">Akka.NET</a>
+</li>
+	<li class="cat-item cat-item-20964"><a href="http://blogs.microsoft.co.il/iblogger/category/animations/">Animations</a>
+</li>
+	<li class="cat-item cat-item-20966"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/architecture/">Architecture</a>
+</li>
+	<li class="cat-item cat-item-20909"><a href="http://blogs.microsoft.co.il/iblogger/category/aws/">AWS</a>
+</li>
+	<li class="cat-item cat-item-20903"><a href="http://blogs.microsoft.co.il/iblogger/category/azure/">Azure</a>
+</li>
+	<li class="cat-item cat-item-20929"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/caliburn-micro/">Caliburn.Micro</a>
+</li>
+	<li class="cat-item cat-item-20904"><a href="http://blogs.microsoft.co.il/iblogger/category/cloud/">Cloud</a>
+</li>
+	<li class="cat-item cat-item-20969"><a href="http://blogs.microsoft.co.il/iblogger/category/conference/">Conference</a>
+</li>
+	<li class="cat-item cat-item-21003"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/debugging/">Debugging</a>
+</li>
+	<li class="cat-item cat-item-20913"><a href="http://blogs.microsoft.co.il/iblogger/category/demo/">Demo</a>
+</li>
+	<li class="cat-item cat-item-20977"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/">DEV</a>
+</li>
+	<li class="cat-item cat-item-20938"><a href="http://blogs.microsoft.co.il/iblogger/category/di/">DI</a>
+</li>
+	<li class="cat-item cat-item-20942"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/di-dev/">DI</a>
+</li>
+	<li class="cat-item cat-item-20985"><a href="http://blogs.microsoft.co.il/iblogger/category/iltam/">ILTAM</a>
+</li>
+	<li class="cat-item cat-item-20943"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/ioc/">IoC</a>
+</li>
+	<li class="cat-item cat-item-20955"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/iot/">IoT</a>
+</li>
+	<li class="cat-item cat-item-20944"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/log4net/">log4net</a>
+</li>
+	<li class="cat-item cat-item-20947"><a href="http://blogs.microsoft.co.il/iblogger/category/manning/">Manning</a>
+</li>
+	<li class="cat-item cat-item-20926"><a href="http://blogs.microsoft.co.il/iblogger/category/msbuild/">MSBuild</a>
+</li>
+	<li class="cat-item cat-item-20930"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/mvvm/">MVVM</a>
+</li>
+	<li class="cat-item cat-item-20945"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/ninject/">Ninject</a>
+</li>
+	<li class="cat-item cat-item-20914"><a href="http://blogs.microsoft.co.il/iblogger/category/nosql/">NoSql</a>
+</li>
+	<li class="cat-item cat-item-20907"><a href="http://blogs.microsoft.co.il/iblogger/category/patterns/">Patterns</a>
+</li>
+	<li class="cat-item cat-item-20918"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/performance/">Performance</a>
+</li>
+	<li class="cat-item cat-item-21007"><a href="http://blogs.microsoft.co.il/iblogger/category/rabbitmq/">RabbitMQ</a>
+</li>
+	<li class="cat-item cat-item-20956"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/iot/raspberry-pi/">Raspberry PI</a>
+</li>
+	<li class="cat-item cat-item-20946"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/reactive-extensions/">Reactive Extensions</a>
+</li>
+	<li class="cat-item cat-item-20948"><a href="http://blogs.microsoft.co.il/iblogger/category/reactive-extensions-in-action/">Reactive Extensions in Action</a>
+</li>
+	<li class="cat-item cat-item-20978"><a href="http://blogs.microsoft.co.il/iblogger/category/rx/">RX</a>
+</li>
+	<li class="cat-item cat-item-20927"><a href="http://blogs.microsoft.co.il/iblogger/category/sdk/">SDK</a>
+</li>
+	<li class="cat-item cat-item-20898"><a href="http://blogs.microsoft.co.il/iblogger/category/sqlite/">SQLite</a>
+</li>
+	<li class="cat-item cat-item-21015"><a href="http://blogs.microsoft.co.il/iblogger/category/teaching/">Teaching</a>
+</li>
+	<li class="cat-item cat-item-20915"><a href="http://blogs.microsoft.co.il/iblogger/category/visual-studio/">Visual Studio</a>
+</li>
+	<li class="cat-item cat-item-20952"><a href="http://blogs.microsoft.co.il/iblogger/category/vpn/">VPN</a>
+</li>
+	<li class="cat-item cat-item-20951"><a href="http://blogs.microsoft.co.il/iblogger/category/windows-10/">Windows 10</a>
+</li>
+	<li class="cat-item cat-item-20925"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/windows-8-1/">Windows 8.1</a>
+</li>
+	<li class="cat-item cat-item-20984"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/winrt/">WinRT</a>
+</li>
+	<li class="cat-item cat-item-20897"><a href="http://blogs.microsoft.co.il/iblogger/category/wp8/">WP8</a>
+</li>
+	<li class="cat-item cat-item-20902"><a href="http://blogs.microsoft.co.il/iblogger/category/wpf/">WPF</a>
+</li>
+	<li class="cat-item cat-item-20922"><a href="http://blogs.microsoft.co.il/iblogger/category/dev/xaml-dev/">XAML</a>
+</li>
+		</ul>
+</aside><aside id="meta-2" class="widget widget_meta"><h3 class="widget-title">Meta</h3>			<ul>
+			<li><a href="https://blogs.microsoft.co.il/iblogger/wp-login.php?action=register">Register</a></li>			<li><a href="https://blogs.microsoft.co.il/iblogger/wp-login.php">Log in</a></li>
+			<li><a href="http://blogs.microsoft.co.il/iblogger/feed/">Entries <abbr title="Really Simple Syndication">RSS</abbr></a></li>
+			<li><a href="http://blogs.microsoft.co.il/iblogger/comments/feed/">Comments <abbr title="Really Simple Syndication">RSS</abbr></a></li>
+			<li><a href="https://wordpress.org/" title="Powered by WordPress, state-of-the-art semantic personal publishing platform.">WordPress.org</a></li>			</ul>
+			</aside>			<aside class="widget mrg">
+		
+			<div class="moposts">
+			<h3 class="widget-title"> Additional Posts </h3>
+								  <a href="http://blogs.microsoft.co.il/iblogger/2018/01/11/connect-2017-recap-event-recordings/" class="latest_art">
+					<div class="la-date">January 11, 2018</div>
+					<h4>Connect(); 2017 recap event – Recordings</h4>
+		
+                    <p>Last month i organized a small local event for the Israeli .NET community where we talked about all the latest announcement and news in the .NET world. The recordings from the event are now live (courtesy of Alon Fliess). Since this was a local event in Israel, all the talks were in Hebrew Connect(); 2017 […]</p>
+			      </a>
+								  <a href="http://blogs.microsoft.co.il/iblogger/2017/09/27/net-conf-il-2017/" class="latest_art">
+					<div class="la-date">September 27, 2017</div>
+					<h4>.NET Conf IL 2017</h4>
+		
+                    <p>Big thank you to everyone who came to the local event of the .NET Conf global celebrations. You can find the slides from all the talks here Here is the list of sessions and speakers bio: .NET Conf highlightsThe .NET world has never been so exciting, and new stuff are being announced on a daily […]</p>
+			      </a>
+								  <a href="http://blogs.microsoft.co.il/iblogger/2017/07/02/im-a-microsoft-mvp/" class="latest_art">
+					<div class="la-date">July 2, 2017</div>
+					<h4>I’m a Microsoft MVP</h4>
+		
+                    <p>I’m so honored and proud to receive the Microsoft MVP Award. It has always been a dream to be part of such a respected and talented group of people who share their knowledge and expertise with the community. During the time that i practice software development professionally, I’ve read blogs and articles written by MVPs, […]</p>
+			      </a>
+								</div>
+				
+				</aside>
+		</div><!-- #secondary -->
+	</div>
+	</div>
+
+	<footer class="footer_main clearfix">
+	<section class="wrapper clearfix">
+		<article id="first_fl" class="footer_list">
+		<h3>משאבים לקהילת המפתחים</h3>
+			<div class="menu-footer1-container">
+				<ul id="menu-footer-menu-2">
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://blogs.microsoft.co.il/msdn" title="MSDN בלוג" target="_blank">בלוג MSDN</a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.microsoft.com/israel/msdn/pulse/" title="ניוזלטר  MSDN" target="_blank">ניוזלטר  MSDN</a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://www.facebook.com/msdnisrael" title="MSDN בפייסבוק" target="_blank">בפייסבוק MSDN</a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.youtube.com/channel/UCp6wuFkya3jOETs_nM7z3Fw?feature=watch" target="_blank">יוטיוב  MSDN</a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.microsoftvirtualacademy.com/" target="_blank">האקדמיה הוירטואלית</a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://msdn.microsoft.com/en-us/evalcenter/default" target="_blank">התנסות חינם</a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.microsoft.com/israel/4steps/" target="_blank">אתר פיתוח אפליקציות</a></li>
+				</ul>
+			</div>
+		</article>
+			<article id="sec_fl" class="footer_list">
+		<h3>משאבים לקהילת IT</h3>
+				<ul id="menu-footer-menu-2">
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://blogs.microsoft.co.il/technet" title="TechNet בלוג" target="_blank">בלוג TechNet </a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.microsoft.com/israel/technetflash/Prev_vers/index.htm" target="_blank">ניוזלטר  TechNet </a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://www.facebook.com/technetil" title="TechNet בפייסבוק" target="_blank">בפייסבוק TechNet</a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.youtube.com/user/TechNetIsrael/videos" target="_blank">יוטיוב  TechNet</a></li>
+								<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.microsoftvirtualacademy.com/" target="_blank">האקדמיה הוירטואלית</a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://technet.microsoft.com/en-us/evalcenter/default" target="_blank">התנסות חינם</a></li>
+				</ul>
+			</article>
+			<article id="thrd_fl" class="footer_list">
+		<h3>משאבים כללים </h3>
+					<ul id="menu-footer-menu-2">
+						<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.microsoft.com/he-il/default.aspx" target="_blank" title="אתר מיקרוסופט ישראל">אתר מיקרוסופט ישראל</a></li>
+						<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.facebook.com/microsoftisrael" target="_blank" title="מיקרוסופט ישראל בפייסבוק">מיקרוסופט ישראל בפייסבוק</a></li>
+						<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://social.msdn.microsoft.com/Forums/he-il/categories" target="_blank" title="&gt;אתר הפורומים">אתר הפורומים</a></li>
+						<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.microsoft.com/israel/communities/usergroups/default.aspx" target="_blank" title="&gt;קבוצות משתמשים">קבוצות משתמשים</a></li>
+						<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://www.microsoft.com/israel/traincert/" target="_blank" title="הדרכות והסמכות מיקרוסופט">הדרכות והסמכות מיקרוסופט</a></li>
+						<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://msevents.microsoft.com/CUI/default.aspx?culture=he-IL" target="_blank">אירועים </a></li>
+					
+					<!--
+					<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://blogs.microsoft.co.il/סימנים-מסחריים/" title=" סימנים מסחריים"> סימנים מסחריים</a></li>
+				<li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="http://blogs.microsoft.co.il/תנאי-שימוש/" title="תנאי שימוש">תנאי שימוש</a></li>
+-->
+				</ul>	</article>
+		</section>
+		<section class="sfooter">
+                <div class="content">
+                    <div class="footer-bottom">                        
+                        <ul class="legal">
+                            <li><a href="http://choice.microsoft.com/">אודות הפרסומות שלנו</a></li>
+                            <li><a href="http://www.microsoft.com/About/Legal/EN/US/IntellectualProperty/Trademarks/EN-US.aspx">סימנים מסחריים</a></li>
+                            <li><a href="http://www.microsoft.com/en-us/legal/intellectualproperty/copyright/default.aspx">תנאי השימוש</a></li>
+                            <li><a href="http://go.microsoft.com/fwlink/?LinkId=248681">הצהרת פרטיות</a></li>
+                        </ul>
+                        <div class="footer-copyright">
+                            <a href="http://www.microsoft.com/">
+                                <img alt="Microsoft" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/microsoft-logo-heb.png">
+                            </a><span>© 2014 Microsoft</span>
+                        </div>
+                    </div>
+                </div>
+</section>
+	</footer><!-- #colophon -->
+    <script>
+        (function (window) {
+            var rSide = document.getElementById("blog_post_info");
+            var lSide = document.getElementById("secondary");
+			
+			setTimeout(function(){
+				rSide = document.getElementById("blog_post_info");
+				lSide = document.getElementById("secondary");
+				if (lSide.offsetHeight > rSide.offsetHeight) {
+					rSide.style.minHeight = lSide.offsetHeight + "px";
+				}
+			},1000);
+
+            window.onresize = function () {
+                if (lSide.offsetHeight > rSide.offsetHeight) {
+                    rSide.style.minHeight = lSide.offsetHeight + "px";
+                }
+            }
+        })(window);
+
+
+    </script>
+	
+<!-- Do Not Remove - Turn Tracking Beacon Code - Do Not Remove -->
+<!-- Advertiser Name : microsoft -->
+<!-- Beacon Name : Microsoft_ blogs general -->
+<!-- START OF WEDCS TAG -->
+<script type="text/javascript">
+    var varSegmentation = 0;
+    var varClickTracking = 1;
+    var varCustomerTracking = 1;
+    var varAutoFirePV = 1;
+    var Route = "LE020";
+    document.write("<script type='text/javascript' src='" +
+    (window.location.protocol) + "//c.microsoft.com/ms.js'" + "'><\/script>");
+</script><script type="text/javascript" src="http://c.microsoft.com/ms.js" '=""></script>
+<noscript>
+    <img alt="" width="1" height="1" src="http://c.microsoft.com/trans_pixel.aspx" />
+</noscript>
+<!-- END OF WEDCS TAG -->
+
+
+
+
+
+<!-- If Beacon is placed on a Transaction or Lead Generation based page, please populate the turn_client_track_id with your order/confirmation ID -->
+<script type="text/javascript">
+  turn_client_track_id = "";
+</script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/beacon_call.js.download">
+</script>
+<noscript>
+  <img border="0" src="http://r.turn.com/r/beacon?b2=PGyOFcFmMNXjqLZWhsqf0IYBbGja1CD2b3Qxz0EXcZ4jZElP3T1utc_BawhZaoxwRafeYDFgKVEXkxLRf3dk_A&cid=">
+</noscript>
+<!-- End Turn Tracking Beacon Code Do Not Remove -->
+
+<script>
+(function() { // Redistats, track version 1.0
+	var global_id = 147;
+	var property_id = 1458;
+	var url = encodeURIComponent(window.location.href.split('#')[0]);
+	var referrer = encodeURIComponent(document.referrer);
+	var x = document.createElement('script'), s = document.getElementsByTagName('script')[0];
+	x.src = '//redistats.com/track.js?gid='+global_id+'&pid='+property_id+'&url='+url+'&referrer='+referrer;
+	s.parentNode.insertBefore(x, s);
+})();
+</script><script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shCore.js.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushAS3.js.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushBash.js.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushColdFusi.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushClojure..download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushCpp.js.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushCSharp.j.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushCss.js.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushDelphi.j.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushDiff.js.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushErlang.j.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushFSharp.j.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushGroovy.j.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushJava.js.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushJavaFX.j.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushJScript..download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushLatex.js.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushMatlabKe.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushObjC.js.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushPerl.js.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushPhp.js.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushPlain.js.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushPowerShe.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushPython.j.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushR.js.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushRuby.js.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushScala.js.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushSql.js.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushVb.js.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/shBrushXml.js.download"></script>
+<script type="text/javascript">
+	(function(){
+		var corecss = document.createElement('link');
+		var themecss = document.createElement('link');
+		var corecssurl = "http://blogs.microsoft.co.il/iblogger/wp-content/plugins/syntaxhighlighter/syntaxhighlighter3/styles/shCore.css?ver=3.0.9b";
+		if ( corecss.setAttribute ) {
+				corecss.setAttribute( "rel", "stylesheet" );
+				corecss.setAttribute( "type", "text/css" );
+				corecss.setAttribute( "href", corecssurl );
+		} else {
+				corecss.rel = "stylesheet";
+				corecss.href = corecssurl;
+		}
+		document.getElementsByTagName("head")[0].insertBefore( corecss, document.getElementById("syntaxhighlighteranchor") );
+		var themecssurl = "http://blogs.microsoft.co.il/iblogger/wp-content/plugins/syntaxhighlighter/syntaxhighlighter3/styles/shThemeEmacs.css?ver=3.0.9b";
+		if ( themecss.setAttribute ) {
+				themecss.setAttribute( "rel", "stylesheet" );
+				themecss.setAttribute( "type", "text/css" );
+				themecss.setAttribute( "href", themecssurl );
+		} else {
+				themecss.rel = "stylesheet";
+				themecss.href = themecssurl;
+		}
+		//document.getElementById("syntaxhighlighteranchor").appendChild(themecss);
+		document.getElementsByTagName("head")[0].insertBefore( themecss, document.getElementById("syntaxhighlighteranchor") );
+	})();
+	SyntaxHighlighter.config.strings.expandSource = '+ expand source';
+	SyntaxHighlighter.config.strings.help = '?';
+	SyntaxHighlighter.config.strings.alert = 'SyntaxHighlighter\n\n';
+	SyntaxHighlighter.config.strings.noBrush = 'Can\'t find brush for: ';
+	SyntaxHighlighter.config.strings.brushNotHtmlScript = 'Brush wasn\'t configured for html-script option: ';
+	SyntaxHighlighter.defaults['pad-line-numbers'] = false;
+	SyntaxHighlighter.all();
+</script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/comment-reply.m.download"></script>
+<script type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/wp-embed.min.js.download"></script>
+<script async="async" type="text/javascript" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/form.js.download"></script>
+
+<iframe scrolling="no" frameborder="0" allowtransparency="true" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/widget_iframe.d753e.html" title="Twitter settings iframe" style="display: none;"></iframe><iframe src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/iframe.html" id="mm_sync_back_ground" style="visibility: hidden; display: none;"></iframe><span id="buffer-extension-hover-button" style="display: none; position: absolute; z-index: 8675309; width: 100px; height: 25px; background-image: url(&quot;chrome-extension://noojglkidnpfjbincgijbaiedldjfbhh/data/shared/img/buffer-hover-icon@2x.png&quot;); background-size: 100px 25px; opacity: 0.9; cursor: pointer; top: 620.2px; left: 1267.8px;"></span></body></html>
