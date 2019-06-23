@@ -1,0 +1,84 @@
+---
+layout: msblogpost
+title: "Adding Localization support to WinRT C# Application"
+date: 2015-01-27
+msblogurl: "http://blogs.microsoft.co.il/iblogger/2015/01/27/catching-exceptions-from-caliburn-micro-actionmessage-invocation/"
+---
+<DIV class="contx entry-content clearfix"><P>When we create applications we usually want to make them easy to use by our users. One way to make application more accessible internationally is to make it localized to the users’ language and regional settings. </P>
+<P>In this post I wish to show how to add localization support to your WinRT C# application. </P>
+<P>All the source code can be downloaded from my GitHub: <A href="https://github.com/tamirdresher/LocalizedWinRTAppExample">https://github.com/tamirdresher/LocalizedWinRTAppExample</A> </P>
+<H1>Sample App<BR></H1>
+<P>I created a simple application that includes a simple login page (the app includes only UI) and currently supports “en-US” and “he-IL” locales </P>
+<P style="TEXT-ALIGN: justify">&nbsp;</P>
+<DIV style="TEXT-ALIGN: center">
+<TABLE style="BORDER-COLLAPSE: collapse" border=0>
+<COLGROUP>
+<COL style="WIDTH: 283px">
+<COL style="WIDTH: 293px"></COLGROUP>
+<TBODY vAlign=top>
+<TR>
+<TD style="PADDING-LEFT: 7px; PADDING-RIGHT: 7px">
+<P style="TEXT-ALIGN: center"><IMG src="./Adding Localization support to WinRT C# Application _ IBlogger - Tamir Dresher_files/en_version.png"> </P>
+<P style="TEXT-ALIGN: center">English version</P></TD>
+<TD style="PADDING-LEFT: 7px; PADDING-RIGHT: 7px">
+<P style="TEXT-ALIGN: center"><IMG src="./Adding Localization support to WinRT C# Application _ IBlogger - Tamir Dresher_files/he_version.png"> </P>
+<P style="TEXT-ALIGN: center">Hebrew version</P></TD></TR></TBODY></TABLE></DIV>
+<P style="TEXT-ALIGN: justify">&nbsp;</P>
+<H1>How does it work?<BR></H1>
+<P>Create a new Windows Store project – I used the Blank App template </P>
+<P></P>
+<P><IMG src="./Adding Localization support to WinRT C# Application _ IBlogger - Tamir Dresher_files/newproject.png"></P>
+<P>&nbsp;</P>
+<P>In the project Add a directory called “Strings” that includes sub directory for every locale you wish to support. </P>
+<P><IMG src="./Adding Localization support to WinRT C# Application _ IBlogger - Tamir Dresher_files/projStructure.png"></P>
+<P>Each sub directory needs to contain a *.resw file (or more) with the localized values. </P>
+<P>&nbsp;</P>
+<P>In the XAML file we need to give each element that is localized a<SPAN style="COLOR: red"><BR><STRONG>x:UID </STRONG></SPAN>unique<SPAN style="COLOR: red"><STRONG><BR></STRONG></SPAN>value. </P>
+<P>e.g. </P>
+<P style="BACKGROUND: white"><SPAN style="FONT-SIZE: 10pt; FONT-FAMILY: Consolas; COLOR: black">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<SPAN style="COLOR: green">&lt;!–username&nbsp;textbox–&gt;<SPAN style="COLOR: black"><BR></SPAN></SPAN></SPAN></P>
+<P style="BACKGROUND: white"><SPAN style="FONT-SIZE: 10pt; FONT-FAMILY: Consolas; COLOR: black">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<SPAN style="COLOR: blue">&lt;<SPAN style="COLOR: #a31515">TextBlock<SPAN style="COLOR: red">&nbsp;<SPAN style="BACKGROUND-COLOR: yellow">x<SPAN style="COLOR: blue">:<SPAN style="COLOR: red">Uid<SPAN style="COLOR: blue">=”UsernameCaption”</SPAN></SPAN></SPAN></SPAN><SPAN style="COLOR: black"><BR></SPAN></SPAN></SPAN></SPAN></SPAN></P>
+<P style="BACKGROUND: white"><SPAN style="FONT-SIZE: 10pt; FONT-FAMILY: Consolas; COLOR: black">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<SPAN style="COLOR: red">&nbsp;Grid.Row<SPAN style="COLOR: blue">=”0″<SPAN style="COLOR: black"><BR></SPAN></SPAN></SPAN></SPAN></P>
+<P style="BACKGROUND: white"><SPAN style="FONT-SIZE: 10pt; FONT-FAMILY: Consolas; COLOR: black">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<SPAN style="COLOR: red">&nbsp;Grid.Column<SPAN style="COLOR: blue">=”0″<SPAN style="COLOR: black"><BR></SPAN></SPAN></SPAN></SPAN></P>
+<P style="BACKGROUND: white"><SPAN style="FONT-SIZE: 10pt; FONT-FAMILY: Consolas; COLOR: black">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<SPAN style="COLOR: red">&nbsp;Text<SPAN style="COLOR: blue">=”Username”<SPAN style="COLOR: black"><BR></SPAN></SPAN></SPAN></SPAN></P>
+<P style="BACKGROUND: white"><SPAN style="FONT-SIZE: 10pt; FONT-FAMILY: Consolas; COLOR: black">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<SPAN style="COLOR: red">&nbsp;HorizontalAlignment<SPAN style="COLOR: blue">=”Right”<SPAN style="COLOR: black"><BR></SPAN></SPAN></SPAN></SPAN></P>
+<P style="BACKGROUND: white"><SPAN style="FONT-SIZE: 10pt; FONT-FAMILY: Consolas; COLOR: black">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<SPAN style="COLOR: red">&nbsp;VerticalAlignment<SPAN style="COLOR: blue">=”Center”<SPAN style="COLOR: black"><BR></SPAN></SPAN></SPAN></SPAN></P>
+<P style="BACKGROUND: white"><SPAN style="FONT-SIZE: 10pt; FONT-FAMILY: Consolas; COLOR: black">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<SPAN style="COLOR: red">&nbsp;Style<SPAN style="COLOR: blue">=”{<SPAN style="COLOR: #a31515">StaticResource<SPAN style="COLOR: red">&nbsp;TitleTextStyle<SPAN style="COLOR: blue">}”&nbsp;/&gt;<SPAN style="COLOR: black"><BR></SPAN></SPAN></SPAN></SPAN></SPAN></SPAN></SPAN></P>
+<P style="BACKGROUND: white">&nbsp;</P>
+<P style="BACKGROUND: white">&nbsp;</P>
+<P>Later, in the *.resw files we define the appropriate value for each localized property </P>
+<P></P>
+<P><IMG src="./Adding Localization support to WinRT C# Application _ IBlogger - Tamir Dresher_files/reswFiles.png"></P>
+<P>&nbsp;</P>
+<P>That’s all you need to do in order to make that UI element localized. </P>
+<P>Note that this doesn’t end with Text value but we can control any property on the element such as width, height etc. </P>
+<H1>Flow Direction<BR></H1>
+<P>Since different languages use different layout ordering (RTL, LTR), we need to add this behavior to our application. </P>
+<P>One way to achieve this is by setting the FlowDirection property (from a value in our .resw file) for each of our views but that error-prone and cumbersome. </P>
+<P>Instead we can add code for our application initialization that put the FlowDirection on the rootframe and since the FlowDirection is an inherited value, all the other views will have the same FlowDirection. </P>
+<P>This code snippet achieves that goal: </P>
+<P style="BACKGROUND: white"><SPAN style="FONT-SIZE: 10pt; FONT-FAMILY: Consolas; COLOR: black">&nbsp;&nbsp;&nbsp;&nbsp;<SPAN style="COLOR: blue">var<SPAN style="COLOR: black">&nbsp;loader&nbsp;=&nbsp;<SPAN style="COLOR: blue">new<SPAN style="COLOR: black">&nbsp;Windows.ApplicationModel.Resources.<SPAN style="COLOR: #2b91af">ResourceLoader<SPAN style="COLOR: black">();<BR></SPAN></SPAN></SPAN></SPAN></SPAN></SPAN></SPAN></P>
+<P style="BACKGROUND: white"><SPAN style="FONT-SIZE: 10pt; FONT-FAMILY: Consolas; COLOR: black">&nbsp;&nbsp;&nbsp;&nbsp;<SPAN style="COLOR: blue">var<SPAN style="COLOR: black">&nbsp;flowDirectionString&nbsp;=&nbsp;loader.GetString(<SPAN style="COLOR: #a31515">“ApplicationFlowDirection”<SPAN style="COLOR: black">);<BR></SPAN></SPAN></SPAN></SPAN></SPAN></P>
+<P style="BACKGROUND: white"><SPAN style="FONT-SIZE: 10pt; FONT-FAMILY: Consolas; COLOR: black">&nbsp;&nbsp;&nbsp;&nbsp;<SPAN style="COLOR: blue">var<SPAN style="COLOR: black">&nbsp;flowDirection&nbsp;=&nbsp;<SPAN style="COLOR: #2b91af">FlowDirection<SPAN style="COLOR: black">.LeftToRight;<BR></SPAN></SPAN></SPAN></SPAN></SPAN></P>
+<P style="BACKGROUND: white"><SPAN style="FONT-SIZE: 10pt; FONT-FAMILY: Consolas; COLOR: black">&nbsp;&nbsp;&nbsp;&nbsp;<SPAN style="COLOR: #2b91af">FlowDirection<SPAN style="COLOR: black">.TryParse(flowDirectionString,&nbsp;<SPAN style="COLOR: blue">true<SPAN style="COLOR: black">,&nbsp;<SPAN style="COLOR: blue">out<SPAN style="COLOR: black">&nbsp;flowDirection);<BR></SPAN></SPAN></SPAN></SPAN></SPAN></SPAN></SPAN></P>
+<P style="BACKGROUND: white"><SPAN style="FONT-SIZE: 10pt; FONT-FAMILY: Consolas; COLOR: black">&nbsp;&nbsp;&nbsp;&nbsp;rootFrame.FlowDirection&nbsp;=&nbsp;flowDirection;<BR></SPAN></P>
+<P>in the attached example application the code is located in the <SPAN style="FONT-SIZE: 10pt; FONT-FAMILY: Consolas; COLOR: black">OnLaunched </SPAN>event handler of the <SPAN style="FONT-SIZE: 10pt; FONT-FAMILY: Consolas; COLOR: #2b91af">App </SPAN>class so that when the application starts the initialization it looks for the resource “ApplicationFlowDirection” (which contains the value RightToLeft or LeftToRight) And if it finds it then changes the root frame FlowDirection. </P>
+<P>Otherwise, the FlowDirection is LeftToRight </P>
+<H1>Testing the Localization<BR></H1>
+<P>In order to see how the UI changes for different locales, I’ve added a code (that runs only in debug mode) where u declare the current locale – default is en-US </P>
+<P style="BACKGROUND: white"></P><PRE><CODE><SPAN style="FONT-FAMILY: Consolas; COLOR: blue">#if<SPAN style="COLOR: black">&nbsp;DEBUG 
+</SPAN></SPAN></CODE></PRE>
+<P></P>
+<P style="BACKGROUND: white"></P><PRE><CODE><SPAN style="FONT-FAMILY: Consolas; COLOR: black">&nbsp;&nbsp;&nbsp;&nbsp;<SPAN style="COLOR: blue">var<SPAN style="COLOR: black">&nbsp;locale&nbsp;=&nbsp;<SPAN style="COLOR: #a31515">"en-US"<SPAN style="COLOR: black">;
+</SPAN></SPAN></SPAN></SPAN></SPAN></CODE></PRE>
+<P></P>
+<P style="BACKGROUND: white"></P><PRE><CODE><SPAN style="FONT-FAMILY: Consolas; COLOR: black">&nbsp;&nbsp;&nbsp;&nbsp;<SPAN style="COLOR: green">//var&nbsp;locale="he-IL";<SPAN style="COLOR: black">
+						</SPAN></SPAN></SPAN></CODE></PRE>
+<P></P>
+<P style="BACKGROUND: white"></P><PRE><CODE><SPAN style="FONT-FAMILY: Consolas; COLOR: black">&nbsp;&nbsp;&nbsp;&nbsp;Windows.Globalization.<SPAN style="COLOR: #2b91af">ApplicationLanguages<SPAN style="COLOR: black">.PrimaryLanguageOverride=locale;
+</SPAN></SPAN></SPAN></CODE></PRE>
+<P></P>
+<P style="BACKGROUND: white"></P><PRE><CODE><SPAN style="FONT-FAMILY: Consolas; COLOR: blue">#endif<SPAN style="COLOR: black">
+					</SPAN></SPAN></CODE></PRE>
+<P></P>
+<P></P>
+<P></P><IFRAME style="OVERFLOW: hidden; BORDER-TOP: medium none; HEIGHT: 80px; BORDER-RIGHT: medium none; BORDER-BOTTOM: medium none; BORDER-LEFT: medium none" src="./Adding Localization support to WinRT C# Application _ IBlogger - Tamir Dresher_files/like.html" frameBorder=0 allowTransparency scrolling=no></IFRAME>

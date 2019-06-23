@@ -1,0 +1,22 @@
+---
+layout: msblogpost
+title: "Fixing Cisco AnyConnect VPN in Windows 10 build 10074 "
+date: 2015-5-30
+msblogurl: "http://blogs.microsoft.co.il/iblogger/2015/05/30/fixing-cisco-anyconnect-vpn-in-windows-10-build-10074/"
+---
+<DIV class="contx entry-content clearfix"><P>Since Build 2015 I’ve been working almost solely with the windows 10 preview builds. in most of the time its works perfect for me, except for one thing which is the CPN client I need to connect to one of my clients network. it seems the that Cisco AnyConnect have some issues with Windows 10 but I finally found the solution thanks to the reddit conversation (<A title=https://www.reddit.com/r/Windows10/comments/34duvd/cisco_anyconnect_still_broken_on_10074/ href="https://www.reddit.com/r/Windows10/comments/34duvd/cisco_anyconnect_still_broken_on_10074/">https://www.reddit.com/r/Windows10/comments/34duvd/cisco_anyconnect_still_broken_on_10074/</A>)</P>
+<P>Here are the steps you need to do that solved it for me</P>
+<OL>
+<LI>1. Open the Device Manager (Ctrl+X and then choose Device Manager) </LI></OL>
+<P>2. Make sure there is only one Cisco AnyConnect Adapter</P>
+<P><A href="https://tamirdresher.github.io/wp-content/uploads/sites/1458/2015/05/image.png"><IMG title=image style="BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; PADDING-RIGHT: 0px; BORDER-TOP-WIDTH: 0px" border=0 alt=image src="./Fixing Cisco AnyConnect VPN in Windows 10 build 10074 _ IBlogger - Tamir Dresher_files/image_thumb.png" width=400 height=210></A></P>
+<P>3. Go to the Network Connection settings (Ctrl+X and choose Network Connections)</P>
+<P>4. Right click on the Cisco adapter and click on Properties</P>
+<P>5. Uncheck the IPv6 setting</P>
+<P><A href="https://tamirdresher.github.io/wp-content/uploads/sites/1458/2015/05/image1.png"><IMG title=image style="BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; PADDING-RIGHT: 0px; BORDER-TOP-WIDTH: 0px" border=0 alt=image src="./Fixing Cisco AnyConnect VPN in Windows 10 build 10074 _ IBlogger - Tamir Dresher_files/image_thumb1.png" width=250 height=321></A>&nbsp;</P>
+<P>6. Open the IPv4 Properties and Change it to be Automatic</P>
+<P><A href="https://tamirdresher.github.io/wp-content/uploads/sites/1458/2015/05/image2.png"><IMG title=image style="BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; PADDING-RIGHT: 0px; BORDER-TOP-WIDTH: 0px" border=0 alt=image src="./Fixing Cisco AnyConnect VPN in Windows 10 build 10074 _ IBlogger - Tamir Dresher_files/image_thumb2.png" width=255 height=289></A></P>
+<P>7. Click OK and try to connect again</P>
+<P>8. If you still can’t connect, go the Cisco installation folder (C:\Program Files (x86)\Cisco\Cisco AnyConnect Secure Mobility Client\) and right click on the “vpnui.exe” file</P>
+<P>9. Choose Properties and set the Compatibility mode to “Windows 7” – just make sure you close the application first</P>
+<P><A href="https://tamirdresher.github.io/wp-content/uploads/sites/1458/2015/05/image3.png"><IMG title=image style="BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; PADDING-RIGHT: 0px; BORDER-TOP-WIDTH: 0px" border=0 alt=image src="./Fixing Cisco AnyConnect VPN in Windows 10 build 10074 _ IBlogger - Tamir Dresher_files/image_thumb3.png" width=255 height=323></A></P><IFRAME style="BORDER-TOP-STYLE: none; OVERFLOW: hidden; BORDER-LEFT-STYLE: none; HEIGHT: 80px; BORDER-BOTTOM-STYLE: none; BORDER-RIGHT-STYLE: none" src="./Fixing Cisco AnyConnect VPN in Windows 10 build 10074 _ IBlogger - Tamir Dresher_files/like.html" frameBorder=0 allowTransparency scrolling=no></IFRAME></DIV>

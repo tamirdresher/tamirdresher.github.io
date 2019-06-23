@@ -1,0 +1,133 @@
+---
+layout: msblogpost
+title: "Dealing with page resize in Windows Store Applications using Caliburn.Micro "
+date: 2015-3-1
+msblogurl: "http://blogs.microsoft.co.il/iblogger/2015/03/01/dealing-with-page-resize-in-windows-store-applications-using-caliburn-micro/"
+---
+<DIV class="contx entry-content clearfix"><P>Windows Store Applications allow the user to change the size of the application and change the the layout to e vertical or horizontal.</P>
+<P><A href="https://msdn.microsoft.com/en-us/library/windows/apps/hh465371.aspx"><IMG alt="App that pans horizontally, at fullscreen" src="./Dealing with page resize in Windows Store Applications using Caliburn.Micro _ IBlogger - Tamir Dresher_files/IC666092.png" width=396 height=223></A><A href="https://msdn.microsoft.com/en-us/library/windows/apps/hh465371.aspx"><IMG alt="App that is taller than it is wide and pans vertically." src="./Dealing with page resize in Windows Store Applications using Caliburn.Micro _ IBlogger - Tamir Dresher_files/IC666093.png" width=395 height=222></A><A href="https://msdn.microsoft.com/en-us/library/windows/apps/hh465371.aspx"><IMG alt="App at narrow minimum width of 320 pixels." src="./Dealing with page resize in Windows Store Applications using Caliburn.Micro _ IBlogger - Tamir Dresher_files/IC666091.png" width=393 height=221></A></P>
+<P>in order to provide god user experience we want adapt our view to different modes. For instance, showing a grid like view when in Full Horizontal mode and change it a List when we are snapped to side (and look vertical).</P>
+<P>The examples and guidelines on how to change your view based on the page layout change are around those option:</P>
+<OL>
+<LI>In your page XAML write the representation for both mode and change visibility based on the current mode 
+<LI>Use VisualStyleManager in your page and change your controls properties based on the current mode </LI></OL>
+<P>My coworker Noam Gindi and I felt that this is not ideal and starteted to look for a more elegent way</P>
+<P>I wanted to take advantage of <A href="http://caliburnmicro.com/documentation/composition#multiple-views-over-the-same-viewmodel">Caliburn.Micro View.Context</A></P>
+<P>So what we did was creating a base ResizablePage that knows how to change the View.Context according to the page dimensions. since Caliburn.Micro Binds the ViewModel to the Page it will automatically switch the inner view according to the context.</P>
+<P>in our case we set a convention that the the view will be suffixed with “SnapView” or “FullView”</P>
+<P>This is the ResizalePage code: </P>
+<DIV>
+<DIV id=highlighter_457886 class="syntaxhighlighter  csharp">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2015/03/01/dealing-with-page-resize-in-windows-store-applications-using-caliburn-micro/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV>
+<DIV class="line number6 index5 alt1">6</DIV>
+<DIV class="line number7 index6 alt2">7</DIV>
+<DIV class="line number8 index7 alt1">8</DIV>
+<DIV class="line number9 index8 alt2">9</DIV>
+<DIV class="line number10 index9 alt1">10</DIV>
+<DIV class="line number11 index10 alt2">11</DIV>
+<DIV class="line number12 index11 alt1">12</DIV>
+<DIV class="line number13 index12 alt2">13</DIV>
+<DIV class="line number14 index13 alt1">14</DIV>
+<DIV class="line number15 index14 alt2">15</DIV>
+<DIV class="line number16 index15 alt1">16</DIV>
+<DIV class="line number17 index16 alt2">17</DIV>
+<DIV class="line number18 index17 alt1">18</DIV>
+<DIV class="line number19 index18 alt2">19</DIV>
+<DIV class="line number20 index19 alt1">20</DIV>
+<DIV class="line number21 index20 alt2">21</DIV>
+<DIV class="line number22 index21 alt1">22</DIV>
+<DIV class="line number23 index22 alt2">23</DIV>
+<DIV class="line number24 index23 alt1">24</DIV>
+<DIV class="line number25 index24 alt2">25</DIV>
+<DIV class="line number26 index25 alt1">26</DIV>
+<DIV class="line number27 index26 alt2">27</DIV>
+<DIV class="line number28 index27 alt1">28</DIV>
+<DIV class="line number29 index28 alt2">29</DIV>
+<DIV class="line number30 index29 alt1">30</DIV>
+<DIV class="line number31 index30 alt2">31</DIV>
+<DIV class="line number32 index31 alt1">32</DIV>
+<DIV class="line number33 index32 alt2">33</DIV>
+<DIV class="line number34 index33 alt1">34</DIV>
+<DIV class="line number35 index34 alt2">35</DIV>
+<DIV class="line number36 index35 alt1">36</DIV>
+<DIV class="line number37 index36 alt2">37</DIV>
+<DIV class="line number38 index37 alt1">38</DIV>
+<DIV class="line number39 index38 alt2">39</DIV>
+<DIV class="line number40 index39 alt1">40</DIV>
+<DIV class="line number41 index40 alt2">41</DIV>
+<DIV class="line number42 index41 alt1">42</DIV>
+<DIV class="line number43 index42 alt2">43</DIV>
+<DIV class="line number44 index43 alt1">44</DIV>
+<DIV class="line number45 index44 alt2">45</DIV>
+<DIV class="line number46 index45 alt1">46</DIV>
+<DIV class="line number47 index46 alt2">47</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="csharp keyword">public</CODE> <CODE class="csharp keyword">class</CODE> <CODE class="csharp plain">ResizablePage : Page</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number3 index2 alt2">&nbsp;</DIV>
+<DIV class="line number4 index3 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">public</CODE> <CODE class="csharp plain">ResizablePage()</CODE></DIV>
+<DIV class="line number5 index4 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number6 index5 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">this</CODE><CODE class="csharp plain">.Loaded += OnLoaded;</CODE></DIV>
+<DIV class="line number7 index6 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number8 index7 alt1">&nbsp;</DIV>
+<DIV class="line number9 index8 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">private</CODE> <CODE class="csharp keyword">void</CODE> <CODE class="csharp plain">OnLoaded(</CODE><CODE class="csharp keyword">object</CODE> <CODE class="csharp plain">sender, RoutedEventArgs routedEventArgs)</CODE></DIV>
+<DIV class="line number10 index9 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number11 index10 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">ApplyTemplate();</CODE></DIV>
+<DIV class="line number12 index11 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">this</CODE><CODE class="csharp plain">.Loaded -= OnLoaded;</CODE></DIV>
+<DIV class="line number13 index12 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number14 index13 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">Caliburn.Micro.View.SetContext(</CODE><CODE class="csharp keyword">this</CODE><CODE class="csharp plain">, GetContext(</CODE><CODE class="csharp keyword">this</CODE><CODE class="csharp plain">.ActualWidth)); </CODE></DIV>
+<DIV class="line number15 index14 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">Caliburn.Micro.View.SetModel(</CODE><CODE class="csharp keyword">this</CODE><CODE class="csharp plain">, DataContext);</CODE></DIV>
+<DIV class="line number16 index15 alt1">&nbsp;</DIV>
+<DIV class="line number17 index16 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">this</CODE><CODE class="csharp plain">.SizeChanged += OnSizeChanged;</CODE></DIV>
+<DIV class="line number18 index17 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number19 index18 alt2">&nbsp;</DIV>
+<DIV class="line number20 index19 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">private</CODE> <CODE class="csharp keyword">void</CODE> <CODE class="csharp plain">OnSizeChanged(</CODE><CODE class="csharp keyword">object</CODE> <CODE class="csharp plain">sender, SizeChangedEventArgs args)</CODE></DIV>
+<DIV class="line number21 index20 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number22 index21 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">Caliburn.Micro.View.SetContext(</CODE><CODE class="csharp keyword">this</CODE><CODE class="csharp plain">, GetContext(args.NewSize.Width));</CODE></DIV>
+<DIV class="line number23 index22 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number24 index23 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number25 index24 alt2">&nbsp;</DIV>
+<DIV class="line number26 index25 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">private</CODE> <CODE class="csharp keyword">string</CODE> <CODE class="csharp plain">GetContext(</CODE><CODE class="csharp keyword">double</CODE> <CODE class="csharp plain">width)</CODE></DIV>
+<DIV class="line number27 index26 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number28 index27 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">if</CODE> <CODE class="csharp plain">(width &lt;= 500)</CODE></DIV>
+<DIV class="line number29 index28 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number30 index29 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">return</CODE> <CODE class="csharp plain">GetName()+</CODE><CODE class="csharp string">"SnapView"</CODE><CODE class="csharp plain">;</CODE></DIV>
+<DIV class="line number31 index30 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number32 index31 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number33 index32 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">return</CODE> <CODE class="csharp plain">GetName()+</CODE><CODE class="csharp string">"FullView"</CODE><CODE class="csharp plain">;</CODE></DIV>
+<DIV class="line number34 index33 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number35 index34 alt2">&nbsp;</DIV>
+<DIV class="line number36 index35 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">private</CODE> <CODE class="csharp keyword">string</CODE> <CODE class="csharp plain">GetName()</CODE></DIV>
+<DIV class="line number37 index36 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number38 index37 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">var</CODE> <CODE class="csharp plain">type = </CODE><CODE class="csharp keyword">this</CODE><CODE class="csharp plain">.GetType();</CODE></DIV>
+<DIV class="line number39 index38 alt2">&nbsp;</DIV>
+<DIV class="line number40 index39 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">string</CODE> <CODE class="csharp plain">str1 = type.FullName;</CODE></DIV>
+<DIV class="line number41 index40 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">var</CODE> <CODE class="csharp plain">index = str1.LastIndexOf(</CODE><CODE class="csharp string">'.'</CODE><CODE class="csharp plain">) + 1;</CODE></DIV>
+<DIV class="line number42 index41 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">var</CODE> <CODE class="csharp plain">str2 = str1.Substring(index, str1.Length - index);</CODE></DIV>
+<DIV class="line number43 index42 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">var</CODE> <CODE class="csharp plain">str3 = str2.Replace(</CODE><CODE class="csharp string">"View"</CODE><CODE class="csharp plain">, </CODE><CODE class="csharp string">""</CODE><CODE class="csharp plain">);</CODE></DIV>
+<DIV class="line number44 index43 alt1">&nbsp;</DIV>
+<DIV class="line number45 index44 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">return</CODE> <CODE class="csharp plain">str3;</CODE></DIV>
+<DIV class="line number46 index45 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number47 index46 alt2"><CODE class="csharp plain">}</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<DIV>
+<DIV id=highlighter_241030 class="syntaxhighlighter  csharp">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2015/03/01/dealing-with-page-resize-in-windows-store-applications-using-caliburn-micro/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="csharp spaces">&nbsp;</CODE>&nbsp;</DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P>and now you simply need to derive your page from it and create the inner view for the two cases mentioned above. </P><IFRAME style="BORDER-TOP-STYLE: none; OVERFLOW: hidden; BORDER-LEFT-STYLE: none; HEIGHT: 80px; BORDER-BOTTOM-STYLE: none; BORDER-RIGHT-STYLE: none" src="./Dealing with page resize in Windows Store Applications using Caliburn.Micro _ IBlogger - Tamir Dresher_files/like.html" frameBorder=0 allowTransparency scrolling=no></IFRAME></DIV>

@@ -1,0 +1,209 @@
+---
+layout: msblogpost
+title: "Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget "
+date: 2017-4-5
+msblogurl: "http://blogs.microsoft.co.il/iblogger/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/"
+---
+<DIV class="contx entry-content clearfix"><P>In VS2017 it much easier now to support multiple frameworks inside a single .csproj file.<BR>When you create a new project VS2017 (that target .NET Core or .NET Standard) this is what you’ll get inside your *.csproj</P>
+<DIV>
+<DIV id=highlighter_269005 class="syntaxhighlighter  xml">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV>
+<DIV class="line number6 index5 alt1">6</DIV>
+<DIV class="line number7 index6 alt2">7</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Project</CODE> <CODE class="xml color1">Sdk</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"Microsoft.NET.Sdk"</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number2 index1 alt1">&nbsp;</DIV>
+<DIV class="line number3 index2 alt2"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">PropertyGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number4 index3 alt1"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">TargetFramework</CODE><CODE class="xml plain">&gt;netstandard1.4&lt;/</CODE><CODE class="xml keyword">TargetFramework</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number5 index4 alt2"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">PropertyGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number6 index5 alt1">&nbsp;</DIV>
+<DIV class="line number7 index6 alt2"><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">Project</CODE><CODE class="xml plain">&gt;</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P>Cool right? A lot of the boilerplate configuration was removed in order to make the MSBuild format clean and readable.<BR>By default, all the files inside your project folder will be added. If you want to make adjustment you can always add (or remove some of the files).<BR>For example, this is how it will look if I want to explicitly add the Properties folder to my project but exclude the AssemblyInfo.cs file.</P>
+<DIV>
+<DIV id=highlighter_418970 class="syntaxhighlighter  xml">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV>
+<DIV class="line number6 index5 alt1">6</DIV>
+<DIV class="line number7 index6 alt2 highlighted">7</DIV>
+<DIV class="line number8 index7 alt1 highlighted">8</DIV>
+<DIV class="line number9 index8 alt2 highlighted">9</DIV>
+<DIV class="line number10 index9 alt1 highlighted">10</DIV>
+<DIV class="line number11 index10 alt2">11</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Project</CODE> <CODE class="xml color1">Sdk</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"Microsoft.NET.Sdk"</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number2 index1 alt1">&nbsp;</DIV>
+<DIV class="line number3 index2 alt2"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">PropertyGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number4 index3 alt1"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">TargetFramework</CODE><CODE class="xml plain">&gt;netstandard1.4&lt;/</CODE><CODE class="xml keyword">TargetFramework</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number5 index4 alt2"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">PropertyGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number6 index5 alt1"><CODE class="xml spaces">&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number7 index6 alt2 highlighted"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">ItemGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number8 index7 alt1 highlighted"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Folder</CODE> <CODE class="xml color1">Include</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"Properties\"</CODE> <CODE class="xml plain">/&gt;</CODE></DIV>
+<DIV class="line number9 index8 alt2 highlighted"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Compile</CODE> <CODE class="xml color1">Remove</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"Properties\AssemblyInfo.cs"</CODE> <CODE class="xml plain">/&gt;</CODE></DIV>
+<DIV class="line number10 index9 alt1 highlighted"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">ItemGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number11 index10 alt2"><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">Project</CODE><CODE class="xml plain">&gt;</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<H3><U>Target Framework Moniker TFM</U></H3>
+<P>The new MSBuild format support declaration of multiple framework targets inside the same property group. If you need you library to support .NET 4.0, .NET 4.5, .NET Standard 1.6 and .NET Core 1.1, the only change you need to make is to change <EM>TargetFramework</EM> into plural form&nbsp;<EM>TargetFramework<STRONG>s</STRONG></EM>&nbsp; and add the framework monikers you wish to support:</P>
+<DIV>
+<DIV id=highlighter_565851 class="syntaxhighlighter  xml">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1 highlighted">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV>
+<DIV class="line number6 index5 alt1">6</DIV>
+<DIV class="line number7 index6 alt2">7</DIV>
+<DIV class="line number8 index7 alt1">8</DIV>
+<DIV class="line number9 index8 alt2">9</DIV>
+<DIV class="line number10 index9 alt1">10</DIV>
+<DIV class="line number11 index10 alt2">11</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Project</CODE> <CODE class="xml color1">Sdk</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"Microsoft.NET.Sdk"</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="xml spaces">&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number3 index2 alt2"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">PropertyGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number4 index3 alt1 highlighted"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">TargetFrameworks</CODE><CODE class="xml plain">&gt;netcoreapp1.1;netstandard1.6;net45;net40&lt;/</CODE><CODE class="xml keyword">TargetFrameworks</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number5 index4 alt2"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">PropertyGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number6 index5 alt1"><CODE class="xml spaces">&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number7 index6 alt2"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">ItemGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number8 index7 alt1"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Folder</CODE> <CODE class="xml color1">Include</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"Properties\"</CODE> <CODE class="xml plain">/&gt;</CODE></DIV>
+<DIV class="line number9 index8 alt2"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Compile</CODE> <CODE class="xml color1">Remove</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"Properties\AssemblyInfo.cs"</CODE> <CODE class="xml plain">/&gt;</CODE></DIV>
+<DIV class="line number10 index9 alt1"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">ItemGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number11 index10 alt2"><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">Project</CODE><CODE class="xml plain">&gt;</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P>The full list of target frameworks (AKA framework moniker) can be found at: <A href="https://docs.microsoft.com/en-us/nuget/schema/target-frameworks#supported-frameworks">https://docs.microsoft.com/en-us/nuget/schema/target-frameworks#supported-frameworks</A></P>
+<P>Of course, not everything is supported in every framework, so we need to add some conditions inside our code and inside our *.csproj file</P>
+<H3><U><BR>MSBuild conditions to the rescue<BR></U></H3>
+<P>Suppose our library has a dependency on <A href="http://restsharp.org/">RestSharp</A>&nbsp; Nuget package.<BR>At the time of this writing, the RestSharp package for .NET Core is called <A href="https://www.nuget.org/packages/RestSharp.NetCore/">RestSharp.NetCore</A>&nbsp; while the package for the full .NET Framework is called <A href="https://www.nuget.org/packages/RestSharp/">RestSharp</A>&nbsp;.<BR>So in order to had the dependency into our *.csproj &nbsp;file we need to separate the reference into two sections. Fortunately, now that MSBuild support the<A href="http://blog.nuget.org/20170316/NuGet-now-fully-integrated-into-MSBuild.html"><EM> &lt;PackageReference&gt;</EM> tag </A>&nbsp;this job becomes so much easier</P>
+<DIV>
+<DIV id=highlighter_418547 class="syntaxhighlighter  xml">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV>
+<DIV class="line number6 index5 alt1">6</DIV>
+<DIV class="line number7 index6 alt2">7</DIV>
+<DIV class="line number8 index7 alt1">8</DIV>
+<DIV class="line number9 index8 alt2">9</DIV>
+<DIV class="line number10 index9 alt1">10</DIV>
+<DIV class="line number11 index10 alt2">11</DIV>
+<DIV class="line number12 index11 alt1 highlighted">12</DIV>
+<DIV class="line number13 index12 alt2 highlighted">13</DIV>
+<DIV class="line number14 index13 alt1 highlighted">14</DIV>
+<DIV class="line number15 index14 alt2 highlighted">15</DIV>
+<DIV class="line number16 index15 alt1 highlighted">16</DIV>
+<DIV class="line number17 index16 alt2 highlighted">17</DIV>
+<DIV class="line number18 index17 alt1 highlighted">18</DIV>
+<DIV class="line number19 index18 alt2">19</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Project</CODE> <CODE class="xml color1">Sdk</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"Microsoft.NET.Sdk"</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="xml spaces">&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number3 index2 alt2"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">PropertyGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number4 index3 alt1"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">TargetFrameworks</CODE><CODE class="xml plain">&gt;netcoreapp1.1;netstandard1.6;net45;net40&lt;/</CODE><CODE class="xml keyword">TargetFrameworks</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number5 index4 alt2"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">PropertyGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number6 index5 alt1"><CODE class="xml spaces">&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number7 index6 alt2"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">ItemGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number8 index7 alt1"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Folder</CODE> <CODE class="xml color1">Include</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"Properties\"</CODE> <CODE class="xml plain">/&gt;</CODE></DIV>
+<DIV class="line number9 index8 alt2"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Compile</CODE> <CODE class="xml color1">Remove</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"Properties\AssemblyInfo.cs"</CODE> <CODE class="xml plain">/&gt;</CODE></DIV>
+<DIV class="line number10 index9 alt1"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">ItemGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number11 index10 alt2"><CODE class="xml spaces">&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number12 index11 alt1 highlighted"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">ItemGroup</CODE> <CODE class="xml color1">Condition</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"'$(TargetFramework)' == 'netcoreapp1.1' or '$(TargetFramework)' == 'netstandard1.6' "</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number13 index12 alt2 highlighted"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">PackageReference</CODE> <CODE class="xml color1">Include</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"RestSharp.NetCore"</CODE> <CODE class="xml color1">Version</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"105.2.3"</CODE> <CODE class="xml plain">/&gt;</CODE></DIV>
+<DIV class="line number14 index13 alt1 highlighted"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">ItemGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number15 index14 alt2 highlighted">&nbsp;</DIV>
+<DIV class="line number16 index15 alt1 highlighted"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">ItemGroup</CODE> <CODE class="xml color1">Condition</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"'$(TargetFramework)' == 'net45' or '$(TargetFramework)' == 'net40' "</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number17 index16 alt2 highlighted"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">PackageReference</CODE> <CODE class="xml color1">Include</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"RestSharp"</CODE> <CODE class="xml color1">Version</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"105.2.3"</CODE> <CODE class="xml plain">/&gt;</CODE></DIV>
+<DIV class="line number18 index17 alt1 highlighted"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">ItemGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number19 index18 alt2"><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">Project</CODE><CODE class="xml plain">&gt;</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<H3><U>Auto Nuget packaging<BR></U></H3>
+<P>One of the greatest pains that was with the old version of Nuget and MSBuild was the separation of the Nuget packaging from the project build. Basically, you had to create a *.nuspec file, add all the frameworks configuration into it and then add all the build artifacts into each of the sub-framework configuration. This was tedious.<BR>Now, VS2017 integrates Nuget into the project itself</P>
+<DIV class="wp-caption alignnone" style="WIDTH: 869px"><IMG class=size-medium src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/nuspecprops.gif" width=859 height=497>
+<P class=wp-caption-text>Embedded nuspec inside your *.csproj (Image taken from http://blog.nuget.org/20170316/NuGet-now-fully-integrated-into-MSBuild.html)</P></DIV>
+<P>After I filled the fields and checked the ‘Generate Nuget Package on build’, this how my *.csproj look</P>
+<DIV>
+<DIV id=highlighter_731249 class="syntaxhighlighter  xml">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2017/04/05/easily-supporting-multiple-target-frameworks-tfms-with-vs2017-and-nuget/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1 highlighted">4</DIV>
+<DIV class="line number5 index4 alt2 highlighted">5</DIV>
+<DIV class="line number6 index5 alt1 highlighted">6</DIV>
+<DIV class="line number7 index6 alt2 highlighted">7</DIV>
+<DIV class="line number8 index7 alt1 highlighted">8</DIV>
+<DIV class="line number9 index8 alt2 highlighted">9</DIV>
+<DIV class="line number10 index9 alt1">10</DIV>
+<DIV class="line number11 index10 alt2">11</DIV>
+<DIV class="line number12 index11 alt1">12</DIV>
+<DIV class="line number13 index12 alt2">13</DIV>
+<DIV class="line number14 index13 alt1">14</DIV>
+<DIV class="line number15 index14 alt2">15</DIV>
+<DIV class="line number16 index15 alt1">16</DIV>
+<DIV class="line number17 index16 alt2">17</DIV>
+<DIV class="line number18 index17 alt1">18</DIV>
+<DIV class="line number19 index18 alt2">19</DIV>
+<DIV class="line number20 index19 alt1">20</DIV>
+<DIV class="line number21 index20 alt2">21</DIV>
+<DIV class="line number22 index21 alt1">22</DIV>
+<DIV class="line number23 index22 alt2">23</DIV>
+<DIV class="line number24 index23 alt1">24</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Project</CODE> <CODE class="xml color1">Sdk</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"Microsoft.NET.Sdk"</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="xml spaces">&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number3 index2 alt2"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">PropertyGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number4 index3 alt1 highlighted"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">TargetFrameworks</CODE><CODE class="xml plain">&gt;netcoreapp1.1;netstandard1.6;net45;net40&lt;/</CODE><CODE class="xml keyword">TargetFrameworks</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number5 index4 alt2 highlighted"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">GeneratePackageOnBuild</CODE><CODE class="xml plain">&gt;True&lt;/</CODE><CODE class="xml keyword">GeneratePackageOnBuild</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number6 index5 alt1 highlighted"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Company</CODE><CODE class="xml plain">&gt;TamirDresher&lt;/</CODE><CODE class="xml keyword">Company</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number7 index6 alt2 highlighted"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Authors</CODE><CODE class="xml plain">&gt;TamirDresher&lt;/</CODE><CODE class="xml keyword">Authors</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number8 index7 alt1 highlighted"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Description</CODE><CODE class="xml plain">&gt;A very impressive package&lt;/</CODE><CODE class="xml keyword">Description</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number9 index8 alt2 highlighted"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Version</CODE><CODE class="xml plain">&gt;1.2.3&lt;/</CODE><CODE class="xml keyword">Version</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number10 index9 alt1"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">PropertyGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number11 index10 alt2"><CODE class="xml spaces">&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number12 index11 alt1"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">ItemGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number13 index12 alt2"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Folder</CODE> <CODE class="xml color1">Include</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"Properties\"</CODE> <CODE class="xml plain">/&gt;</CODE></DIV>
+<DIV class="line number14 index13 alt1"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Compile</CODE> <CODE class="xml color1">Remove</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"Properties\AssemblyInfo.cs"</CODE> <CODE class="xml plain">/&gt;</CODE></DIV>
+<DIV class="line number15 index14 alt2"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">ItemGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number16 index15 alt1"><CODE class="xml spaces">&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number17 index16 alt2"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">ItemGroup</CODE> <CODE class="xml color1">Condition</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"'$(TargetFramework)' == 'netcoreapp1.1' or '$(TargetFramework)' == 'netstandard1.6' "</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number18 index17 alt1"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">PackageReference</CODE> <CODE class="xml color1">Include</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"RestSharp.NetCore"</CODE> <CODE class="xml color1">Version</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"105.2.3"</CODE> <CODE class="xml plain">/&gt;</CODE></DIV>
+<DIV class="line number19 index18 alt2"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">ItemGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number20 index19 alt1">&nbsp;</DIV>
+<DIV class="line number21 index20 alt2"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">ItemGroup</CODE> <CODE class="xml color1">Condition</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"'$(TargetFramework)' == 'net45' or '$(TargetFramework)' == 'net40' "</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number22 index21 alt1"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">PackageReference</CODE> <CODE class="xml color1">Include</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"RestSharp"</CODE> <CODE class="xml color1">Version</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"105.2.3"</CODE> <CODE class="xml plain">/&gt;</CODE></DIV>
+<DIV class="line number23 index22 alt2"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">ItemGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number24 index23 alt1"><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">Project</CODE><CODE class="xml plain">&gt;</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P>Now, when I build my project or click on ‘Package’ from the project context menu, a Nuget package will be created for all the supported frameworks<BR>You can read about other configuration you can now make to your *.csproj here: <A href="https://docs.microsoft.com/en-us/dotnet/articles/core/tools/csproj">https://docs.microsoft.com/en-us/dotnet/articles/core/tools/csproj</A></P><IFRAME style="BORDER-TOP-STYLE: none; OVERFLOW: hidden; BORDER-LEFT-STYLE: none; HEIGHT: 80px; BORDER-BOTTOM-STYLE: none; BORDER-RIGHT-STYLE: none" src="./Easily supporting multiple target frameworks (TFMs) with VS2017 and Nuget _ IBlogger - Tamir Dresher_files/like.html" frameBorder=0 allowTransparency scrolling=no></IFRAME></DIV>

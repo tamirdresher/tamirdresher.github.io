@@ -1,0 +1,198 @@
+---
+layout: msblogpost
+title: "Catching exceptions from Caliburn.Micro ActionMessage invocation "
+date: 2015-1-27
+msblogurl: "http://blogs.microsoft.co.il/iblogger/2015/01/27/catching-exceptions-from-caliburn-micro-actionmessage-invocation/"
+---
+<DIV class="contx entry-content clearfix"><P>Caliburn.Micro provides many extensions to make our life easier. One of them is the ability to handle UI events and trigger a method call in the ViewModel. <BR>It is very similar to what you get when using EventToCommand (<A title=https://msdn.microsoft.com/en-us/magazine/dn237302.aspx href="https://msdn.microsoft.com/en-us/magazine/dn237302.aspx">https://msdn.microsoft.com/en-us/magazine/dn237302.aspx</A>) but caliburn makes it so much simpler.</P>
+<P>For instance, lets say I want to open the user profile when Tapping on an element somewhere in my Grid, I just write it like this:</P>
+<DIV>
+<DIV id=highlighter_614536 class="syntaxhighlighter  xml">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2015/01/27/catching-exceptions-from-caliburn-micro-actionmessage-invocation/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV>
+<DIV class="line number6 index5 alt1">6</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Grid</CODE> <CODE class="xml color1">x:Name</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"GroupMemberItem"</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml color1">micro:Message.Attach</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"[Event Tapped] = [Action OpenProfile($dataContext)]"</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number3 index2 alt2">&nbsp;</DIV>
+<DIV class="line number4 index3 alt1"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml comments">&lt;!-- The rest of the grid elemens --&gt;</CODE></DIV>
+<DIV class="line number5 index4 alt2">&nbsp;</DIV>
+<DIV class="line number6 index5 alt1"><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">Grid</CODE><CODE class="xml plain">&gt;</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<DIV>
+<DIV id=highlighter_407550 class="syntaxhighlighter  xml">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2015/01/27/catching-exceptions-from-caliburn-micro-actionmessage-invocation/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="xml spaces">&nbsp;</CODE>&nbsp;</DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P>the $dataContext token you see is a very powerful Caliburn.Micro feature that allows us to pass the Grids’ DataContext to the OpenProfile method. you can read on the more advanced options in the documentation page: <A title=http://caliburnmicro.com/documentation/actions href="http://caliburnmicro.com/documentation/actions">http://caliburnmicro.com/documentation/actions</A></P>
+<P>What do you think will happen if OpenProfile method throws an exception?</P>
+<P>If OpenProfile throws an exception then the entire application will crash. unless of course you added a event-handler to your <A href="https://msdn.microsoft.com/en-us/library/system.appdomain.unhandledexception%28v=vs.110%29.aspx">AppDomain</A> and caught the exception there.&nbsp; </P>
+<P>Lets say we want a specific handling to exceptions that are raised inside a Caliburn.Micro call.</P>
+<P>When we wrote </P>
+<DIV>
+<DIV id=highlighter_174715 class="syntaxhighlighter  xml">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2015/01/27/catching-exceptions-from-caliburn-micro-actionmessage-invocation/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="xml plain">micro:Message.Attach="[Event Tapped] = [Action OpenProfile($dataContext)]</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P>Caliburn created an instance of <A href="https://github.com/Caliburn-Micro/Caliburn.Micro/blob/64e781d44883dd397bff21ab4ff1f78d1e24cb38/src/Caliburn.Micro.Platform/ActionMessage.cs">ActionMessage</A> which handles the parsing and invocation of the method when needed.</P>
+<P>lets create a SilentActionMessage that will catch the exception if it was raised and will call some error handler that we will define (usually write to log)</P>
+<DIV>
+<DIV id=highlighter_184627 class="syntaxhighlighter  csharp">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2015/01/27/catching-exceptions-from-caliburn-micro-actionmessage-invocation/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV>
+<DIV class="line number6 index5 alt1">6</DIV>
+<DIV class="line number7 index6 alt2">7</DIV>
+<DIV class="line number8 index7 alt1">8</DIV>
+<DIV class="line number9 index8 alt2">9</DIV>
+<DIV class="line number10 index9 alt1">10</DIV>
+<DIV class="line number11 index10 alt2">11</DIV>
+<DIV class="line number12 index11 alt1">12</DIV>
+<DIV class="line number13 index12 alt2">13</DIV>
+<DIV class="line number14 index13 alt1">14</DIV>
+<DIV class="line number15 index14 alt2">15</DIV>
+<DIV class="line number16 index15 alt1">16</DIV>
+<DIV class="line number17 index16 alt2">17</DIV>
+<DIV class="line number18 index17 alt1">18</DIV>
+<DIV class="line number19 index18 alt2">19</DIV>
+<DIV class="line number20 index19 alt1">20</DIV>
+<DIV class="line number21 index20 alt2">21</DIV>
+<DIV class="line number22 index21 alt1">22</DIV>
+<DIV class="line number23 index22 alt2">23</DIV>
+<DIV class="line number24 index23 alt1">24</DIV>
+<DIV class="line number25 index24 alt2">25</DIV>
+<DIV class="line number26 index25 alt1">26</DIV>
+<DIV class="line number27 index26 alt2">27</DIV>
+<DIV class="line number28 index27 alt1">28</DIV>
+<DIV class="line number29 index28 alt2">29</DIV>
+<DIV class="line number30 index29 alt1">30</DIV>
+<DIV class="line number31 index30 alt2">31</DIV>
+<DIV class="line number32 index31 alt1">32</DIV>
+<DIV class="line number33 index32 alt2">33</DIV>
+<DIV class="line number34 index33 alt1">34</DIV>
+<DIV class="line number35 index34 alt2">35</DIV>
+<DIV class="line number36 index35 alt1">36</DIV>
+<DIV class="line number37 index36 alt2">37</DIV>
+<DIV class="line number38 index37 alt1">38</DIV>
+<DIV class="line number39 index38 alt2">39</DIV>
+<DIV class="line number40 index39 alt1">40</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="csharp color1">/// &lt;summary&gt;</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="csharp color1">/// This ActionMessage prevent an exception to proppgate in the case that the method defined in the XAML doesnt exist</CODE></DIV>
+<DIV class="line number3 index2 alt2"><CODE class="csharp color1">/// &lt;/summary&gt;</CODE></DIV>
+<DIV class="line number4 index3 alt1"><CODE class="csharp keyword">public</CODE> <CODE class="csharp keyword">class</CODE> <CODE class="csharp plain">SilentActionMessage: ActionMessage</CODE></DIV>
+<DIV class="line number5 index4 alt2"><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number6 index5 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">private</CODE> <CODE class="csharp keyword">readonly</CODE> <CODE class="csharp plain">Action&lt;Exception&gt; _errorAction;</CODE></DIV>
+<DIV class="line number7 index6 alt2">&nbsp;</DIV>
+<DIV class="line number8 index7 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">public</CODE> <CODE class="csharp plain">SilentActionMessage()</CODE></DIV>
+<DIV class="line number9 index8 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number10 index9 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number11 index10 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number12 index11 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">public</CODE> <CODE class="csharp plain">SilentActionMessage(Action&lt;Exception&gt; errorAction )</CODE></DIV>
+<DIV class="line number13 index12 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number14 index13 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">_errorAction = errorAction;</CODE></DIV>
+<DIV class="line number15 index14 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number16 index15 alt1">&nbsp;</DIV>
+<DIV class="line number17 index16 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">protected</CODE> <CODE class="csharp keyword">override</CODE> <CODE class="csharp keyword">void</CODE> <CODE class="csharp plain">Invoke(</CODE><CODE class="csharp keyword">object</CODE> <CODE class="csharp plain">eventArgs)</CODE></DIV>
+<DIV class="line number18 index17 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number19 index18 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">try</CODE></DIV>
+<DIV class="line number20 index19 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number21 index20 alt2">&nbsp;</DIV>
+<DIV class="line number22 index21 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">base</CODE><CODE class="csharp plain">.Invoke(eventArgs);</CODE></DIV>
+<DIV class="line number23 index22 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number24 index23 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number25 index24 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">catch</CODE><CODE class="csharp plain">(Exception e)</CODE></DIV>
+<DIV class="line number26 index25 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number27 index26 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">var</CODE> <CODE class="csharp plain">ancestors = </CODE><CODE class="csharp keyword">this</CODE><CODE class="csharp plain">.AssociatedObject.GetVisualAncestors();</CODE></DIV>
+<DIV class="line number28 index27 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">if</CODE> <CODE class="csharp plain">(_errorAction!=</CODE><CODE class="csharp keyword">null</CODE><CODE class="csharp plain">)</CODE></DIV>
+<DIV class="line number29 index28 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{ </CODE></DIV>
+<DIV class="line number30 index29 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">var</CODE> <CODE class="csharp plain">ancestorsList = ancestors.Aggregate(</CODE><CODE class="csharp string">""</CODE><CODE class="csharp plain">, (s, ancestor) =&gt; s += </CODE><CODE class="csharp string">","</CODE> <CODE class="csharp plain">+ ancestor.ToString());</CODE></DIV>
+<DIV class="line number31 index30 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">var</CODE> <CODE class="csharp plain">fullEx =</CODE></DIV>
+<DIV class="line number32 index31 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">new</CODE> <CODE class="csharp plain">InvalidOperationException(</CODE></DIV>
+<DIV class="line number33 index32 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">string</CODE><CODE class="csharp plain">.Format(</CODE><CODE class="csharp string">"couldnt invoke the Action {0} , Trail to the SilentActionMessage:{1}"</CODE><CODE class="csharp plain">,</CODE></DIV>
+<DIV class="line number34 index33 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">this</CODE><CODE class="csharp plain">.MethodName, ancestorsList), e);</CODE></DIV>
+<DIV class="line number35 index34 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number36 index35 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">_errorAction(fullEx);</CODE></DIV>
+<DIV class="line number37 index36 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number38 index37 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number39 index38 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number40 index39 alt1"><CODE class="csharp plain">}</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P>in the code, I’m calling the regular ActionMessage.Invoke method and if there is an exception I call some errorAction with an exception that also shows the trail to the “evil” UI element.</P>
+<P>&nbsp;</P>
+<P>in order to attach to Caliburn.Micro I’m adding these lines to my ApplicationBootstrapper</P>
+<P></P>
+<DIV>
+<DIV id=highlighter_823806 class="syntaxhighlighter  csharp">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2015/01/27/catching-exceptions-from-caliburn-micro-actionmessage-invocation/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="csharp plain">Parser.InterpretMessageText = (target, text) =&gt;</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">new</CODE> <CODE class="csharp plain">SilentActionMessage(ex =&gt; _logger.ErrorException(</CODE><CODE class="csharp string">"Exception in SilentActionMessage target:"</CODE> <CODE class="csharp plain">+ target, ex))</CODE></DIV>
+<DIV class="line number3 index2 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number4 index3 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">MethodName = Regex.Replace(text, </CODE><CODE class="csharp string">"^Action"</CODE><CODE class="csharp plain">, </CODE><CODE class="csharp keyword">string</CODE><CODE class="csharp plain">.Empty).Trim()</CODE></DIV>
+<DIV class="line number5 index4 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">};</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P>this solves my problem almost completely, with one exception – asynchronous methods.</P>
+<P>when you call an async method without awaiting you wont be able to catch any exception that are thrown from the method.</P>
+<P>Luckily, Caliburn.Micro knows how to handle async method that return Task (it does so by convert it to internal implementation of Coroutine). so in order for us to get the exception that was thrown we need to attach to the Coroutine.Completed event </P>
+<DIV>
+<DIV id=highlighter_603015 class="syntaxhighlighter  csharp">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2015/01/27/catching-exceptions-from-caliburn-micro-actionmessage-invocation/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV>
+<DIV class="line number6 index5 alt1">6</DIV>
+<DIV class="line number7 index6 alt2">7</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="csharp plain">Coroutine.Completed += (sender, args) =&gt;</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number3 index2 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">if</CODE> <CODE class="csharp plain">(args.Error != </CODE><CODE class="csharp keyword">null</CODE><CODE class="csharp plain">)</CODE></DIV>
+<DIV class="line number4 index3 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number5 index4 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">_logger.ErrorException(</CODE><CODE class="csharp string">"exception while invoking ActionMessage"</CODE><CODE class="csharp plain">, args.Error);</CODE></DIV>
+<DIV class="line number6 index5 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number7 index6 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">};</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P>This works beutifully when the called method return type is a Task.<BR>But, if the method is “async void” you will have a problem.</P>
+<P>async void are evil, and I haven’t found any solution other than change all you “async void” methods to “async Task“</P><IFRAME style="BORDER-TOP-STYLE: none; OVERFLOW: hidden; BORDER-LEFT-STYLE: none; HEIGHT: 80px; BORDER-BOTTOM-STYLE: none; BORDER-RIGHT-STYLE: none" src="./Catching exceptions from Caliburn.Micro ActionMessage invocation _ IBlogger - Tamir Dresher_files/like.html" frameBorder=0 allowTransparency scrolling=no></IFRAME></DIV>

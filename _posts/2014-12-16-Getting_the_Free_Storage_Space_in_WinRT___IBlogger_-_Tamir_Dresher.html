@@ -1,0 +1,39 @@
+---
+layout: msblogpost
+title: "Getting the Free Storage Space in WinRT "
+date: 2014-12-16
+msblogurl: "http://blogs.microsoft.co.il/iblogger/2014/12/16/getting-free-storage-space-winrt/"
+---
+<DIV class="contx entry-content clearfix"><P>I didnt find any documenation to this method other than the thread in StackOverflow: <A title=http://stackoverflow.com/questions/19510449/disk-space-in-winrt-using-c-sharp-in-windows-8 href="http://stackoverflow.com/questions/19510449/disk-space-in-winrt-using-c-sharp-in-windows-8">http://stackoverflow.com/questions/19510449/disk-space-in-winrt-using-c-sharp-in-windows-8</A></P>
+<P>so im keeping it here so it wont get lost by the winds of time….</P>
+<DIV id=scid:9D7513F9-C04C-4721-824A-2B34F0212519:8f20e115-69aa-43a8-8730-e0221c8835b0 class=wlWriterEditableSmartContent style="FLOAT: none; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px">
+<DIV>
+<DIV id=highlighter_52904 class="syntaxhighlighter nogutter  csharp">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2014/12/16/getting-free-storage-space-winrt/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="csharp keyword">public</CODE> <CODE class="csharp keyword">static</CODE> <CODE class="csharp keyword">async</CODE> <CODE class="csharp plain">Task&lt;UInt64&gt; GetFreeSpace(</CODE><CODE class="csharp keyword">this</CODE> <CODE class="csharp plain">IStorageItem sf)</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number3 index2 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">var</CODE> <CODE class="csharp plain">properties = </CODE><CODE class="csharp keyword">await</CODE> <CODE class="csharp plain">sf.GetBasicPropertiesAsync();</CODE></DIV>
+<DIV class="line number4 index3 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">var</CODE> <CODE class="csharp plain">filteredProperties = </CODE><CODE class="csharp keyword">await</CODE> <CODE class="csharp plain">properties.RetrievePropertiesAsync(</CODE><CODE class="csharp keyword">new</CODE><CODE class="csharp plain">[] { </CODE><CODE class="csharp string">"System.FreeSpace"</CODE> <CODE class="csharp plain">});</CODE></DIV>
+<DIV class="line number5 index4 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">var</CODE> <CODE class="csharp plain">freeSpace = filteredProperties[</CODE><CODE class="csharp string">"System.FreeSpace"</CODE><CODE class="csharp plain">];</CODE></DIV>
+<DIV class="line number6 index5 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">return</CODE> <CODE class="csharp plain">(UInt64)freeSpace;</CODE></DIV>
+<DIV class="line number7 index6 alt2"><CODE class="csharp plain">}</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P><!-- Code inserted with Steve Dunn's Windows Live Writer Code Formatter Plugin.  http://dunnhq.com --></P></DIV>
+<P>Sample use:</P>
+<DIV id=scid:9D7513F9-C04C-4721-824A-2B34F0212519:e66a8083-48d0-4a6f-adff-975f82a5808d class=wlWriterEditableSmartContent style="FLOAT: none; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px">
+<DIV>
+<DIV id=highlighter_91302 class="syntaxhighlighter nogutter  csharp">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2014/12/16/getting-free-storage-space-winrt/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="csharp keyword">var</CODE> <CODE class="csharp plain">freeSpace = </CODE><CODE class="csharp keyword">await</CODE> <CODE class="csharp plain">ApplicationData.Current.LocalFolder.GetFreeSpace();</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="csharp plain">Debug.WriteLine(freeSpace.GetSizeString());</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P><!-- Code inserted with Steve Dunn's Windows Live Writer Code Formatter Plugin.  http://dunnhq.com --></P></DIV>
+<P>Thank you&nbsp; <A title="Filip Skakun" href="http://stackoverflow.com/users/41942/filip-skakun">Filip Skakun</A></P><IFRAME style="BORDER-TOP-STYLE: none; OVERFLOW: hidden; BORDER-LEFT-STYLE: none; HEIGHT: 80px; BORDER-BOTTOM-STYLE: none; BORDER-RIGHT-STYLE: none" src="./Getting the Free Storage Space in WinRT _ IBlogger - Tamir Dresher_files/like.html" frameBorder=0 allowTransparency scrolling=no></IFRAME></DIV>

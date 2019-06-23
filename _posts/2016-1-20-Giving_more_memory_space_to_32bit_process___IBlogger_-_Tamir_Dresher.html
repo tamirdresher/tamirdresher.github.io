@@ -1,0 +1,33 @@
+---
+layout: msblogpost
+title: "Giving more memory space to 32bit process "
+date: 2016-1-20
+msblogurl: "http://blogs.microsoft.co.il/iblogger/2016/01/20/giving-more-memory-space-to-32bit-process/"
+---
+<DIV class="contx entry-content clearfix"><P>Its fair to say that the standard CPU architecture that we all use these days is 64bit. </P>
+<P>But even though everyone has 64bit processor and 64bit windows, some processes are still 32bit. </P>
+<P>I’m currently working on a project that uses some 32bit 3rd party package, and because of that must also be build in <STRONG>32bit</STRONG>. <BR>This project does a very heavy simulation and uses some very big geometric models that can take a large amount of memory. <BR>Because of the large models that the application needs to work with, there were times that we got OutOfMemoryExceptions.<BR>Obviously we checked for memory leaks and did some improvement and optimization is the code, but at some point you realize that if a model weigh 1.5GB you just need to find those 1.5GB to give it. </P>
+<P>Under 64bit environment, each 64bit process is allowed to use the astronomic number of <STRONG>128TB</STRONG> of memory. <BR>But for 32bit process, no matter what is the environment it is running on, only 4GB of memory at most can be allocated. </P>
+<P>This 4GB limit is actually quite confusing because 2GB are used for the USER space and the other 2GB are reserved for the KERNEL mode. so this means that your code can only allocate up to<STRONG> 2GB</STRONG> of memory. </P>
+<H2>Enabling large address awareness</H2>
+<P>Luckily we can tweak the 2GB distribution, and give the USER mode a little more space. </P>
+<P>To do so we need to add to the <STRONG>compiled binary</STRONG> a flag that instruct the OS to give the process a large heap address, which is done by running the following command on the compiled assembly. this should be done in the command prompt (as Administrator)</P>
+<P><FONT color=#ff0000>editbin /LARGEADDRESSAWARE “&lt;Assembly&gt;”</FONT> </P>
+<P>To make this automatic, you can add the following commands to your post-build event, or in your build machine: </P>
+<P><FONT color=#ff0000>CALL “%VS120COMNTOOLS%vsvars32.bat”</FONT></P>
+<P><FONT color=#ff0000>editbin /LARGEADDRESSAWARE “$(TargetPath)”<BR>dumpbin /HEADERS “$(TargetPath)” | find “Application can handle large”</FONT></P>
+<P>the first line sets the visual studio tools path, so that the editbin command will be recognized. </P>
+<P>To check that the assembly is set to use large address sapce, run the following command </P>
+<P><FONT color=#ff0000>dumpbin /headers &lt;Assembly&gt; </FONT></P>
+<P>The headers should contain the line <EM>“Application can handle large (&gt;2GB) addresses”</EM> </P>
+<P><IMG src="./Giving more memory space to 32bit process _ IBlogger - Tamir Dresher_files/image_thumb_4.png"><BR>(<A title=https://blogs.technet.microsoft.com/markrussinovich/2008/11/17/pushing-the-limits-of-windows-virtual-memory/ href="https://blogs.technet.microsoft.com/markrussinovich/2008/11/17/pushing-the-limits-of-windows-virtual-memory/">https://blogs.technet.microsoft.com/markrussinovich/2008/11/17/pushing-the-limits-of-windows-virtual-memory/</A>) </P>
+<H2>Extending the USER mode memory in 32bit Windows</H2>
+<P>Enabling the large address awareness in the process is not enough if youre running a 32bit windows, you must also tell the OS that its OK to give more space to the USER mode for processes that request it.</P>
+<P><STRONG>NOTE: this is only relevent for 32bit Windows</STRONG></P>
+<P>useually you’ll limit the amount of memory the OS can give to the USER mode to 3GB (leaving 1GB for the KERNEL).</P>
+<P>For this, you need to add a switch to the Windows boot by running the following command (as Administrator) in the command prompt</P>
+<P><FONT color=#ff0000>bcdedit /set IncreaseUserVa 3072</FONT></P>
+<P>Then, restart your machine in order for the switch to take effect.</P>
+<P>To check if the switch is enabled, run the <FONT color=#ff0000>bcdedit</FONT> command. <BR>You should see an output that contains the <EM>increaseuserva</EM> switch</P>
+<P><IMG src="./Giving more memory space to 32bit process _ IBlogger - Tamir Dresher_files/image_b9f2a3c0-74be-4814-a903-62cd501e967a.png"><BR>(<A title=http://blogs.technet.com/b/askperf/archive/2009/04/03/who-moved-my-3gb.aspx href="http://blogs.technet.com/b/askperf/archive/2009/04/03/who-moved-my-3gb.aspx">http://blogs.technet.com/b/askperf/archive/2009/04/03/who-moved-my-3gb.aspx</A>)</P>
+<P><FONT color=#ff0000></FONT></P><IFRAME style="BORDER-TOP-STYLE: none; OVERFLOW: hidden; BORDER-LEFT-STYLE: none; HEIGHT: 80px; BORDER-BOTTOM-STYLE: none; BORDER-RIGHT-STYLE: none" src="./Giving more memory space to 32bit process _ IBlogger - Tamir Dresher_files/like.html" frameBorder=0 allowTransparency scrolling=no></IFRAME></DIV>

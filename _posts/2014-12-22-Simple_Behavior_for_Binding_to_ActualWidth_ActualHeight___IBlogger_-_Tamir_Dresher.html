@@ -1,0 +1,182 @@
+---
+layout: msblogpost
+title: "Simple Behavior for Binding to ActualWidth\ActualHeight "
+date: 2014-12-22
+msblogurl: "http://blogs.microsoft.co.il/iblogger/2014/12/22/simple-behavior-binding-actualwidthactualheight/"
+---
+<DIV class="contx entry-content clearfix"><P>There are times when you want two or more elements in your XAML to share the same dimensions, usually you dint want to deal with static sizes and prefer that after an element got its size from the layout, all the other elements will be set to the same size.</P>
+<P>you can find the real sizes of an element quite easily by looking at its ActualHeight and ActualWidth properties, however those properties doesn’t behave nice with binding and attempting to bind an element to another element ActualWidth\ActualHeight will result in an expected results.</P>
+<P>to mitigate the problem I created a simple Behavior that enables binding to another element ActualHeight and ActualWidth</P>
+<DIV>
+<DIV id=highlighter_249551 class="syntaxhighlighter  csharp">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2014/12/22/simple-behavior-binding-actualwidthactualheight/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV>
+<DIV class="line number6 index5 alt1">6</DIV>
+<DIV class="line number7 index6 alt2">7</DIV>
+<DIV class="line number8 index7 alt1">8</DIV>
+<DIV class="line number9 index8 alt2">9</DIV>
+<DIV class="line number10 index9 alt1">10</DIV>
+<DIV class="line number11 index10 alt2">11</DIV>
+<DIV class="line number12 index11 alt1">12</DIV>
+<DIV class="line number13 index12 alt2">13</DIV>
+<DIV class="line number14 index13 alt1">14</DIV>
+<DIV class="line number15 index14 alt2">15</DIV>
+<DIV class="line number16 index15 alt1">16</DIV>
+<DIV class="line number17 index16 alt2">17</DIV>
+<DIV class="line number18 index17 alt1">18</DIV>
+<DIV class="line number19 index18 alt2">19</DIV>
+<DIV class="line number20 index19 alt1">20</DIV>
+<DIV class="line number21 index20 alt2">21</DIV>
+<DIV class="line number22 index21 alt1">22</DIV>
+<DIV class="line number23 index22 alt2">23</DIV>
+<DIV class="line number24 index23 alt1">24</DIV>
+<DIV class="line number25 index24 alt2">25</DIV>
+<DIV class="line number26 index25 alt1">26</DIV>
+<DIV class="line number27 index26 alt2">27</DIV>
+<DIV class="line number28 index27 alt1">28</DIV>
+<DIV class="line number29 index28 alt2">29</DIV>
+<DIV class="line number30 index29 alt1">30</DIV>
+<DIV class="line number31 index30 alt2">31</DIV>
+<DIV class="line number32 index31 alt1">32</DIV>
+<DIV class="line number33 index32 alt2">33</DIV>
+<DIV class="line number34 index33 alt1">34</DIV>
+<DIV class="line number35 index34 alt2">35</DIV>
+<DIV class="line number36 index35 alt1">36</DIV>
+<DIV class="line number37 index36 alt2">37</DIV>
+<DIV class="line number38 index37 alt1">38</DIV>
+<DIV class="line number39 index38 alt2">39</DIV>
+<DIV class="line number40 index39 alt1">40</DIV>
+<DIV class="line number41 index40 alt2">41</DIV>
+<DIV class="line number42 index41 alt1">42</DIV>
+<DIV class="line number43 index42 alt2">43</DIV>
+<DIV class="line number44 index43 alt1">44</DIV>
+<DIV class="line number45 index44 alt2">45</DIV>
+<DIV class="line number46 index45 alt1">46</DIV>
+<DIV class="line number47 index46 alt2">47</DIV>
+<DIV class="line number48 index47 alt1">48</DIV>
+<DIV class="line number49 index48 alt2">49</DIV>
+<DIV class="line number50 index49 alt1">50</DIV>
+<DIV class="line number51 index50 alt2">51</DIV>
+<DIV class="line number52 index51 alt1">52</DIV>
+<DIV class="line number53 index52 alt2">53</DIV>
+<DIV class="line number54 index53 alt1">54</DIV>
+<DIV class="line number55 index54 alt2">55</DIV>
+<DIV class="line number56 index55 alt1">56</DIV>
+<DIV class="line number57 index56 alt2">57</DIV>
+<DIV class="line number58 index57 alt1">58</DIV>
+<DIV class="line number59 index58 alt2">59</DIV>
+<DIV class="line number60 index59 alt1">60</DIV>
+<DIV class="line number61 index60 alt2">61</DIV>
+<DIV class="line number62 index61 alt1">62</DIV>
+<DIV class="line number63 index62 alt2">63</DIV>
+<DIV class="line number64 index63 alt1">64</DIV>
+<DIV class="line number65 index64 alt2">65</DIV>
+<DIV class="line number66 index65 alt1">66</DIV>
+<DIV class="line number67 index66 alt2">67</DIV>
+<DIV class="line number68 index67 alt1">68</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="csharp keyword">public</CODE> <CODE class="csharp keyword">class</CODE> <CODE class="csharp plain">BindToActualDimensionBehavior : Behavior&lt;FrameworkElement&gt;</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number3 index2 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">public</CODE> <CODE class="csharp plain">FrameworkElement SourceControl</CODE></DIV>
+<DIV class="line number4 index3 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number5 index4 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">get</CODE> <CODE class="csharp plain">{ </CODE><CODE class="csharp keyword">return</CODE> <CODE class="csharp plain">(FrameworkElement)GetValue(SourceControlProperty); }</CODE></DIV>
+<DIV class="line number6 index5 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">set</CODE> <CODE class="csharp plain">{ SetValue(SourceControlProperty, value); }</CODE></DIV>
+<DIV class="line number7 index6 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number8 index7 alt1">&nbsp;</DIV>
+<DIV class="line number9 index8 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp comments">// Using a DependencyProperty as the backing store for SourceControl.&nbsp; This enables animation, styling, binding, etc...</CODE></DIV>
+<DIV class="line number10 index9 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">public</CODE> <CODE class="csharp keyword">static</CODE> <CODE class="csharp keyword">readonly</CODE> <CODE class="csharp plain">DependencyProperty SourceControlProperty =</CODE></DIV>
+<DIV class="line number11 index10 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">DependencyProperty.Register(</CODE><CODE class="csharp string">"SourceControl"</CODE><CODE class="csharp plain">, </CODE><CODE class="csharp keyword">typeof</CODE><CODE class="csharp plain">(FrameworkElement), </CODE><CODE class="csharp keyword">typeof</CODE><CODE class="csharp plain">(BindToActualDimensionBehavior), </CODE><CODE class="csharp keyword">new</CODE> <CODE class="csharp plain">PropertyMetadata(</CODE><CODE class="csharp keyword">null</CODE><CODE class="csharp plain">, OnSourceControlChanged));</CODE></DIV>
+<DIV class="line number12 index11 alt1">&nbsp;</DIV>
+<DIV class="line number13 index12 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">private</CODE> <CODE class="csharp keyword">static</CODE> <CODE class="csharp keyword">void</CODE> <CODE class="csharp plain">OnSourceControlChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs dependencyPropertyChangedEventArgs)</CODE></DIV>
+<DIV class="line number14 index13 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number15 index14 alt2">&nbsp;</DIV>
+<DIV class="line number16 index15 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">((BindToActualDimensionBehavior)dependencyObject).OnSourceControlChanged((FrameworkElement)dependencyPropertyChangedEventArgs.OldValue, (FrameworkElement)dependencyPropertyChangedEventArgs.NewValue);</CODE></DIV>
+<DIV class="line number17 index16 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number18 index17 alt1">&nbsp;</DIV>
+<DIV class="line number19 index18 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">private</CODE> <CODE class="csharp keyword">void</CODE> <CODE class="csharp plain">OnSourceControlChanged(FrameworkElement oldControl, FrameworkElement newControl)</CODE></DIV>
+<DIV class="line number20 index19 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number21 index20 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">if</CODE> <CODE class="csharp plain">(oldControl!=</CODE><CODE class="csharp keyword">null</CODE><CODE class="csharp plain">)</CODE></DIV>
+<DIV class="line number22 index21 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number23 index22 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">oldControl.LayoutUpdated -= OnSourceLayoutUpdated;</CODE></DIV>
+<DIV class="line number24 index23 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number25 index24 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">if</CODE> <CODE class="csharp plain">(newControl!=</CODE><CODE class="csharp keyword">null</CODE><CODE class="csharp plain">)</CODE></DIV>
+<DIV class="line number26 index25 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number27 index26 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">newControl.LayoutUpdated += OnSourceLayoutUpdated;</CODE></DIV>
+<DIV class="line number28 index27 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number29 index28 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number30 index29 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">public</CODE> <CODE class="csharp keyword">double</CODE> <CODE class="csharp plain">ActualWidth</CODE></DIV>
+<DIV class="line number31 index30 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number32 index31 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">get</CODE> <CODE class="csharp plain">{ </CODE><CODE class="csharp keyword">return</CODE> <CODE class="csharp plain">(</CODE><CODE class="csharp keyword">double</CODE><CODE class="csharp plain">)GetValue(ActualWidthProperty); }</CODE></DIV>
+<DIV class="line number33 index32 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">set</CODE> <CODE class="csharp plain">{ SetValue(ActualWidthProperty, value); }</CODE></DIV>
+<DIV class="line number34 index33 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number35 index34 alt2">&nbsp;</DIV>
+<DIV class="line number36 index35 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp comments">// Using a DependencyProperty as the backing store for ActualWidth.&nbsp; This enables animation, styling, binding, etc...</CODE></DIV>
+<DIV class="line number37 index36 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">public</CODE> <CODE class="csharp keyword">static</CODE> <CODE class="csharp keyword">readonly</CODE> <CODE class="csharp plain">DependencyProperty ActualWidthProperty =</CODE></DIV>
+<DIV class="line number38 index37 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">DependencyProperty.Register(</CODE><CODE class="csharp string">"ActualWidth"</CODE><CODE class="csharp plain">, </CODE><CODE class="csharp keyword">typeof</CODE><CODE class="csharp plain">(</CODE><CODE class="csharp keyword">double</CODE><CODE class="csharp plain">), </CODE><CODE class="csharp keyword">typeof</CODE><CODE class="csharp plain">(BindToActualDimensionBehavior), </CODE><CODE class="csharp keyword">new</CODE> <CODE class="csharp plain">PropertyMetadata(0.0));</CODE></DIV>
+<DIV class="line number39 index38 alt2">&nbsp;</DIV>
+<DIV class="line number40 index39 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number41 index40 alt2">&nbsp;</DIV>
+<DIV class="line number42 index41 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">public</CODE> <CODE class="csharp keyword">double</CODE> <CODE class="csharp plain">ActualHeight</CODE></DIV>
+<DIV class="line number43 index42 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number44 index43 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">get</CODE> <CODE class="csharp plain">{ </CODE><CODE class="csharp keyword">return</CODE> <CODE class="csharp plain">(</CODE><CODE class="csharp keyword">double</CODE><CODE class="csharp plain">)GetValue(ActualHeightProperty); }</CODE></DIV>
+<DIV class="line number45 index44 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">set</CODE> <CODE class="csharp plain">{ SetValue(ActualHeightProperty, value); }</CODE></DIV>
+<DIV class="line number46 index45 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number47 index46 alt2">&nbsp;</DIV>
+<DIV class="line number48 index47 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number49 index48 alt2">&nbsp;</DIV>
+<DIV class="line number50 index49 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp comments">// Using a DependencyProperty as the backing store for ActualHeight.&nbsp; This enables animation, styling, binding, etc...</CODE></DIV>
+<DIV class="line number51 index50 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">public</CODE> <CODE class="csharp keyword">static</CODE> <CODE class="csharp keyword">readonly</CODE> <CODE class="csharp plain">DependencyProperty ActualHeightProperty =</CODE></DIV>
+<DIV class="line number52 index51 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">DependencyProperty.Register(</CODE><CODE class="csharp string">"ActualHeight"</CODE><CODE class="csharp plain">, </CODE><CODE class="csharp keyword">typeof</CODE><CODE class="csharp plain">(</CODE><CODE class="csharp keyword">double</CODE><CODE class="csharp plain">), </CODE><CODE class="csharp keyword">typeof</CODE><CODE class="csharp plain">(BindToActualDimensionBehavior), </CODE><CODE class="csharp keyword">new</CODE> <CODE class="csharp plain">PropertyMetadata(0.0));</CODE></DIV>
+<DIV class="line number53 index52 alt2">&nbsp;</DIV>
+<DIV class="line number54 index53 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number55 index54 alt2">&nbsp;</DIV>
+<DIV class="line number56 index55 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">private</CODE> <CODE class="csharp keyword">void</CODE> <CODE class="csharp plain">UpdateDimensions()</CODE></DIV>
+<DIV class="line number57 index56 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number58 index57 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">ActualHeight = SourceControl.ActualHeight;</CODE></DIV>
+<DIV class="line number59 index58 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">ActualWidth = SourceControl.ActualWidth;</CODE></DIV>
+<DIV class="line number60 index59 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number61 index60 alt2">&nbsp;</DIV>
+<DIV class="line number62 index61 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number63 index62 alt2">&nbsp;</DIV>
+<DIV class="line number64 index63 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">void</CODE> <CODE class="csharp plain">OnSourceLayoutUpdated(</CODE><CODE class="csharp keyword">object</CODE> <CODE class="csharp plain">sender, </CODE><CODE class="csharp keyword">object</CODE> <CODE class="csharp plain">e)</CODE></DIV>
+<DIV class="line number65 index64 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number66 index65 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">UpdateDimensions();</CODE></DIV>
+<DIV class="line number67 index66 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number68 index67 alt1"><CODE class="csharp plain">}</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P>in your XAML you will use it like this (Windows Store Example):</P>
+<DIV>
+<DIV id=highlighter_470107 class="syntaxhighlighter  xml">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2014/12/22/simple-behavior-binding-actualwidthactualheight/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV>
+<DIV class="line number6 index5 alt1">6</DIV>
+<DIV class="line number7 index6 alt2">7</DIV>
+<DIV class="line number8 index7 alt1">8</DIV>
+<DIV class="line number9 index8 alt2">9</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Image</CODE>&nbsp; <CODE class="xml color1">Source</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"ms-<A href="appx:///Assets/SomeImage.png">appx:///Assets/SomeImage.png</A>"</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml color1">x:Name</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"emptyStateImg"</CODE></DIV>
+<DIV class="line number3 index2 alt2"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml color1">Margin</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"213,148,213,0"</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number4 index3 alt1"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">interactivity:Interaction.Behaviors</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number5 index4 alt2"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">behaviors:BindToActualDimensionBehavior</CODE></DIV>
+<DIV class="line number6 index5 alt1"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml color1">SourceControl</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"{Binding ElementName=AnotherImage}"</CODE></DIV>
+<DIV class="line number7 index6 alt2"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml color1">ActualHeight</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"{Binding ElementName=emptyStateImg, Path=MaxHeight,Mode=TwoWay}"</CODE> <CODE class="xml plain">/&gt;</CODE></DIV>
+<DIV class="line number8 index7 alt1"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">interactivity:Interaction.Behaviors</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number9 index8 alt2"><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">Image</CODE><CODE class="xml plain">&gt;</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV><IFRAME style="BORDER-TOP-STYLE: none; OVERFLOW: hidden; BORDER-LEFT-STYLE: none; HEIGHT: 80px; BORDER-BOTTOM-STYLE: none; BORDER-RIGHT-STYLE: none" src="./Simple Behavior for Binding to ActualWidth_ActualHeight _ IBlogger - Tamir Dresher_files/like.html" frameBorder=0 allowTransparency scrolling=no></IFRAME></DIV>

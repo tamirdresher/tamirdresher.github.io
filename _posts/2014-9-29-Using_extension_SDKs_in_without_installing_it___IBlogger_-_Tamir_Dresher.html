@@ -1,0 +1,48 @@
+---
+layout: msblogpost
+title: "Using extension SDKs in without installing it "
+date: 2014-9-29
+msblogurl: "http://blogs.microsoft.co.il/iblogger/2014/09/29/using-extension-sdks-without-installing/"
+---
+<DIV class="contx entry-content clearfix"><P>In my Windows 8.1 project I wanted to use the SQLite PCL library. I Installed it from nuget and everything worked great so I committed the changes to the source control and moved on.</P>
+<P>When my colleague pulled the changes, it didn’t compiled.<BR>The nuget package installed an extension SDK for me but apparently it doesn’t install it when you restore the package (very bad for CI).</P>
+<P>So it seems that the only solution is putting the SDK inside our 3rdParty folder and putting it as part of our source control, but unfortunately&nbsp;this wasn’t an easy task – so im writing about it <IMG class="wlEmoticon wlEmoticon-smile" style="BORDER-TOP-STYLE: none; BORDER-LEFT-STYLE: none; BORDER-BOTTOM-STYLE: none; BORDER-RIGHT-STYLE: none" alt=סמיילי src="./Using extension SDKs in without installing it _ IBlogger - Tamir Dresher_files/wlEmoticon-smile.png"></P>
+<P>fortunately Sara Silva wrote a good post about it – <A href="http://www.saramgsilva.com/index.php/2013/extension-sdks-in-build-server-without-installing-it/">http://www.saramgsilva.com/index.php/2013/extension-sdks-in-build-server-without-installing-it/</A></P>
+<P>I will simply summarize:</P>
+<OL>
+<LI>you need to add the SDK into your 3rd party folder in the same structure as it is in the Microsoft SDKs folder –<STRONG> [3rdParty]\Windows\[v8.0 | v8.1]\ExtensionSDKs\[SDKName]\[SDKVersion]\…</STRONG> 
+<LI>you need to add to the project *.csproj file the redirection (actually we are adding the new path while maintaining the old one as well)<BR>Note: you must add it after the line :
+<P></P>
+<DIV>
+<DIV id=highlighter_76194 class="syntaxhighlighter  xml">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2014/09/29/using-extension-sdks-without-installing/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">Import</CODE> <CODE class="xml color1">Project</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"$(MSBuildExtensionsPath)MicrosoftWindowsXamlv11.0Microsoft.Windows.UI.Xaml.CSharp.targets"</CODE> <CODE class="xml plain">/&gt;&lt;</CODE><CODE class="xml keyword">Import</CODE> <CODE class="xml color1">Project</CODE><CODE class="xml plain">=</CODE><CODE class="xml string">"$(MSBuildExtensionsPath)MicrosoftWindowsXamlv11.0Microsoft.Windows.UI.Xaml.CSharp.targets"</CODE> <CODE class="xml plain">/&gt;</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P>Like so:</P>
+<DIV>
+<DIV id=highlighter_531066 class="syntaxhighlighter  xml">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2014/09/29/using-extension-sdks-without-installing/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">PropertyGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;</CODE><CODE class="xml keyword">SDKReferenceDirectoryRoot</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number3 index2 alt2"><CODE class="xml spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="xml plain">$(SolutionDir)[3rdParty]\Windows\[v8.0 | v8.1]\ExtensionSDKs\[SDKName]\[SDKVersion]\…;$(SDKReferenceDirectoryRoot)</CODE></DIV>
+<DIV class="line number4 index3 alt1"><CODE class="xml spaces">&nbsp;&nbsp;</CODE><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">SDKReferenceDirectoryRoot</CODE><CODE class="xml plain">&gt;</CODE></DIV>
+<DIV class="line number5 index4 alt2"><CODE class="xml plain">&lt;/</CODE><CODE class="xml keyword">PropertyGroup</CODE><CODE class="xml plain">&gt;</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<LI>Commit the changes and youre done. </LI></OL>
+<P>Thank you Sara Silva – <A title=http://www.saramgsilva.com/ href="http://www.saramgsilva.com/">http://www.saramgsilva.com/</A></P><IFRAME style="BORDER-TOP-STYLE: none; OVERFLOW: hidden; BORDER-LEFT-STYLE: none; HEIGHT: 80px; BORDER-BOTTOM-STYLE: none; BORDER-RIGHT-STYLE: none" src="./Using extension SDKs in without installing it _ IBlogger - Tamir Dresher_files/like.html" frameBorder=0 allowTransparency scrolling=no></IFRAME></DIV>

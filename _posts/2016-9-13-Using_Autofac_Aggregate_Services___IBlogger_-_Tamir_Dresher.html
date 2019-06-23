@@ -1,0 +1,221 @@
+---
+layout: msblogpost
+title: "Using Autofac Aggregate Services "
+date: 2016-9-13
+msblogurl: "http://blogs.microsoft.co.il/iblogger/2016/09/13/using-autofac-aggregate-services/"
+---
+<DIV class="contx entry-content clearfix"><P>I really like using <A href="https://github.com/autofac/Autofac">Autofac</A>, it’s one of the most productive libraries I know, and it’s so much fun to discover new features.</P>
+<P><A href="http://docs.autofac.org/en/latest/advanced/aggregate-services.html">Aggregate Services</A> is Autofac feature that allows you to wrap a set of dependencies into a single aggregate without the need to implement a concrete type for it.</P>
+<P>Consider the following case where you have a base class that has dependencies on a few other services, and two derived classes:</P>
+<P></P>
+<DIV>
+<DIV id=highlighter_982963 class="syntaxhighlighter  csharp">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2016/09/13/using-autofac-aggregate-services/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV>
+<DIV class="line number6 index5 alt1">6</DIV>
+<DIV class="line number7 index6 alt2">7</DIV>
+<DIV class="line number8 index7 alt1">8</DIV>
+<DIV class="line number9 index8 alt2">9</DIV>
+<DIV class="line number10 index9 alt1">10</DIV>
+<DIV class="line number11 index10 alt2">11</DIV>
+<DIV class="line number12 index11 alt1">12</DIV>
+<DIV class="line number13 index12 alt2">13</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="csharp keyword">class</CODE> <CODE class="csharp plain">BaseLicenseGenerator:ILicenseGenerator</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number3 index2 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp comments">//members</CODE></DIV>
+<DIV class="line number4 index3 alt1">&nbsp;</DIV>
+<DIV class="line number5 index4 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">public</CODE> <CODE class="csharp plain">BaseLicenseGenerator(ILogger logger, IUserRepository userRepository, ILicenseRepository licenseRepository)</CODE></DIV>
+<DIV class="line number6 index5 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number7 index6 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">_logger = logger;</CODE></DIV>
+<DIV class="line number8 index7 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">_userRepository = userRepository;</CODE></DIV>
+<DIV class="line number9 index8 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">_licenseRepository = licenseRepository;</CODE></DIV>
+<DIV class="line number10 index9 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number11 index10 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number12 index11 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp comments">//...</CODE></DIV>
+<DIV class="line number13 index12 alt2"><CODE class="csharp plain">}</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P></P>
+<DIV>
+<DIV id=highlighter_73953 class="syntaxhighlighter  csharp">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2016/09/13/using-autofac-aggregate-services/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV>
+<DIV class="line number6 index5 alt1">6</DIV>
+<DIV class="line number7 index6 alt2">7</DIV>
+<DIV class="line number8 index7 alt1">8</DIV>
+<DIV class="line number9 index8 alt2">9</DIV>
+<DIV class="line number10 index9 alt1">10</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="csharp keyword">class</CODE> <CODE class="csharp plain">PerMonthLicenseGenerator </CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">: BaseLicenseGenerator</CODE></DIV>
+<DIV class="line number3 index2 alt2"><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number4 index3 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">public</CODE> <CODE class="csharp plain">PerMonthLicenseGenerator(ILogger logger, IUserRepository userRepository, ILicenseRepository licenseRepository)</CODE></DIV>
+<DIV class="line number5 index4 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">: </CODE><CODE class="csharp keyword">base</CODE><CODE class="csharp plain">(logger, userRepository, licenseRepository)</CODE></DIV>
+<DIV class="line number6 index5 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number7 index6 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number8 index7 alt1">&nbsp;</DIV>
+<DIV class="line number9 index8 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp comments">//...</CODE></DIV>
+<DIV class="line number10 index9 alt1"><CODE class="csharp plain">}</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P></P>
+<DIV>
+<DIV id=highlighter_322666 class="syntaxhighlighter  csharp">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2016/09/13/using-autofac-aggregate-services/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV>
+<DIV class="line number6 index5 alt1">6</DIV>
+<DIV class="line number7 index6 alt2">7</DIV>
+<DIV class="line number8 index7 alt1">8</DIV>
+<DIV class="line number9 index8 alt2">9</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="csharp keyword">class</CODE> <CODE class="csharp plain">YearlyLicenseGenerator : BaseLicenseGenerator</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number3 index2 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">public</CODE> <CODE class="csharp plain">YearlyLicenseGenerator(ILogger logger, IUserRepository userRepository, ILicenseRepository licenseRepository)</CODE></DIV>
+<DIV class="line number4 index3 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">: </CODE><CODE class="csharp keyword">base</CODE><CODE class="csharp plain">(logger, userRepository, licenseRepository)</CODE></DIV>
+<DIV class="line number5 index4 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number6 index5 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number7 index6 alt2">&nbsp;</DIV>
+<DIV class="line number8 index7 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp comments">//...</CODE></DIV>
+<DIV class="line number9 index8 alt2"><CODE class="csharp plain">}</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P>&nbsp;</P>
+<P>To me, the need to include all the dependencies of the base class inside the derived classes constructor is a little counter-productive. If I need to make a change to the dependencies of the base class, I’ll have to go and modify the derived classes as well.</P>
+<P>With Autofac Aggregate Services, I can change the base class to include a single dependency which will wrap all the other dependencies together. <BR>All I need is to add reference to the <A href="https://nuget.org/packages/Autofac.Extras.AggregateService">Autofac.Extras.AggregateService</A> nuget package.</P>
+<P></P>
+<DIV>
+<DIV id=highlighter_208802 class="syntaxhighlighter  csharp">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2016/09/13/using-autofac-aggregate-services/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV>
+<DIV class="line number6 index5 alt1">6</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="csharp keyword">public</CODE> <CODE class="csharp keyword">interface</CODE> <CODE class="csharp plain">ILicenseGeneratorDependencies</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number3 index2 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">ILogger Logger { </CODE><CODE class="csharp keyword">get</CODE><CODE class="csharp plain">; }</CODE></DIV>
+<DIV class="line number4 index3 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">IUserRepository UserRepository { </CODE><CODE class="csharp keyword">get</CODE><CODE class="csharp plain">; }</CODE></DIV>
+<DIV class="line number5 index4 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">ILicenseRepository LicenseRepository { </CODE><CODE class="csharp keyword">get</CODE><CODE class="csharp plain">; }</CODE></DIV>
+<DIV class="line number6 index5 alt1"><CODE class="csharp plain">}</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P>Now I just need to register this interface to my container as an aggregate service and change my classes to use it.</P>
+<P></P>
+<DIV>
+<DIV id=highlighter_63282 class="syntaxhighlighter  csharp">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2016/09/13/using-autofac-aggregate-services/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV>
+<DIV class="line number6 index5 alt1">6</DIV>
+<DIV class="line number7 index6 alt2 highlighted">7</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="csharp keyword">var</CODE> <CODE class="csharp plain">containerBuilder = </CODE><CODE class="csharp keyword">new</CODE> <CODE class="csharp plain">ContainerBuilder();</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="csharp plain">containerBuilder.RegisterType().As();</CODE></DIV>
+<DIV class="line number3 index2 alt2"><CODE class="csharp plain">containerBuilder.RegisterType().As();</CODE></DIV>
+<DIV class="line number4 index3 alt1"><CODE class="csharp plain">containerBuilder.RegisterType().As();</CODE></DIV>
+<DIV class="line number5 index4 alt2"><CODE class="csharp plain">containerBuilder.RegisterType().AsSelf();</CODE></DIV>
+<DIV class="line number6 index5 alt1">&nbsp;</DIV>
+<DIV class="line number7 index6 alt2 highlighted"><CODE class="csharp plain">containerBuilder.RegisterAggregateService();</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P></P>
+<DIV>
+<DIV id=highlighter_339174 class="syntaxhighlighter  csharp">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2016/09/13/using-autofac-aggregate-services/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV>
+<DIV class="line number6 index5 alt1">6</DIV>
+<DIV class="line number7 index6 alt2">7</DIV>
+<DIV class="line number8 index7 alt1">8</DIV>
+<DIV class="line number9 index8 alt2">9</DIV>
+<DIV class="line number10 index9 alt1">10</DIV>
+<DIV class="line number11 index10 alt2">11</DIV>
+<DIV class="line number12 index11 alt1">12</DIV>
+<DIV class="line number13 index12 alt2">13</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="csharp keyword">class</CODE> <CODE class="csharp plain">BaseLicenseGenerator : ILicenseGenerator</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number3 index2 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp comments">//members</CODE></DIV>
+<DIV class="line number4 index3 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number5 index4 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">public</CODE> <CODE class="csharp plain">BaseLicenseGenerator(ILicenseGeneratorDependencies licenseGeneratorDependencies)</CODE></DIV>
+<DIV class="line number6 index5 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number7 index6 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">_logger = licenseGeneratorDependencies.Logger;</CODE></DIV>
+<DIV class="line number8 index7 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">_userRepository = licenseGeneratorDependencies.UserRepository;</CODE></DIV>
+<DIV class="line number9 index8 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">_licenseRepository = licenseGeneratorDependencies.LicenseRepository;</CODE></DIV>
+<DIV class="line number10 index9 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number11 index10 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE>&nbsp;</DIV>
+<DIV class="line number12 index11 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp comments">//...</CODE></DIV>
+<DIV class="line number13 index12 alt2"><CODE class="csharp plain">}</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P></P>
+<DIV>
+<DIV id=highlighter_43749 class="syntaxhighlighter  csharp">
+<DIV class=toolbar><SPAN><A class="toolbar_item command_help help" href="https://tamirdresher.github.io/2016/09/13/using-autofac-aggregate-services/#">?</A></SPAN></DIV>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+<TBODY>
+<TR>
+<TD class=gutter>
+<DIV class="line number1 index0 alt2">1</DIV>
+<DIV class="line number2 index1 alt1">2</DIV>
+<DIV class="line number3 index2 alt2">3</DIV>
+<DIV class="line number4 index3 alt1">4</DIV>
+<DIV class="line number5 index4 alt2">5</DIV>
+<DIV class="line number6 index5 alt1">6</DIV>
+<DIV class="line number7 index6 alt2">7</DIV>
+<DIV class="line number8 index7 alt1">8</DIV>
+<DIV class="line number9 index8 alt2">9</DIV>
+<DIV class="line number10 index9 alt1">10</DIV></TD>
+<TD class=code>
+<DIV class=container>
+<DIV class="line number1 index0 alt2"><CODE class="csharp keyword">class</CODE> <CODE class="csharp plain">PerMonthLicenseGenerator</CODE></DIV>
+<DIV class="line number2 index1 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">: BaseLicenseGenerator</CODE></DIV>
+<DIV class="line number3 index2 alt2"><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number4 index3 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp keyword">public</CODE> <CODE class="csharp plain">PerMonthLicenseGenerator(ILicenseGeneratorDependencies licenseGeneratorDependencies)</CODE></DIV>
+<DIV class="line number5 index4 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">: </CODE><CODE class="csharp keyword">base</CODE><CODE class="csharp plain">(licenseGeneratorDependencies)</CODE></DIV>
+<DIV class="line number6 index5 alt1"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">{</CODE></DIV>
+<DIV class="line number7 index6 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp plain">}</CODE></DIV>
+<DIV class="line number8 index7 alt1">&nbsp;</DIV>
+<DIV class="line number9 index8 alt2"><CODE class="csharp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</CODE><CODE class="csharp comments">//...</CODE></DIV>
+<DIV class="line number10 index9 alt1"><CODE class="csharp plain">}</CODE></DIV></DIV></TD></TR></TBODY></TABLE></DIV></DIV>
+<P>&nbsp;</P>
+<P>that’s it! now if I need to change the BaseLicenseGenerator class and add a dependency, I just need to change the ILicenseGeneratorDependencies interface, and leave the derived classes untouched</P><IFRAME style="BORDER-TOP-STYLE: none; OVERFLOW: hidden; BORDER-LEFT-STYLE: none; HEIGHT: 80px; BORDER-BOTTOM-STYLE: none; BORDER-RIGHT-STYLE: none" src="./Using Autofac Aggregate Services _ IBlogger - Tamir Dresher_files/like.html" frameBorder=0 allowTransparency scrolling=no></IFRAME></DIV>
