@@ -1,0 +1,98 @@
+---
+layout: msblogpost
+title: "Could not contact node rabbit@[machine_name]" after upgrading to RabbitMQ 3.6.5"
+date: 2016-10-13
+msblogurl: "http://blogs.microsoft.co.il/iblogger/2016/10/13/could-not-contact-node-rabbitmachine_name-after-upgrading-to-rabbitmq-3-6-5/"
+---
+
+
+<div class="contx entry-content clearfix">
+    <p>
+        This error kept me busy for almost two days, so i thought it would be best to describe the steps i took to fix it
+    </p>
+    <ol>
+        <li>
+            Make sure that the erlang cookie file (<font face="Consolas">.erlang.cookie</font>) is configured correctly
+            in all places. i.e. <font face="Consolas">%HOMEDRIVE%%HOMEPATH%</font> and <font face="Consolas">
+                %SYSTEMROOT%.
+            </font>
+            <font face="Segoe UI">it should contain the same value in all places</font>
+        </li>
+        <li>
+            Open the RabbitMQ command prompt with Administrator privileges
+        </li>
+        <li>
+            Remove the RabbitMQ service by using the command: <font face="Consolas">rabbitmq-service remove</font>&nbsp;
+        </li>
+        <li>
+            Navigate to %APPDATA%\RabbitMQ\db
+        </li>
+        <li>
+            Delete everything (make sure you have a backup just in case)
+        </li>
+        <li>
+            Go back to the command promp and install the service with the command: <font face="Consolas">
+                rabbitmq-service install
+            </font>
+        </li>
+        <li>
+            Check that the node is connected by running the command: <font face="Consolas">rabbitmqctl status<br></font>
+        </li>
+        <li>Hope you’ll have a smoother upgrade process than mine</li>
+    </ol>
+    <iframe src="{{ site.url }}/assets/Could_not_contact_node_RMQ_3.6.5__files/like.html"
+            scrolling="no" frameborder="0" style="border:none; overflow:hidden; height:80px;"
+            allowtransparency="true"></iframe>
+
+
+
+
+</div><!-- .entry-content -->
+
+
+
+<div id="comments" class="comments-area">
+
+    <div class="clearfix"></div>
+
+
+    <h1 class="comments-title">one comment</h1>
+
+    <ol class="commentlist">
+        <li class="comment even thread-even depth-1" id="li-comment-2826280">
+            <div class="clearfix">
+                <div class="comment-avatar">
+                    <img src="{{ site.url }}/assets/Could_not_contact_node_RMQ_3.6.5__files/e3596ae2e598d2366adf6190bd8c8c93.png"
+                         width="50" height="50" alt=""
+                         class="avatar avatar-50wp-user-avatar wp-user-avatar-50 alignnone photo avatar-default">
+                </div>
+                <div class="comment-post-body">
+                    <span class="comment-author">Evgeni</span><a class="comment-date"
+                                                                 href=""
+                                                                 data-datetime="2016-12-27T14:50:17+00:00">December 27, 2016 ב 14:50</a>
+
+                    <div class="comment-content comment">
+                        <p>
+                            1. Sometimes this phenomena happen when workstation is inserted into domain after
+                            installation of RabbitMQ is completed.
+                        </p>
+                        <p>
+                            2. In case when RabbitMQ command prompt is not available from the Start menu, please open
+                            “C:\Program Files (x86)\RabbitMQ Server\rabbitmq_server-3.5.2\sbin” in the command line
+                        </p>
+
+                    </div><!-- .comment-content -->
+                </div>
+
+            </div>
+
+
+        </li><!-- #comment-## -->
+    </ol><!-- .commentlist -->
+
+
+
+
+
+
+</div><!-- #comments .comments-area -->
