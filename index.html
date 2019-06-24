@@ -6,3 +6,9 @@ title: Tamir Dresher, IBlogger
 	<h1>Hi there, I'm Tamir Dresher!</h1>
 	<p>I live and breath software development since 2005 and work as Chief Architect at <a href="https://www.clarizen.com/">Clarizen</a><p>
 </div><!-- /.blurb -->
+
+<div class="blog-index">  
+    {% assign post = site.posts.first %}
+    {% assign content = post.content %}
+    {% include post_detail.html %}
+  </div>
