@@ -1,9 +1,10 @@
 ---
 layout: msblogpost
-title: "Simple Behavior for Binding to ActualWidth\ActualHeight "
+title: "Simple Behavior for Binding to ActualWidth\ActualHeight"
 date: 2014-12-22
 msblogurl: "http://blogs.microsoft.co.il/iblogger/2014/12/22/simple-behavior-binding-actualwidthactualheight/"
 ---
+
 <DIV class="contx entry-content clearfix"><P>There are times when you want two or more elements in your XAML to share the same dimensions, usually you dint want to deal with static sizes and prefer that after an element got its size from the layout, all the other elements will be set to the same size.</P>
 <P>you can find the real sizes of an element quite easily by looking at its ActualHeight and ActualWidth properties, however those properties doesn’t behave nice with binding and attempting to bind an element to another element ActualWidth\ActualHeight will result in an expected results.</P>
 <P>to mitigate the problem I created a simple Behavior that enables binding to another element ActualHeight and ActualWidth</P>
