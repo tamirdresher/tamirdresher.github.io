@@ -8,7 +8,7 @@ A few months ago we announced the beginning of rate-limiting in the Clarizen One
 
 ## What is the API rate-limit and why did Clarizen add it?
 Clarizen API is used extensively by our customers; many of them built custom applications and custom integrations that use Clarizen’s advanced API [query language](https://api.clarizen.com/V2.0/services/data/Query) and backend calculations to implement complex scenarios to automate their business workflows.
-![An avarage week of API usage in one datacenter](mitigating-api-rate-limit/typical-week-api-usage.png)*An avarage week of API usage in one datacenter*
+![An avarage week of API usage in one datacenter]({{ site.url }}/assets/mitigating-api-rate-limit/typical-week-api-usage.png)*An avarage week of API usage in one datacenter*
 
 Our API is scalable and performs well, but even with the best hardware and software, without setting limits, customers can create a load that will affect the performance and user experience of their tenant and sometimes even on other tenants
 These are the types of issues you may see on the backend with such loads:
@@ -18,7 +18,7 @@ These are the types of issues you may see on the backend with such loads:
 
 
 Over time we discovered that some clients can create heavy loads on the API. At some point we even saw thousands of calls per second coming from a single client!
-![Max API calls per sec from a single client in an average week](mitigating-api-rate-limit/max-request-count-per-sec-in-week.png)*Max API calls per sec from a single client in an average week*
+![Max API calls per sec from a single client in an average week]({{ site.url }}/assets/mitigating-api-rate-limit/max-request-count-per-sec-in-week.png)*Max API calls per sec from a single client in an average week*
 
 So one good way to fix these issues is to avoid them in the first place, hence rate-limits were introduced.
 
