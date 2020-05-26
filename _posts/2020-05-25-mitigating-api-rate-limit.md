@@ -50,7 +50,7 @@ Connection: keep-alive
 What you should understand from this is that the API client code you write should now be aware of such restrictions and should protect itself.
 
 ## How to avoid _429 Too Many Requests_
-The first thing you need to understand is that there is no magic here, you have to design your API clients so that they will flood the API. This is generally true to any API you consume, and specifically the Clarizen API.
+The first thing you need to understand is that there is no magic here, you have to design your API clients so that they will __not__ flood the API. This is generally true to any API you consume, and specifically the Clarizen API.
 
 One of the most popular techniques to remedy the rate-limit response is by adding some kind of retry mechanism with backoffs (delays) between the attempts. The delay can be fixed so the same amount of time is waited for every time, or it can be with some randomization (known as [exponantial backoff](https://en.wikipedia.org/wiki/Exponential_backoff))
 
