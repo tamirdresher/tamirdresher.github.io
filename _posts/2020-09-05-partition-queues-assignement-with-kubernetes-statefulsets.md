@@ -13,11 +13,11 @@ For example, if the system you are working on involves financial data, it makes 
 
 Messaging systems such as Kafka, AWS Kinesis, Azure Event-Hub and Apache Pulsar makes it very easy to create a system where each partition is only consumed by a single consumer (as long as the consumers are in the same consumer group).
 
-With Kafka, AWS Kinesis and Azure Event Hub, the partition assignment is done using a cooperative algorithm executed by the clients. This process which is called - rebalalnce (you can read how Kafaka is doing it here: https://www.confluent.io/blog/incremental-cooperative-rebalancing-in-kafka/ and how Azure Event Hub is doing it here https://docs.microsoft.com/en-us/azure/event-hubs/event-processor-balance-partition-load )
+With Kafka, AWS Kinesis and Azure Event Hub, the partition assignment is done using a cooperative algorithm executed by the clients. This process which is called - rebalalnce (you can read how Kafaka is doing it [here](https://www.confluent.io/blog/incremental-cooperative-rebalancing-in-kafka/) and how Azure Event Hub is doing it [here](https://docs.microsoft.com/en-us/azure/event-hubs/event-processor-balance-partition-load )
   
 I thought it would be an interesting academic exercise to implement a simpler partition assignment protocol that fits more nicely in a Kubernetes hosted environment with a non-partitioned messaging system such as RabbitMQ where each partition will represented by a simple queue.
 
-All the code related to this post can be found here: https://github.com/tamirdresher/DistributedBalancedPartitionQueueAssignment  
+All the code related to this post can be found here: [https://github.com/tamirdresher/DistributedBalancedPartitionQueueAssignment](https://github.com/tamirdresher/DistributedBalancedPartitionQueueAssignment)  
 
 ## Balanced Distributed Resource Allocation
 
@@ -261,5 +261,5 @@ Note that when the queue is declared, I pass the _x-single-active-consumer_ argu
 
 # Summary
 I hope you found this post interesting. I'm not sure yet if I get the chance to use this technique in a real production environment but it was fun solving.
-You can find the code in my github https://github.com/tamirdresher/DistributedBalancedPartitionQueueAssignment
+You can find the code in my github [https://github.com/tamirdresher/DistributedBalancedPartitionQueueAssignment](https://github.com/tamirdresher/DistributedBalancedPartitionQueueAssignment) 
 
