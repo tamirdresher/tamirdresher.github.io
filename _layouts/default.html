@@ -2,11 +2,15 @@
 <html lang="en">
 	
 	{% include head.html %}
-	
-	<body>
+	<link href="/css/style.css" rel="stylesheet">
+	<body class="flex-container">
+		<div class="sidebar">
+			{% include sidebar.html %}
+		</div>
 		<div class="container">
 			
-			{% include header.html %}
+			{% include header.html %}		
+			
 			
 			{{ content }}
 			
