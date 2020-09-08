@@ -132,4 +132,7 @@ pre.prettyprint { padding: 10px !important; margin: 40px; font-size: 12px;}
 .sidebar-nav {
 	margin-top: 20px;
 }
-	
+
+.flex-container {
+	display: flex;
+  }
