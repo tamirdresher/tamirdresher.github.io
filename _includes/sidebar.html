@@ -1,0 +1,50 @@
+<div class="sidebar-item sidebar-header">
+	<div class='sidebar-brand'>
+		<a href="/about/">{{ site.title }}</a>
+	</div>
+	<p class="lead">{{ site.description }}</p>
+	{%- if social.github -%}
+		<a rel="me" href="https://github.com/{{ social.github | cgi_escape | escape }}" title="{{ social.github | escape }}">
+			<svg class="svg-icon grey">
+				<use xlink:href="{{ '/assets/minima-social-icons.svg#github' | relative_url }}" />
+			</svg></a></li>
+	{%- endif -%}
+</div>
+
+<div class="sidebar-item sidebar-nav">
+	<ul class="nav">
+      <li class="nav-title">Pages</li>
+	  <li>
+	  	<a class="nav-item" href="/">My Books</a>
+	  </li>
+        <li>
+            <a href="http://manning.com/dresher/?a_aid=8ec75026&a_bid=8ec75026">
+                <img src='https://images-na.ssl-images-amazon.com/images/I/41nS-A7vOqL._SX397_BO1,204,203,200_.jpg' alt='Rx.NET in Action' height='150'>
+            </a>
+        </li>
+        <li>
+            <a href="https://www.amazon.com/Hands-Full-Stack-Development-ASP-NET-Core/dp/178862288X">
+                <img src='https://images-na.ssl-images-amazon.com/images/I/51hLPrJ+5YL._SX404_BO1,204,203,200_.jpg' alt='Hands-On Full-Stack Web Development with ASP.NET Core' height='150'> 
+            </a>
+        </li>
+	</ul>
+</div>
+
+<div class="sidebar-item sidebar-nav">
+  	<ul class="nav">
+			<li class="nav-title">Categories</li>
+	    {% for category in site.categories %}
+	    <li>
+	    	<a class="nav-item" href="{{ root_url }}/{{ site.category_dir }}#{{ category | first }}">
+				<span class="name">{{ category | first }}</span>
+				<span class="badge">{{ category | last | size }}</span>
+	    	</a>
+ 		</li>
+	    {% endfor %}
+	  </nav>
+	</ul>
+</div>
+
+<div class="sidebar-item sidebar-footer">
+	<p>Powered by <a href="https://github.com/jekyll/jekyll">Jekyll</a></p>
+</div>

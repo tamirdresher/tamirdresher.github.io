@@ -93,3 +93,43 @@ pre.prettyprint { padding: 10px !important; margin: 40px; font-size: 12px;}
 	font-family: 'Montserrat', Helvetica, sans-serif; }
 
 
+
+.sidebar {
+	/*position: fixed;*/
+	display: flex;
+	flex-flow: column nowrap;
+	flex: 0 0 220px;
+	padding: 15px;
+	z-index: 1;
+	background-color: #222;
+	color: #fff;
+}
+
+.sidebar-item {
+	display: block;
+}
+
+.sidebar ul {
+	list-style-type: none;
+	padding-inline-start: 0px;
+}
+
+.sidebar-brand > a {
+	font-size: 300%;
+	font-family: 'Gelasio';
+	color: #fff;
+}
+
+.lead {
+	font-size: 120%;
+	color: #aaa;
+}
+
+.sidebar-header {
+	margin-bottom: 50px;
+}
+
+.sidebar-nav {
+	margin-top: 20px;
+}
+	
