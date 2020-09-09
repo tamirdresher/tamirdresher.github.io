@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Distributed balanced partition-queues assignment using kubernetes statefulSet"
+title: "Distributed balanced partition-queues assignment using Kubernetes statefulSet"
 date: 2020-09-05
 ---
 Partitioning a domain is a useful way to achieve scalability of a system. The idea behind partitioning is that instead of putting everything in a single place, you divide the dataset or the work into multiple places based on some attribute, which is usually the identifier of the entity.
