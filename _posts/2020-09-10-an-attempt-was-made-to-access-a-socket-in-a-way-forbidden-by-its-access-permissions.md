@@ -20,6 +20,6 @@ kill <PID>
 ```
 netsh int ip reset
 ```
-4. if you find that anything is not reset due to permissions, follow the steps listed [here](https://davidvielmetter.com/tricks/netsh-int-ip-reset-says-access-denied/)
+4. if you find that anything is was blocked and the message "Access is denied" is shown, follow the steps listed [here](https://davidvielmetter.com/tricks/netsh-int-ip-reset-says-access-denied/) and run the previous step again
 5. Reset the machine
 
