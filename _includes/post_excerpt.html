@@ -1,7 +1,7 @@
 <h1 class="entry-title">
-    
     {% if post.title %}
     <a href="{{ root_url }}{{ post.url }}">{{ post.title }}</a>
+    {{ post.date | date_to_string }} m
     {% endif %}
 </h1>
-<div class="entry-content">{{ content }}</div>
+<div class="entry-content">{{ post.content | strip_html | truncatewords: 50 }}</div>
