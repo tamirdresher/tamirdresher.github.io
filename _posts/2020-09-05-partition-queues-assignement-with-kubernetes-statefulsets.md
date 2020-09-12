@@ -32,7 +32,8 @@ Also, we need to make sure that even if the number of processes (consumers from 
 
 ## Kubernetes statfulSets
 
-In Kubernetes, a statefulSet is a type of deployment strategy that maintains a sticky identity for each of the Pods.
+In Kubernetes, a statefulSet is a type of deployment strategy that maintains a sticky identity and storage for each of the Pods.
+statefulSet were designed to host a stateful application such as databases or persisted cache that need to maintains their state across restarts and reschedules. 
 The nice thing about a statefulSet is that every pod is assigned an integer ordinal index, from 0 up through N-1, which is unique over the set.
 When a pod crashes or is rescheduled, Kubernetes will take of all of complexity of reviving it and reassign it to the correct identity.
 When scaling down the statefulSet, for example from 5 to 3 replicas, Kubernetes will terminate the last two pods in the set.
