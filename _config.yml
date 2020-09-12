@@ -4,6 +4,5 @@ markdown: kramdown
 permalink: /blog/:year/:month/:day/:title
 title: IBlogger
 description: Tamir Dresher | Blog
-social:
-  github: tamirdresher
-  linkedin: tamirdresher
+github: tamirdresher
+linkedin: tamirdresher
