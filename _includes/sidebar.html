@@ -3,12 +3,18 @@
 		<a href="/about/">{{ site.title }}</a>
 	</div>
 	<p class="lead">{{ site.description }}</p>
-	{%- if social.github -%}
+	{% if social.github %}
 		<a rel="me" href="https://github.com/{{ social.github | cgi_escape | escape }}" title="{{ social.github | escape }}">
 			<svg class="svg-icon grey">
 				<use xlink:href="{{ '/assets/minima-social-icons.svg#github' | relative_url }}" />
 			</svg></a></li>
-	{%- endif -%}
+	{% endif %}
+	{% if social.linkedin %}
+		<a rel="me" href="https://www.linkedin.com/in/{{ social.linkedin | cgi_escape | escape }}" title="{{ social.linkedin | escape }}">
+			<svg class="svg-icon grey">
+				<use xlink:href="{{ '/assets/minima-social-icons.svg#linkedin' | relative_url }}" />
+			</svg></a></li>
+	{% endif %}	
 </div>
 
 <div class="sidebar-item sidebar-nav">
@@ -25,6 +31,18 @@
                 <img src='https://images-na.ssl-images-amazon.com/images/I/51hLPrJ+5YL._SX404_BO1,204,203,200_.jpg' alt='Hands-On Full-Stack Web Development with ASP.NET Core' height='150'> 
             </a>
         </li>
+	</ul>
+</div>
+
+<div class="sidebar-item sidebar-nav">
+	<ul class="nav">
+      <li class="nav-title">My talks</li>
+	  
+        <li>
+			<a href="https://www.youtube.com/channel/UCJjIx4kJC-tEuFDO5wwN5kg">
+				<img src='https://cdn.jsdelivr.net/npm/simple-icons@3.0.1/icons/youtube.svg' alt='YouTube' height='40'>
+			</a>
+        </li>        
 	</ul>
 </div>
 
