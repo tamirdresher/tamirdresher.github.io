@@ -4,12 +4,12 @@
 	</div>
 	<p class="lead">{{ site.description }}</p>
 	
-		<a rel="me" href="https://github.com/{{ github | cgi_escape | escape }}" title="{{ social.github | escape }}">
+		<a rel="me" href="https://github.com/{{ github | cgi_escape | escape }}" title="{{ github | escape }}">
 			<svg class="svg-icon grey">
 				<use xlink:href="{{ '/assets/minima-social-icons.svg#github' | relative_url }}" />
 			</svg></a></li>
 	
-		<a rel="me" href="https://www.linkedin.com/in/{{ linkedin | cgi_escape | escape }}" title="{{ social.linkedin | escape }}">
+		<a rel="me" href="https://www.linkedin.com/in/{{ linkedin | cgi_escape | escape }}" title="{{ linkedin | escape }}">
 			<svg class="svg-icon grey">
 				<use xlink:href="{{ '/assets/minima-social-icons.svg#linkedin' | relative_url }}" />
 			</svg></a></li>
