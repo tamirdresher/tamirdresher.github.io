@@ -3,18 +3,17 @@
 		<a href="/about/">{{ site.title }}</a>
 	</div>
 	<p class="lead">{{ site.description }}</p>
-	{% if social.github %}
+	
 		<a rel="me" href="https://github.com/{{ social.github | cgi_escape | escape }}" title="{{ social.github | escape }}">
 			<svg class="svg-icon grey">
 				<use xlink:href="{{ '/assets/minima-social-icons.svg#github' | relative_url }}" />
 			</svg></a></li>
-	{% endif %}
-	{% if social.linkedin %}
+	
 		<a rel="me" href="https://www.linkedin.com/in/{{ social.linkedin | cgi_escape | escape }}" title="{{ social.linkedin | escape }}">
 			<svg class="svg-icon grey">
 				<use xlink:href="{{ '/assets/minima-social-icons.svg#linkedin' | relative_url }}" />
 			</svg></a></li>
-	{% endif %}	
+	
 </div>
 
 <div class="sidebar-item sidebar-nav">
