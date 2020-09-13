@@ -43,7 +43,7 @@ These attributes of the statefulSet make it easier for us to implement our solut
 
   
 
-## Implementing the Partition Queues Assignement with StatefulSet
+## Implementing the Partition Queues Assignment with StatefulSet
 
 Suppose we have a system that works with a traditional message broker such as RabbitMQ, ActiveMQ, SQS, Azure Storage Queues or alike.
 We have a queue named "OrderEvents" that holds events about orders we wish to partition to P partitions.
