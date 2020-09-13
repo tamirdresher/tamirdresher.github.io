@@ -30,7 +30,7 @@ This is a challenging problem to solve because we need to take into account that
 
 Also, we need to make sure that even if the number of processes (consumers from here on) changes, no resource will be used by two consumers in parallel.  
 
-## Kubernetes statfulSets
+## Kubernetes statefulSets
 
 In Kubernetes, a statefulSet is a type of deployment strategy that maintains a sticky identity and storage for each of the Pods.
 statefulSet were designed to host a stateful application such as databases or persisted cache that need to maintains their state across restarts and reschedules. 
