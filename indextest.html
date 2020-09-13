@@ -25,7 +25,7 @@ title: Tamir Dresher, IBlogger
   </div> -->
 
 
-  {% assign pinned = site.posts | where_exp: "item", "item.pin == true"  %}
+{% assign pinned = site.posts | where_exp: "item", "item.pin == true"  %}
 {% assign default = site.posts | where_exp: "item", "item.pin != true"  %}
 {% assign posts = "" | split: "" %}
 
