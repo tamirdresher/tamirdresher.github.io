@@ -1,70 +1,106 @@
-<div class="sidebar-item sidebar-header">
-	<div class='sidebar-brand'>
-		<a href="/about/">{{ site.title }}</a>
+<!--
+  The Side Bar
+  v2.0
+  https://github.com/cotes2020/jekyll-theme-chirpy
+  © 2017-2019 Cotes Chung
+  MIT License
+-->
+
+<div id="nav-wrapper">
+  <div id="profile-wrapper" class="d-flex flex-column">
+    <div id="avatar" class="d-flex justify-content-center">
+      <a href="{{ site.baseurl }}/" alt="avatar">
+        {% assign avatar_url = site.avatar %}
+        {% capture start %}{{ site.avatar | slice: 0 }}{% endcapture %}
+        {% if start == '/' %}
+          {% assign avatar_url = avatar_url | prepend: site.baseurl %}
+        {% endif %}
+        <img src="{{ avatar_url }}" alt="avatar" onerror="this.style.display='none'">
+      </a>
+    </div>
+
+    <div class="profile-text mt-3">
+      <div class="site-title">
+        <a href="{{ '/' | relative_url }}">{{- site.title -}}</a>
+      </div>
+      <div class="site-subtitle font-italic">{{- site.tagline -}}</div>
+    </div>
+  </div>
+
+  <ul class="nav flex-column">
+  {% assign page_urls = page.url | split: "/" %}
+
+  {% for item in site.data.tabs %}
+  	{% if item.externalurl %}
+	  {% assign ref = item.externalurl %}
+	{% else %}
+		{% assign ref = site.baseurl | append: "/" %}
+
+		{% if item.path %}
+		{% assign ref = ref | append: item.path | append: "/" %}
+		{% if item.url %}
+			{% assign ref = ref | append: item.url | append: "/" %}
+		{% endif %}
+		{% endif %}
+	{% endif %}
+
+
+    <li class="nav-item d-flex justify-content-center
+      {% if item.url == page_urls.last
+        or item.name == page.tab_active
+        or item.name == "Home" and page.layout == "home" %}active{% endif %}">
+      <a href="{{ ref }}" class="nav-link d-flex justify-content-center align-items-center w-100">
+        <i class="fa-fw {{ item.icon }} ml-xl-3 mr-xl-3 unloaded"></i>
+        <span>{{ item.name | upcase }}</span>
+      </a>
+    </li> <!-- .nav-item -->
+  {% endfor %}
+
+  </ul> <!-- ul.nav.flex-column -->
+
+	<div class="site-subtitle">
+		My Books
 	</div>
-	<p class="lead">{{ site.description }}</p>
-	
-	<a rel="me" href="https://www.linkedin.com/in/tamirdresher"  title="tamirdresher">
-		<svg viewBox="0 0 20 20" width="50">
-			<use xlink:href="{{ '/assets/minima-social-icons.svg#linkedin' | relative_url }}" />
-		</svg>
-	</a>
-	<a rel="me" href="https://github.com/tamirdresher" title="tamirdresher">
-		<svg viewBox="0 0 20 20" width="50">
-			<use xlink:href="{{ '/assets/minima-social-icons.svg#github' | relative_url }}" />
-		</svg>
-	</a>
-	<a rel="me" href="https://twitter.com/tamir_dresher" title="@tamir_dresher">
-		<svg viewBox="0 0 20 20" width="50">
-			<use xlink:href="{{ '/assets/minima-social-icons.svg#twitter' | relative_url }}" />
-		</svg>
-	</a>
-</div>
+	<div class="d-flex flex-wrap justify-content-around mt-4">	  
+		<a href="http://manning.com/dresher/?a_aid=8ec75026&a_bid=8ec75026">
+			<img src='https://images-na.ssl-images-amazon.com/images/I/41nS-A7vOqL._SX397_BO1,204,203,200_.jpg' alt='Rx.NET in Action' height='100'>
+		</a>
+		<a href="https://www.amazon.com/Hands-Full-Stack-Development-ASP-NET-Core/dp/178862288X">
+			<img src='https://images-na.ssl-images-amazon.com/images/I/51hLPrJ+5YL._SX404_BO1,204,203,200_.jpg' alt='Hands-On Full-Stack Web Development with ASP.NET Core' height='100'> 
+		</a>	  
+	</div>
+</div><!-- #nav-wrapper -->
 
-<div class="sidebar-item sidebar-nav">
-	<ul class="nav">
-      <li class="nav-title">My Books</li>
-	  
-        <li>
-            <a href="http://manning.com/dresher/?a_aid=8ec75026&a_bid=8ec75026">
-                <img src='https://images-na.ssl-images-amazon.com/images/I/41nS-A7vOqL._SX397_BO1,204,203,200_.jpg' alt='Rx.NET in Action' height='150'>
-            </a>
-        </li>
-        <li>
-            <a href="https://www.amazon.com/Hands-Full-Stack-Development-ASP-NET-Core/dp/178862288X">
-                <img src='https://images-na.ssl-images-amazon.com/images/I/51hLPrJ+5YL._SX404_BO1,204,203,200_.jpg' alt='Hands-On Full-Stack Web Development with ASP.NET Core' height='150'> 
-            </a>
-        </li>
-	</ul>
-</div>
+<div class="sidebar-bottom d-flex flex-wrap justify-content-around mt-4">
 
-<div class="sidebar-item sidebar-nav">
-	<ul class="nav">
-      <li class="nav-title">My talks</li>
-	  
-        <li>
-			<a href="https://www.youtube.com/channel/UCJjIx4kJC-tEuFDO5wwN5kg">
-				<img src='https://cdn.jsdelivr.net/npm/simple-icons@3.0.1/icons/youtube.svg' alt='YouTube' height='40'>
-			</a>
-        </li>        
-	</ul>
-</div>
+  {% if site.theme_mode == "dual" %}
+  <span id="mode-toggle-wrapper">
+    {% include mode-toggle.html %}
+  </span>
+  <span class="icon-border"></span>
+  {% endif %}
 
-<div class="sidebar-item sidebar-nav">
-  	<ul class="nav">
-			<li class="nav-title">Categories</li>
-	    {% for category in site.categories %}
-	    <li>
-	    	<a class="nav-item" href="{{ root_url }}/{{ site.category_dir }}#{{ category | first }}">
-				<span class="name">{{ category | first }}</span>
-				<span class="badge">{{ category | last | size }}</span>
-	    	</a>
- 		</li>
-	    {% endfor %}
-	  </nav>
-	</ul>
-</div>
+  {% for entry in site.data.contact %}
+    {% capture url %}
+      {%- if entry.type == 'github' -%}
+        https://github.com/{{ site.github.username }}
+      {%- elsif entry.type == 'twitter' -%}
+        https://twitter.com/{{ site.twitter.username }}
+      {%- elsif entry.type == 'email' -%}
+        {% assign email = site.social.email | split: '@' %}
+        javascript:window.open('mailto:' + ['{{ email[0] }}','{{ email[1] }}'].join('@'))
+      {%- elsif entry.type == 'rss' -%}
+        {{ "/feed.xml" | relative_url }}
+      {%- else -%}
+        {{ entry.url }}
+      {%- endif -%}
+    {% endcapture %}
 
-<div class="sidebar-item sidebar-footer">
-	<p>Powered by <a href="https://github.com/jekyll/jekyll">Jekyll</a></p>
+    {% if url != '' %}
+    <a href="{{ url }}" {% unless entry.noblank %}target="_blank"{% endunless %}>
+      <i class="{{ entry.icon }}"></i>
+    </a>
+    {% endif %}
+  {% endfor %}
+
 </div>
