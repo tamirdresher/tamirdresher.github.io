@@ -140,7 +140,7 @@ This is the how the code looks:
 ```
 int consumerId = ...
 int parititionCount = ...
-int assignableConsumerCount = Math.Min(consumerCount, parititionCount); //we can't assign more consumers that partitions
+int assignableConsumerCount = Math.Min(consumerCount, parititionCount); //we can't assign more consumers than partitions
 if (consumerId >= assignableConsumerCount)
 {    
     return Enumerable.Empty<int>();
