@@ -1,13 +1,13 @@
 ---
 layout: post
 title: "Scaling Your AI Development Team with Git Worktrees"
-date: 2025-01-20
+date: 2025-10-20
 tags: [git, ai-agents, development-workflow, hackathon, vscode, productivity]
 ---
 
-During the Microsoft Global Hackathon 2025, my team faced a familiar challenge: too many features, too little time. We needed to build multiple features simultaneously, and the traditional approach of switching between branches was killing our productivity. That's when I discovered a game-changing technique: using Git worktrees to create a virtual AI development team, with each agent working on a different feature in parallel.
+During the Microsoft Global Hackathon 2025, my team faced a familiar challenge: too many features, too little time. I had to work on multiple features simultaneously but you can't really do it in the same folder where you cloned your repo and creating multiple clones by yourself is cumbersome and hurts productivity. That's when I discovered a game-changing technique: using Git worktrees to create a virtual AI development team, with each agent working on a different feature in parallel.
 
-The result? We had multiple AI code agents working simultaneously on different features, each in their own workspace, while I supervised the entire team like a tech lead reviewing pull requests. It was like having a team of developers working on your machine at the same time, without the overhead of managing multiple repository clones.
+The result? I had multiple AI code agents working simultaneously on different features, each in their own workspace, while I supervised the entire team like a tech lead reviewing pull requests. It was like having a team of developers working on your machine at the same time, without the overhead of managing multiple repository clones.
 
 ## The Problem: Context Switching is Killing Productivity
 
@@ -70,13 +70,13 @@ Once you have the Repositories view visible, you can access worktree management.
 2. Click the three dots next to your repository name
 3. Navigate to "Worktrees" in the context menu
 
-### Step 3: Create a New Worktree
+### Step 3: Create a Worktree
 
 Now you're ready to create your first worktree!
 
 ![Create New Worktree](/assets/worktree-and-ai-superpowers/create-new-worktree.png)
 
-Click on "Create New Worktree" from the worktrees menu. This will start the worktree creation wizard.
+Click on "Create Worktree" from the worktrees menu. This will start the worktree creation wizard.
 
 ### Step 4: Select or Create a Branch
 
@@ -96,14 +96,7 @@ Next, specify where the worktree will be created on your filesystem.
 
 ![New Worktree Folder Selection](/assets/worktree-and-ai-superpowers/new-worktree-folder.png)
 
-I recommend creating a dedicated folder structure like:
-```
-project-name/
-├── main/           (your main worktree)
-├── feature-auth/   (worktree for authentication)
-├── feature-api/    (worktree for API changes)
-└── bugfix-123/     (worktree for bug fix)
-```
+Usually you keep all worktrees in a folder with the name of the repo and '.worktrees' suffix.
 
 This keeps everything organized and makes it easy to see what's being worked on.
 
@@ -113,7 +106,7 @@ Once created, you can open the worktree in its own VS Code window.
 
 ![Open Worktree in New Window](/assets/worktree-and-ai-superpowers/open-worktree-in-new-window.png)
 
-Right-click on the newly created worktree and select "Open in New Window". This gives you a completely separate VS Code instance for this branch.
+Click on the three dots next to the newly created worktree and select "Open in New Window". This gives you a completely separate VS Code instance for this branch.
 
 ### Step 7: Repeat for Each Feature
 
@@ -131,10 +124,11 @@ Now comes the magic:
 3. **Switch between windows** to monitor progress
 4. **Review and guide** each agent like you would review a team member's work
 5. **Commit and push** when satisfied with the implementation
+6. **Have multiple agents working in parallel**
 
 ## Real-World Benefits
 
-During the hackathon, this approach gave us several concrete advantages:
+During the hackathon, this approach gave me several concrete advantages:
 
 **No Context Switching**: Each AI agent maintained full context of its specific task. When I needed to check on the authentication feature, I just switched windows - no branch switching, no reloading.
 
@@ -146,37 +140,6 @@ During the hackathon, this approach gave us several concrete advantages:
 
 **Clean Branch Management**: Each worktree was isolated. If one feature needed to be abandoned or drastically changed, it didn't affect the others.
 
-## My Hackathon Success Story
-
-Our hackathon project required building a full-stack application with authentication, real-time features, and a complex data pipeline - all in 48 hours. Using worktrees, I had:
-
-- One agent building the authentication system
-- Another implementing the real-time WebSocket communication
-- A third working on the data processing pipeline
-- Myself coordinating and handling the integration
-
-What would have taken a week of sequential development happened in two days. The worktrees approach let us maintain velocity without the chaos of constant branch switching or the overhead of multiple repository clones.
-
-## Getting Started Today
-
-If you want to try this technique, start small:
-
-1. Pick a project with at least two features or bugs to work on
-2. Create a worktree for each branch
-3. Open each in its own window
-4. Start your AI agent in each window with a specific task
-5. Experience the productivity boost firsthand
-
-The first time you switch between windows and see multiple features progressing simultaneously, you'll understand why this is a superpower.
-
-## Conclusion
-
-Git worktrees transform how you work with AI code agents. Instead of one assistant that constantly loses context as you switch branches, you have a team of focused agents, each working on their assigned task. Combined with VS Code's excellent worktree support, it's the closest thing to having a distributed development team running on your local machine.
-
-The Microsoft Global Hackathon taught me that the future of development isn't just about having AI assistants - it's about orchestrating them effectively. Worktrees are the tool that makes that orchestration possible.
-
-Give it a try on your next project. Your productivity (and your AI agents) will thank you.
-
 ---
 
-*Have you tried using Git worktrees with AI code agents? I'd love to hear about your experience in the comments below!*
+*Have you tried using Git worktrees with AI code agents or have other tips to share? I'd love to hear about your experience in the comments below!*
