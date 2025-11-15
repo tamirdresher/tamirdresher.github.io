@@ -143,7 +143,7 @@ The beauty of Playwright MCP is how seamlessly it integrates with your existing 
 When your Aspire app host starts your React frontend, it's typically accessible at a local URL:
 
 ```csharp
-var reactApp = builder.AddViteApp("reactfrontend", "../Dk8sOnboardingWizard.Web.React", "dev")
+var reactApp = builder.AddViteApp("reactfrontend", "../YourProject.Web.React", "dev")
     .WithExternalHttpEndpoints(); // Makes it accessible to MCP
 ```
 
