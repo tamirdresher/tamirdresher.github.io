@@ -188,8 +188,8 @@ echo "[init.sh] Configuring npm authentication for private feed..."
 
 # Configure npm authentication (matching .npmrc registry URL)
 echo "; begin auth token to pull npm packages" > ~/.npmrc
-echo "//microsoft.pkgs.visualstudio.com/_packaging/YourFeedName/npm/registry/:_authToken=${VSS_NUGET_ACCESSTOKEN}" >> ~/.npmrc
-echo "//microsoft.pkgs.visualstudio.com/_packaging/YourFeedName/npm/registry/:email=npm requires email to be set but doesn't use the value" >> ~/.npmrc
+echo "//ORGANIZATION.pkgs.visualstudio.com/_packaging/YourFeedName/npm/registry/:_authToken=${VSS_NUGET_ACCESSTOKEN}" >> ~/.npmrc
+echo "//ORGANIZATION.pkgs.visualstudio.com/_packaging/YourFeedName/npm/registry/:email=npm requires email to be set but doesn't use the value" >> ~/.npmrc
 echo "; end auth token to pull npm packages" >> ~/.npmrc
 
 echo "[init.sh] npm authentication configured successfully"
@@ -252,7 +252,7 @@ RUN chmod +x ./scripts/init.sh && \
 
 The `.npmrc` in your project should only contain the registry URL:
 ```
-registry=https://microsoft.pkgs.visualstudio.com/_packaging/YourFeedName/npm/registry/
+registry=https://ORGANIZATION.pkgs.visualstudio.com/_packaging/YourFeedName/npm/registry/
 always-auth=true
 ```
 
