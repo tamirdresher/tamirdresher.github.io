@@ -145,7 +145,7 @@ public static class GitFolderResolver
 
 This extracts `feature-auth` from a path like:
 ```
-C:\Projects\my-repo.worktrees\feature-auth\Dk8sOnboardingWizard.AppHost
+C:\Projects\my-repo.worktrees\feature-auth\YourProject.AppHost
 ```
 
 ### Step 2: Extension Method to Resolve Clone Name
@@ -364,9 +364,9 @@ builder.Environment.ApplicationName =
 ```
 
 This shows:
-- `Dk8sOnboardingWizard-feature-auth` in one dashboard
-- `Dk8sOnboardingWizard-feature-payments` in another
-- `Dk8sOnboardingWizard-feature-ui` in a third
+- `YourProject-feature-auth` in one dashboard
+- `YourProject-feature-payments` in another
+- `YourProject-feature-ui` in a third
 
 ### Step 8: Using Clone-Aware Resources
 
@@ -427,7 +427,7 @@ code ../my-repo.worktrees/feature-auth
 # Aspire detects clone name: "feature-auth"
 # Allocates: Cosmos port 8091, Qdrant port 6341, Dashboard port 17001
 # Creates volumes: cosmos-feature-auth, storage-feature-auth
-# Application name: "Dk8sOnboardingWizard-feature-auth"
+# Application name: "YourProject-feature-auth"
 ```
 
 **Agent 2: Payment Processing**
@@ -442,7 +442,7 @@ code ../my-repo.worktrees/feature-payments
 # Aspire detects clone name: "feature-payments"
 # Allocates: Cosmos port 8092, Qdrant port 6342, Dashboard port 17011
 # Creates volumes: cosmos-feature-payments, storage-feature-payments
-# Application name: "Dk8sOnboardingWizard-feature-payments"
+# Application name: "YourProject-feature-payments"
 ```
 
 **Agent 3: UI Updates**
@@ -665,7 +665,7 @@ To avoid port conflicts between different clones running the same services, ensu
 ```json
 {
   "profiles": {
-    "Dk8sOnboardingWizard.ApiService": {
+    "YourProject.ApiService": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
