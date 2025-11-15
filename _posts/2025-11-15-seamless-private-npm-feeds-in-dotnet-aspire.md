@@ -66,7 +66,7 @@ First, create an [`.npmrc`](.npmrc) file in your React project root that points 
 
 ```
 # Use private feed as the only registry
-registry=https://microsoft.pkgs.visualstudio.com/_packaging/YourFeedName/npm/registry/
+registry=https://ORGANIZATION.pkgs.visualstudio.com/_packaging/YourFeedName/npm/registry/
 
 # Always authenticate with private feed
 always-auth=true
@@ -79,7 +79,7 @@ always-auth=true
 In your AppHost project, configure the React app to use npm with automatic installation. Thanks to [Aspire 13's first-class JavaScript support](https://aspire.dev/whats-new/aspire-13/#javascript-as-a-first-class-citizen), this is now straightforward with the [`AddViteApp()`](https://aspire.dev/api/Aspire.Hosting.ViteAppHostingExtension.AddViteApp.html) extension method:
 
 ```csharp
-var reactApp = builder.AddViteApp("reactfrontend", "../Dk8sOnboardingWizard.Web.React", "dev")
+var reactApp = builder.AddViteApp("reactfrontend", "../YourProject.Web.React", "dev")
     .WithNpm(
         install: true,
         installArgs: ["--legacy-peer-deps"])
@@ -163,7 +163,7 @@ In your [`package.json`](package.json), add the authentication script to run bef
 
 ```json
 {
-  "name": "dk8s-onboarding-wizard-react",
+  "name": "your-project-react",
   "version": "1.0.0",
   "scripts": {
     "auth": "pwsh -ExecutionPolicy Bypass -File ./scripts/setup-auth.ps1",
@@ -205,9 +205,9 @@ FROM node:18-alpine AS build
 WORKDIR /app
 
 # Copy package files
-COPY Dk8sOnboardingWizard.Web.React/package*.json ./
-COPY Dk8sOnboardingWizard.Web.React/.npmrc ./
-COPY Dk8sOnboardingWizard.Web.React/scripts/init.sh ./scripts/
+COPY YourProject.Web.React/package*.json ./
+COPY YourProject.Web.React/.npmrc ./
+COPY YourProject.Web.React/scripts/init.sh ./scripts/
 
 # Setup authentication and install dependencies
 ARG VSS_NUGET_ACCESSTOKEN
@@ -264,7 +264,7 @@ New team members need to:
 ```powershell
 # One-time setup
 az login
-cd Dk8sOnboardingWizard.Web.React
+cd YourProject.Web.React
 npm run auth
 ```
 
@@ -275,7 +275,7 @@ After that, F5 just works.
 If you see E401 errors after a few days:
 ```powershell
 # Refresh credentials
-cd Dk8sOnboardingWizard.Web.React
+cd YourProject.Web.React
 npm cache clean --force
 npm run auth
 ```
@@ -304,7 +304,7 @@ The `preinstall` hook should handle this automatically, but manual refresh is th
 
 2. **Clear npm cache:**
    ```powershell
-   cd Dk8sOnboardingWizard.Web.React
+   cd YourProject.Web.React
    npm cache clean --force
    rm -rf node_modules package-lock.json
    npm install --legacy-peer-deps  # preinstall hook runs automatically
