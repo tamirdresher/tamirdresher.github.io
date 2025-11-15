@@ -5,7 +5,10 @@ date: 2025-11-15
 tags: [aspire, npm, azure-devops, authentication, dotnet, react, private-packages]
 ---
 
-I recently ran into a frustrating problem while working on a project with a React frontend. The app needed packages from an internal Azure DevOps npm feed, but every time I pressed F5 in Visual Studio, Aspire would fail with E401 authentication errors. The typical npm authentication dance—running `vsts-npm-auth`, configuring tokens, dealing with expired credentials—was killing my productivity. I needed Aspire to "just work" like the rest of my development workflow.
+I recently ran into a frustrating problem while working on a project with a React frontend. The app needed packages from an internal Azure DevOps npm feed, but every time I pressed F5 in Visual Studio, Aspire would fail to launch the react app due authentication errors. The typical npm authentication dance—running `vsts-npm-auth`, configuring tokens, dealing with expired credentials—was killing my productivity. I needed Aspire to "just work" like the rest of my development workflow.
+
+<img width="986" height="375" alt="image" src="https://github.com/user-attachments/assets/a823d133-eee4-4011-90ae-a5f3b9b75089" />
+
 
 ## Aspire 13: JavaScript as a First-Class Citizen
 
@@ -20,7 +23,7 @@ Before diving into the authentication challenges, it's worth noting that .NET As
 - **Environment variable injection** - Pass configuration from Aspire to your JS apps seamlessly
 - **Proper shutdown handling** - Graceful termination of dev servers
 
-This means you can now use [`AddViteApp()`](https://aspire.dev/api/Aspire.Hosting.ViteAppHostingExtension.AddViteApp.html), [`AddNpmApp()`](https://aspire.dev/api/Aspire.Hosting.NpmAppHostingExtension.AddNpmApp.html), and other JavaScript-specific extension methods that handle the complexity of running JavaScript build tools in the Aspire orchestration environment.
+This means you can now use `AddViteApp()`, `AddJavaScriptApp()`, and other JavaScript-specific extension methods that handle the complexity of running JavaScript build tools in the Aspire orchestration environment.
 
 However, this improved JavaScript support also means that authentication challenges with private npm feeds become more visible. When Aspire 13 tries to automatically run `npm install` for your React or Vue app, authentication failures immediately break the F5 experience we've come to expect from Aspire.
 
@@ -76,7 +79,7 @@ always-auth=true
 
 ### 2. Integrate with Aspire
 
-In your AppHost project, configure the React app to use npm with automatic installation. Thanks to [Aspire 13's first-class JavaScript support](https://aspire.dev/whats-new/aspire-13/#javascript-as-a-first-class-citizen), this is now straightforward with the [`AddViteApp()`](https://aspire.dev/api/Aspire.Hosting.ViteAppHostingExtension.AddViteApp.html) extension method:
+In your AppHost project, configure the React app to use npm with automatic installation. Thanks to [Aspire 13's first-class JavaScript support](https://aspire.dev/whats-new/aspire-13/#javascript-as-a-first-class-citizen), this is now straightforward with the [`AddViteApp()`](https://learn.microsoft.com/en-us/dotnet/api/aspire.hosting.javascripthostingextensions.addviteapp?view=dotnet-aspire-13.0) extension method:
 
 ```csharp
 var reactApp = builder.AddViteApp("reactfrontend", "../YourProject.Web.React", "dev")
@@ -89,8 +92,8 @@ var reactApp = builder.AddViteApp("reactfrontend", "../YourProject.Web.React", "
 ```
 
 **What's happening here:**
-- [`AddViteApp()`](https://aspire.dev/api/Aspire.Hosting.ViteAppHostingExtension.AddViteApp.html) - New in Aspire 13, specifically designed for Vite-based apps
-- [`WithNpm()`](AppHost.cs:189) - Configures npm to run `install` automatically before starting the dev server
+- `AddViteApp()` - New in Aspire 13, specifically designed for Vite-based apps
+- `WithNpm()` - Configures npm to run `install` automatically before starting the dev server
 - `install: true` - Triggers `npm install` on app start
 - `installArgs` - Passes arguments to npm (in this case, `--legacy-peer-deps`)
 
@@ -104,7 +107,7 @@ This is where our authentication solution needs to integrate—ensuring credenti
 
 ### 3. Create the Authentication Script
 
-Create a PowerShell script [`setup-auth.ps1`](setup-auth.ps1) in a `scripts` folder:
+Create a PowerShell script `setup-auth.ps1` in a `scripts` folder:
 
 ```powershell
 # setup-auth.ps1
@@ -159,7 +162,7 @@ This script:
 
 ### 4. Wire Up npm Lifecycle Hooks
 
-In your [`package.json`](package.json), add the authentication script to run before installation:
+In your `package.json`, add the authentication script to run before installation:
 
 ```json
 {
@@ -174,7 +177,7 @@ In your [`package.json`](package.json), add the authentication script to run bef
 }
 ```
 
-The [`preinstall`](package.json:7) hook runs automatically before `npm install`, ensuring credentials are fresh every time.
+The `preinstall` hook runs automatically before `npm install`, ensuring credentials are fresh every time.
 
 ### 5. Pipeline Authentication (Different Approach)
 
@@ -224,7 +227,7 @@ RUN chmod +x ./scripts/init.sh && \
 
 1. You run `az login` once when setting up your machine
 2. Press F5 in Visual Studio to start Aspire
-3. Aspire calls `npm install` via [`WithNpm()`](AppHost.cs:189)
+3. Aspire calls `npm install` via `WithNpm()`
 4. npm triggers the `preinstall` hook
 5. `setup-auth.ps1` runs and:
    - Verifies Azure CLI auth
@@ -246,150 +249,6 @@ RUN chmod +x ./scripts/init.sh && \
 
 **Result:** Reproducible builds with no secrets in git.
 
-## Best Practices
-
-### 1. Never Commit Credentials
-
-The `.npmrc` in your project should only contain the registry URL:
-```
-registry=https://ORGANIZATION.pkgs.visualstudio.com/_packaging/YourFeedName/npm/registry/
-always-auth=true
-```
-
-Credentials go in your user profile's `~/.npmrc`, managed by `vsts-npm-auth`.
-
-### 2. One-Time Team Setup
-
-New team members need to:
-```powershell
-# One-time setup
-az login
-cd YourProject.Web.React
-npm run auth
-```
-
-After that, F5 just works.
-
-### 3. Handle Credential Expiration
-
-If you see E401 errors after a few days:
-```powershell
-# Refresh credentials
-cd YourProject.Web.React
-npm cache clean --force
-npm run auth
-```
-
-The `preinstall` hook should handle this automatically, but manual refresh is there if needed.
-
-### 4. Separate Local and Pipeline Config
-
-- **Local:** Use `vsts-npm-auth` with Azure CLI
-- **Pipeline:** Use `VSS_NUGET_ACCESSTOKEN` with `init.sh`
-- **Don't mix them** - They have different token formats and lifetimes
-
-## Troubleshooting
-
-### E401: Unauthorized
-
-**Symptom:** `npm error code E401` during install
-
-**Solutions:**
-
-1. **Verify Azure CLI login:**
-   ```powershell
-   az account show  # Should show your account details
-   az login         # If not logged in
-   ```
-
-2. **Clear npm cache:**
-   ```powershell
-   cd YourProject.Web.React
-   npm cache clean --force
-   rm -rf node_modules package-lock.json
-   npm install --legacy-peer-deps  # preinstall hook runs automatically
-   ```
-
-3. **Run auth manually:**
-   ```powershell
-   npm run auth
-   ```
-
-4. **Check feed permissions:**
-   - Visit your Azure DevOps feed settings
-   - Ensure your account has read permissions
-
-### vsts-npm-auth Installation Fails
-
-**Symptom:** Can't install `vsts-npm-auth`
-
-**Solution:**
-```powershell
-# Install from public npm explicitly
-npm install -g vsts-npm-auth --registry https://registry.npmjs.org/
-
-# Verify
-vsts-npm-auth --help
-```
-
-### Pipeline Builds Fail with E401
-
-**Symptom:** Pipeline gets E401 despite `VSS_NUGET_ACCESSTOKEN`
-
-**Check:**
-1. Verify the pipeline has access to your private feed
-2. Ensure `VSS_NUGET_ACCESSTOKEN` is passed as build arg in Dockerfile
-3. Check `init.sh` has execute permissions (`chmod +x`)
-4. Verify the registry URL in `.npmrc` matches the one in `init.sh`
-
-### Peer Dependency Warnings
-
-**Symptom:** Warnings about peer dependencies during install
-
-**Solution:** This is expected with `--legacy-peer-deps`. The application works correctly despite warnings. Modern package managers are stricter about peer dependencies, but many packages haven't caught up yet.
-
-## Real-World Benefits
-
-After implementing this solution:
-
-**Before:**
-- ❌ 5-10 minutes per developer for auth setup
-- ❌ E401 errors every few hours
-- ❌ Manual `vsts-npm-auth` commands
-- ❌ Broken F5 experience
-- ❌ Pipeline failures due to auth
-
-**After:**
-- ✅ One-time `az login` setup
-- ✅ Automatic credential refresh
-- ✅ F5 just works
-- ✅ Zero auth-related pipeline failures
-- ✅ New developers onboard in minutes
-
-## Alternative Approaches
-
-### Option 1: Environment Variables
-
-You could store tokens in environment variables, but:
-- ❌ Tokens expire frequently
-- ❌ Manual refresh needed
-- ❌ Harder to manage across team
-
-### Option 2: Manual .npmrc Management
-
-You could manually edit `~/.npmrc`, but:
-- ❌ Error-prone
-- ❌ Token format is complex
-- ❌ Doesn't integrate with Azure CLI
-
-### Option 3: Public Registry Proxy
-
-You could proxy through a public npm registry, but:
-- ❌ Additional infrastructure
-- ❌ Security concerns
-- ❌ Caching complexity
-
-The `vsts-npm-auth` + lifecycle hooks approach is the sweet spot of automation and simplicity.
 
 ## Conclusion
 
@@ -398,9 +257,3 @@ Working with private npm feeds in .NET Aspire doesn't have to be painful. By lev
 The key is recognizing that local development and pipeline builds are fundamentally different environments, and handling each appropriately. Once configured, your team can focus on building features instead of fighting with authentication.
 
 ---
-
-*Working on a similar setup? Run into issues? I'd love to hear about your experience in the comments below!*
-
-## Related Posts
-
-- [Scaling Your AI Development Team with Git Worktrees](/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html)
