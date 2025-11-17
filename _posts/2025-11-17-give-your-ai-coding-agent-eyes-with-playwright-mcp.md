@@ -89,6 +89,21 @@ The `--extension` flag is a game-changer for real-world development. Without it,
 
 This is especially valuable when working with private feeds, internal tools, or any application behind authentication.
 
+For example, here i asked roo to get the colors from my open tab
+
+<img width="816" height="1000" alt="image" src="https://github.com/user-attachments/assets/66d89a14-05dc-40aa-b783-e562a6cd064f" />
+
+it then starts the Playwright MCP and open the browser for me to pick the tab i want
+
+<img width="1133" height="1206" alt="image" src="https://github.com/user-attachments/assets/f192e27b-70e1-4852-9615-81eed6bf7079" />
+
+<img width="1366" height="864" alt="image" src="https://github.com/user-attachments/assets/5c1a5d5a-73e8-4621-8294-722f33905d87" />
+
+it then process the information and give me the results
+<img width="1127" height="1213" alt="image" src="https://github.com/user-attachments/assets/3ddd3216-ddf1-4668-bf47-4f882582c3a9" />
+
+
+
 For more details on the extension mode, see the [Playwright MCP extension documentation](https://github.com/microsoft/playwright-mcp/blob/main/extension/README.md).
 
 The full list includes many more—check the [Playwright MCP documentation](https://github.com/microsoft/playwright-mcp) for details.
@@ -112,3 +127,4 @@ If you're already using AI coding agents, adding Playwright MCP is a no-brainer.
 ## Related Posts
 
 - [Scaling Your AI Development Team with Git Worktrees](/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html)
+
