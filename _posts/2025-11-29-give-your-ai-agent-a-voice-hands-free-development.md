@@ -466,9 +466,76 @@ Want to try it yourself? The full source code is on GitHub: [tamirdresher/mcp-vo
 ### Prerequisites
 
 - .NET 10 SDK
-- Azure OpenAI account with TTS and Whisper deployments
+- Azure OpenAI account with TTS and Whisper deployments (see below)
 - Windows OS (for NAudio)
 - Microphone and speakers
+
+### Deploying Azure OpenAI Models
+
+Before you can use VoiceMCP, you need to deploy both TTS and Whisper models in Azure OpenAI. Here's what I learned setting this up:
+
+If you're creating a new Azure OpenAI resource, choose East US 2 to get both models.
+
+#### Deploying the Models
+
+Using Azure CLI, here's how to deploy both models:
+
+**1. Deploy Whisper (Speech-to-Text):**
+```bash
+az cognitiveservices account deployment create \
+  --resource-group <RESOURCE_GROUP> \
+  --name <ACCOUNT_NAME> \
+  --deployment-name whisper \
+  --model-name whisper \
+  --model-version "001" \
+  --model-format OpenAI \
+  --sku-capacity 1 \
+  --sku-name "Standard"
+```
+
+**2. Deploy TTS (Text-to-Speech):**
+```bash
+az cognitiveservices account deployment create \
+  --resource-group <RESOURCE_GROUP> \
+  --name <ACCOUNT_NAME> \
+  --deployment-name tts \
+  --model-name gpt-4o-mini-tts \
+  --model-version "2025-03-20" \
+  --model-format OpenAI \
+  --sku-capacity 1 \
+  --sku-name "GlobalStandard"
+```
+
+**Important notes:**
+- Start with capacity 10, but you may need to increase it
+
+#### Watch Out for Rate Limits
+
+I initially deployed with capacity 1 (1K tokens per minute), but hit rate limits during testing. Voice interactions generate more API calls than you might expect—each question involves:
+1. TTS call to speak the question
+2. Whisper call to transcribe your response
+3. TTS call to confirm what was heard
+4. Whisper call to transcribe your confirmation
+
+That's 4 API calls per interaction. I increased my TPM capacity to avoid rate limiting during active use.
+
+#### Verify Your Deployments
+
+Check that both models are deployed successfully:
+```bash
+az cognitiveservices account deployment list \
+  --resource-group <RESOURCE_GROUP> \
+  --name <ACCOUNT_NAME> \
+  --query "[].{Name:name, Model:properties.model.name, SKU:sku.name, Status:properties.provisioningState}" -o table
+```
+
+You should see:
+```
+Name     Model            SKU             Status
+-------  ---------------  --------------  ---------
+whisper  whisper          Standard        Succeeded
+tts      gpt-4o-mini-tts  GlobalStandard  Succeeded
+```
 
 ## Conclusion
 
