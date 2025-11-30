@@ -12,11 +12,20 @@ I spend a lot of time driving. During those drives, I often open ChatGPT on my p
 > - Work continues even when I close my laptop—agents keep running in the background
 > - I can spin up multiple machines for different projects or experiments
 > - No more "works on my machine" problems—everyone on the team gets the same environment
-> - I can access my full dev setup from anywhere, even my phone (though I mostly just use it to let agents work while I'm mobile)
+> - I can access my full dev setup from anywhere, even [from my phone using Windows App](https://learn.microsoft.com/en-us/azure/dev-box/how-to-connect-devices-to-dev-box), which lets me see the agent's work and give commands remotely
 
 The problem? When Roo hits a decision point and needs my input, it just... stops. By the time I get home 40 minutes later, I've lost all that potential progress. The agent was ready to work, I was available to answer questions, but we had no way to communicate.
 
 I'd already given my AI agent [eyes with Playwright MCP](/2025/11/17/give-your-ai-coding-agent-eyes-with-playwright-mcp.html). Why not give it a mouth and ears too?
+
+## See It In Action
+
+<video width="100%" controls>
+  <source src="/assets/GivingYourAIAgentMouthAndEars/VoiceMCP.mp4" type="video/mp4">
+  Your browser doesn't support video playback.
+</video>
+
+*VoiceMCP in action: Roo asking questions via voice, receiving spoken responses, and continuing work hands-free*
 
 ## The Problem: AI Agents Can't Talk to You
 
@@ -107,7 +116,12 @@ The [`Program.cs`](https://github.com/tamirdresher/mcp-voice-assist/blob/main/Vo
 var builder = Host.CreateApplicationBuilder(args);
 
 // Configure logging to stderr (stdout is for MCP protocol)
-builder.Logging.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace);
+// Clear default providers to prevent stdout pollution
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole(options =>
+{
+    options.LogToStandardErrorThreshold = LogLevel.Trace;
+});
 
 // Register MCP server with stdio transport
 builder.Services
@@ -121,24 +135,37 @@ builder.Services.AddSingleton<IVoiceService, SemanticKernelVoiceService>();
 // Hybrid credential loading: Env vars (for MCP clients) → User secrets (dev)
 var azureEndpoint = Environment.GetEnvironmentVariable("AZURE_OPENAI_ENDPOINT");
 var azureApiKey = Environment.GetEnvironmentVariable("AZURE_OPENAI_API_KEY");
-// ... fallback to user secrets if env vars not found ...
+var azureTtsDeployment = Environment.GetEnvironmentVariable("AZURE_OPENAI_TTS_DEPLOYMENT");
+var azureWhisperDeployment = Environment.GetEnvironmentVariable("AZURE_OPENAI_WHISPER_DEPLOYMENT");
+
+// Fallback to user secrets in development
+var configuration = builder.Configuration;
+if (string.IsNullOrEmpty(azureEndpoint))
+{
+    azureEndpoint = configuration["AzureOpenAI:Endpoint"];
+    azureApiKey = configuration["AzureOpenAI:ApiKey"];
+    azureTtsDeployment = configuration["AzureOpenAI:TtsDeploymentName"];
+    azureWhisperDeployment = configuration["AzureOpenAI:WhisperDeploymentName"];
+}
 
 // Add Semantic Kernel with Azure OpenAI services
 builder.Services.AddKernel()
     .AddAzureOpenAITextToAudio(
-         deploymentName: azureTtsDeployment,
-         endpoint: azureEndpoint,
-         apiKey: azureApiKey)
+         deploymentName: azureTtsDeployment ?? throw new InvalidOperationException("TTS deployment name is not configured"),
+         endpoint: azureEndpoint ?? throw new InvalidOperationException("Azure OpenAI endpoint is not configured"),
+         apiKey: azureApiKey ?? throw new InvalidOperationException("Azure OpenAI API key is not configured"))
     .AddAzureOpenAIAudioToText(
-        deploymentName: azureWhisperDeployment,
-        endpoint: azureEndpoint,
-        apiKey: azureApiKey);
+        deploymentName: azureWhisperDeployment ?? throw new InvalidOperationException("Whisper deployment name is not configured"),
+        endpoint: azureEndpoint ?? throw new InvalidOperationException("Azure OpenAI endpoint is not configured"),
+        apiKey: azureApiKey ?? throw new InvalidOperationException("Azure OpenAI API key is not configured"));
 
 await builder.Build().RunAsync();
 ```
 
 **Key points:**
-- Logs go to `stderr` because `stdout` is reserved for MCP protocol messages
+- `ClearProviders()` prevents default logging from polluting stdout (critical for MCP protocol)
+- All logs go to `stderr` because `stdout` is reserved for MCP protocol messages
+- Null-coalescing operators provide clear error messages when configuration is missing
 - Hybrid configuration supports both environment variables (for MCP clients) and user secrets (for development)
 - Semantic Kernel handles the Azure OpenAI integration cleanly
 
