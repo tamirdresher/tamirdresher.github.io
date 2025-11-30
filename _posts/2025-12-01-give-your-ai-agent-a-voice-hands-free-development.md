@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Give Your AI Agent Mouth and Ears: Building a Voice-Enabled MCP for Hands-Free Development"
-date: 2025-11-29
+date: 2025-12-01
 tags: [ai-agents, mcp, voice, azure-openai, semantic-kernel, hands-free, roo, devbox]
 ---
 
