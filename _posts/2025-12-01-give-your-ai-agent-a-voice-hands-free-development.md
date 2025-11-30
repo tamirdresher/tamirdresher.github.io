@@ -20,10 +20,7 @@ I'd already given my AI agent [eyes with Playwright MCP](/2025/11/17/give-your-a
 
 ## See It In Action
 
-<video width="100%" controls>
-  <source src="/assets/GivingYourAIAgentMouthAndEars/VoiceMCP.mp4" type="video/mp4">
-  Your browser doesn't support video playback.
-</video>
+<iframe width="100%" height="400" src="https://www.youtube.com/embed/wP6m5xLAbOs" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 *VoiceMCP in action: Roo asking questions via voice, receiving spoken responses, and continuing work hands-free*
 
