@@ -5,7 +5,7 @@ date: 2025-12-01
 tags: [ai-agents, mcp, voice, azure-openai, semantic-kernel, hands-free, roo, devbox]
 ---
 
-I spend a lot of time driving. During those drives, I often open ChatGPT on my phone (hands-free) to brainstorm architecture decisions or research technical approaches for problems I'm working on. Meanwhile, my Roo agent is back on [DevBox](https://devbox.microsoft.com/), grinding through the actual implementation work.
+I spend a lot of time driving. During those drives, I often open ChatGPT on my phone (hands-free, voice mode) to brainstorm architecture decisions or research technical approaches for problems I'm working on. Meanwhile, my Roo agent is back on [DevBox](https://devbox.microsoft.com/), grinding through the actual implementation work.
 
 > **What is DevBox?**
 > [Microsoft DevBox](https://devbox.microsoft.com/) is a cloud-based development environment that gives you powerful dev machines in the cloud. I find it incredibly useful because:
