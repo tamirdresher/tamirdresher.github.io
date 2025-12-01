@@ -55,7 +55,7 @@ The server exposes two main tools:
 
 Here's how the interaction flows:
 
-```mermaid
+<div class="mermaid">
 sequenceDiagram
     participant Roo as Roo Agent
     participant MCP as VoiceMCP Server
@@ -89,7 +89,7 @@ sequenceDiagram
     
     MCP-->>Roo: Return "Approach B"
     Roo->>Roo: Continue with answer
-```
+</div>
 
 The interaction flow:
 
