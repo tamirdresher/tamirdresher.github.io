@@ -55,41 +55,8 @@ The server exposes two main tools:
 
 Here's how the interaction flows:
 
-<div class="mermaid">
-sequenceDiagram
-    participant Roo as Roo Agent
-    participant MCP as VoiceMCP Server
-    participant TTS as Azure OpenAI TTS
-    participant Speakers as Speakers/Car Audio
-    participant User as You
-    participant Mic as Microphone
-    participant Whisper as Azure OpenAI Whisper
-
-    Roo->>MCP: ask_user("Which approach?")
-    MCP->>TTS: Convert text to speech
-    TTS-->>MCP: Audio data (MP3)
-    MCP->>Speakers: Play audio
-    Speakers->>User: "Which approach?"
-    
-    User->>Mic: Speaks response
-    Mic->>MCP: Audio data (WAV)
-    MCP->>MCP: Convert WAV to MP3
-    MCP->>Whisper: Transcribe audio
-    Whisper-->>MCP: "Approach B"
-    
-    MCP->>TTS: "I heard: Approach B. Correct?"
-    TTS-->>MCP: Audio data
-    MCP->>Speakers: Play confirmation
-    Speakers->>User: Confirmation question
-    
-    User->>Mic: "Yes"
-    Mic->>MCP: Audio data
-    MCP->>Whisper: Transcribe
-    Whisper-->>MCP: "Yes"
-    
-    MCP-->>Roo: Return "Approach B"
-    Roo->>Roo: Continue with answer
-</div>
+![VoiceMCP Architecture Sequence Diagram](/assets/GivingYourAIAgentMouthAndEars/voice-mcp-sequence-diagram.png)
+*Sequence diagram showing the complete voice interaction flow between Roo, VoiceMCP, Azure OpenAI services, and the user*
 
 The interaction flow:
 
