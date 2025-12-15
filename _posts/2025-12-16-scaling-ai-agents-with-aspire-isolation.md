@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Scaling AI Agents with .NET Aspire: The Missing Isolation Layer for Parallel Development"
-date: 2025-11-16
+date: 2025-12-16
 tags: [aspire, git-worktrees, ai-agents, parallel-development, dotnet, port-management, mcp]
 ---
 
@@ -651,4 +651,5 @@ This approach transformed my AI agent workflow from sequential (one at a time) t
 
 - [Scaling Your AI Development Team with Git Worktrees](/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html) - The foundation for parallel AI development
 - [Seamless Private NPM Feeds in .NET Aspire](/2025/11/15/seamless-private-npm-feeds-in-dotnet-aspire.html) - Handling private packages in Aspire
+
 - [Give Your AI Coding Agent Eyes with Playwright MCP](/2025/11/15/give-your-ai-coding-agent-eyes-with-playwright-mcp.html) - Visual testing for AI agents
