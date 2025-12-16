@@ -23,20 +23,27 @@ An AI agent can create a complete distributed application with just a few lines:
 var builder = DistributedApplication.CreateBuilder(args);
 
 var cache = builder.AddRedis("cache");
-var db = builder.AddPostgres("db").AddDatabase("appdb");
+var db = builder.AddPostgres("db").AddDatabase("notetakerdb");
 var messaging = builder.AddRabbitMQ("messaging");
 
 var backend = builder.AddProject<Projects.Backend>("backend")
     .WithReference(cache)
     .WithReference(db)
-    .WithReference(messaging);
+    .WithReference(messaging)
+    .WithHttpEndpoint(name: "http")
+    .WithExternalHttpEndpoints();
 
-var aiService = builder.AddUvicornApp("ai-service", "../ai-service", "main:app")
-    .WithReference(db);
+var aiService = builder.AddPythonApp("ai-service", "../ai-service", "main.py")
+    .WithReference(db)
+    .WithReference(messaging)
+    .WithHttpEndpoint(env: "PORT", name: "http")
+    .WithExternalHttpEndpoints();
 
 builder.AddJavaScriptApp("frontend", "../frontend")
     .WithReference(backend)
-    .WithReference(aiService);
+    .WithReference(aiService.GetEndpoint("http"))
+    .WithHttpEndpoint(env: "PORT")
+    .WithExternalHttpEndpoints();
 
 builder.Build().Run();
 ```
