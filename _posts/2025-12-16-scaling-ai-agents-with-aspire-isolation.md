@@ -72,6 +72,8 @@ Agent: "Show me traces for slow requests"
 
 This is transformative: instead of debugging individual components, agents can **reason about the entire system**, following request flows across services, correlating logs, and identifying root causes.
 
+Aspire also provides distributed integration testing capabilities that enable agents to run comprehensive tests against the entire system—I'll cover this later in the post.
+
 ## The Problem: Port Conflicts Kill Parallelism
 
 This all works beautifully—until you try to run multiple worktrees in parallel. Every AppHost instance tries to grab the same ports:
@@ -457,6 +459,46 @@ Multiple agents work simultaneously:
 - ✅ No custom NuGet packages
 - ✅ Simple script-based approach
 
+
+## Aspire's Built-in Distributed Testing Support
+
+Beyond orchestration and observability, Aspire provides [distributed testing capabilities](https://aspire.dev/testing/overview/) that enable true end-to-end testing with automatic port isolation. Instead of just running the AppHost, your AI agent can now **run comprehensive tests** against the entire system.
+
+Using [`DistributedApplicationTestingBuilder`](https://aspire.dev/testing/write-your-first-test/?testing-framework=mstest), you can spin up your full application stack—frontend, backend, databases, message queues—with [automatically randomized ports](https://aspire.dev/testing/manage-app-host/?testing-framework=mstest) for complete isolation:
+
+```csharp
+var appHost = await DistributedApplicationTestingBuilder
+    .CreateAsync<Projects.NoteTaker_AppHost>();
+
+var app = await appHost.BuildAsync();
+await app.StartAsync();
+
+// Wait for resources to be healthy
+await app.ResourceNotifications.WaitForResourceHealthyAsync("frontend");
+
+// Get dynamically allocated endpoint
+var frontendUrl = app.GetEndpoint("frontend");
+```
+
+Combine this with [Playwright](https://playwright.dev) and you achieve true end-to-end tests:
+
+```csharp
+// Get the dynamically allocated frontend URL
+var frontendUrl = app.GetEndpoint("frontend").ToString();
+
+// Use Playwright to interact with the UI
+var page = await browser.NewPageAsync();
+await page.GotoAsync(frontendUrl);
+
+// Test the actual UI with all dependencies running
+await page.FillAsync("#title", "Test Task");
+await page.ClickAsync("button[type='submit']");
+await page.WaitForSelectorAsync(".task-item");
+```
+
+In the [NoteTaker example](https://github.com/tamirdresher/worktrees-example/blob/main/src/NoteTaker.Tests/PlaywrightIntegrationTests.cs), tests interact with the actual frontend UI while all backend services, databases, and dependencies run in the background—all with isolated, randomly allocated ports.
+
+**This means your AI agent is now truly autonomous**: it can modify code, run the full test suite with all system dependencies, and validate changes end-to-end without manual intervention. Read more about [accessing resources in tests](https://aspire.dev/testing/accessing-resources/).
 
 ## Under the Hood: How the MCP Proxy Works
 
