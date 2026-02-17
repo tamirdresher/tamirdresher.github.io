@@ -151,12 +151,18 @@ Without both entries, `git check-ignore` silently fails to match, and your Squad
 
 ## Working with Squad
 
-Once everything is set up, you work with Squad through Copilot Chat using the `squad` agent.
+Once everything is set up, you work with Squad through Copilot Chat using the `@squad` agent. Squad delegates work to the right team members based on their defined roles and skills. The team state (who's doing what, what's been decided) persists in the `.ai-team/` directory—which lives in your side repo and can be committed there independently.
 
-Squad delegates work to the right team members based on their defined roles and skills. The team state (who's doing what, what's been decided) persists in the `.ai-team/` directory—which lives in your side repo and can be committed there independently.
+### SquadUI: A Visual Companion
 
-I also installed teh [SquadUI](https://marketplace.visualstudio.com/items?itemName=csharpfritz.squadui) extension by Jeffrey T. Fritz which allows me to see see the team and the decision it made and make it easy to insalls skills 
-![Squad UI](./../assets/trying-squad-without-touching-your-repo/squad-ui.png)
+One thing I'd recommend pairing with Squad is the [SquadUI](https://marketplace.visualstudio.com/items?itemName=csharpfritz.squadui) VS Code extension by Jeffrey T. Fritz. While Squad itself lives in the Copilot Chat, SquadUI gives you a dedicated sidebar with panels for your team roster, installed skills, and decisions—all updating in real time as files in `.ai-team/` change.
+
+![SquadUI extension in VS Code](/assets/trying-squad-without-touching-your-repo/squad-ui.png)
+
+The dashboard (`Ctrl+Shift+D`) is particularly useful—it shows a 30-day velocity chart of completed tasks, a 7-day activity heatmap, and swimlane views of what each team member has been working on. You can also browse and install skills from the [awesome-copilot](https://github.com/github/awesome-copilot) catalog and [skills.sh](https://skills.sh/) directly from the sidebar. It makes the whole Squad experience feel like a proper team management tool rather than just a chat agent.
+
+The nice thing is that since SquadUI reads from `.ai-team/`, it works perfectly with our symlink setup—it doesn't care that the files are symlinked from another repo.
+
 ## Wrapping Up
 
 Squad is an interesting approach to AI-assisted development, and the symlink + git exclude pattern lets you try it on any repo without asking anyone's permission. The whole setup takes about 5 minutes, and if you decide Squad isn't for you, just delete the symlinks—your repo is exactly as it was.
