@@ -38,7 +38,7 @@ Your squad:
 📋  Scribe   — (silent)       Memory, decisions, session logs
 🔄  Ralph    — (monitor)      Work queue, backlog, keep-alive
 
-The RP rename to Microsoft.BasePlatform is captured in decisions.md
+The RP rename to ************* is captured in decisions.md
 — the whole team will see it.
 ```
 
@@ -49,29 +49,23 @@ You can then ask the team to review your codebase. Here, "Holden" (the lead) pro
 
 Holden's review is in. Here's the executive summary:
 
-🏗️ Holden's Architecture Review — Microsoft.BasePlatform Skeleton
+🏗️ Holden's Architecture Review — ********** Skeleton
 
 Verdict: The skeleton is architecturally sound — TypeSpec definitions
-are comprehensive, BaseRP framework integration is correct, and Aspire
+are comprehensive, ***** framework integration is correct, and Aspire
 dev experience is polished. But only 1 of 5 resource types
-(ClusterHubWorkspace) is wired end-to-end.
+(**********) is wired end-to-end.
 
 Critical Findings:
  #  Issue                                                    Priority
- 1  Only Workspace has Config, Validator, DeploymentProvider  P1
- 2  Bug: ClusterHubWorkspaceResourceId references wrong type  P1
+ 1  Only Workspace has Config, Validator, DeploymentProvider   P1
+ 2  Bug: ****************** ResourceId references wrong type   P1
  3  RunCustomGlobalExceptionHandler only lists "workspaceName" P1
- 4  AppHost only creates one Cosmos container                 P1
- 5  Probe models in PRD but not in TypeSpec                   P2
- 6  11 doc files still reference Microsoft.ClusterHub         P2
- 7  API version mismatch: docs vs TypeSpec                    P2
- 8  No unit test project — only integration tests             P2
+ 4  AppHost only creates one Cosmos container                  P1
 
 What's Working Well:
- ✅ TypeSpec definitions cover all 5 resources with proper ARM conventions
  ✅ Discriminated unions for polymorphism (providers, tiers)
- ✅ Aspire AppHost with all 4 emulators
- ✅ Central Package Management, TreatWarningsAsErrors, SourceLink
+ ....
 ```
 
 And when it's time to fix things, Squad delegates to the right team members in parallel—Amos handles the code fix while Drummer improves test diagnostics:
@@ -95,7 +89,7 @@ FIX 1 — Worker/Program.cs:
   AddAzureKeyVaultClient → AddKeyedAzureKeyVaultClient
 
 FIX 2 — cluster-group.tsp:
-  Microsoft.BasePlatform/ClusterHubWorkspace → Microsoft.BasePlatform/workspaces
+  .....
 ```
 
 All of this happened on my work repo, without a single Squad file being committed. Here's how I set it up.
@@ -228,7 +222,7 @@ One thing I'd recommend pairing with Squad is the [SquadUI](https://marketplace.
 
 ![SquadUI extension in VS Code](/assets/trying-squad-without-touching-your-repo/squad-ui.png)
 
-The dashboard (`Ctrl+Shift+D`) is particularly useful—it shows a 30-day velocity chart of completed tasks, a 7-day activity heatmap, and swimlane views of what each team member has been working on. You can also browse and install skills from the [awesome-copilot](https://github.com/github/awesome-copilot) catalog and [skills.sh](https://skills.sh/) directly from the sidebar. It makes the whole Squad experience feel like a proper team management tool rather than just a chat agent.
+You can also browse and install skills from the [awesome-copilot](https://github.com/github/awesome-copilot) catalog and [skills.sh](https://skills.sh/) directly from the sidebar. It makes the whole Squad experience feel like a proper team management tool rather than just a chat agent.
 
 The nice thing is that since SquadUI reads from `.ai-team/`, it works perfectly with our symlink setup—it doesn't care that the files are symlinked from another repo.
 
