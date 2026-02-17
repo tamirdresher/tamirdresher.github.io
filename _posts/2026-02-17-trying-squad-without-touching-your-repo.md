@@ -2,7 +2,7 @@
 layout: post
 title: "Trying Squad AI Team Framework Without Touching Your Real Repo"
 date: 2026-02-17
-tags: [ai-agents, squad, github-copilot, git, symlinks, development-workflow, productivity]
+tags: [ai-agents, squad, github-copilot, git, symlinks, development-workflow, productivity, parallel-development,]
 ---
 
 I've been running multiple AI agents in parallel using [Git worktrees](/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html) for a while now, and it's been a productivity multiplier. But recently I stumbled upon [Squad](https://github.com/bradygaster/squad)—a framework by Brady Gaster that lets you define an entire AI team with specialized roles, all orchestrated through GitHub Copilot. Think of it as going from managing individual AI agents to having a full team with a tech lead, developers, testers, and a documentation writer, all coordinated automatically.
@@ -15,19 +15,88 @@ So I found a way to use Squad on any repo without actually changing it. Here's h
 
 Before we get into the setup, here's what Squad looks like once it's running. When you first invoke it, it greets you and asks about your project:
 
-![Squad greeting](/assets/squad-without-touching-repo/squad-greeting.png)
+```
+> show me the team
+
+Squad v0.4.1
+⚠️ Heads up: In v0.5.0, .ai-team/ will be renamed to .squad/.
+
+Hey Tamir! No team exists yet for this project. Let's set one up.
+What are you building? (language, stack, what it does)
+```
 
 After describing what you're building, Squad creates a full team with specialized roles:
 
-![Squad team roster](/assets/squad-without-touching-repo/squad-team-roster.png)
+```
+✅ Team hired. Try: "Holden, set up the project structure"
+
+Your squad:
+🏗️  Holden   — Lead           Architecture, TypeSpec API design, code review
+🔧  Amos     — Backend Dev    C# controllers, worker, Cosmos DB, queue processing
+⚙️  Naomi    — Infra/DevOps   Aspire integration, deployment, config generation
+🧪  Drummer  — Tester         Unit tests, integration tests, validation
+📋  Scribe   — (silent)       Memory, decisions, session logs
+🔄  Ralph    — (monitor)      Work queue, backlog, keep-alive
+
+The RP rename to Microsoft.BasePlatform is captured in decisions.md
+— the whole team will see it.
+```
 
 You can then ask the team to review your codebase. Here, "Holden" (the lead) produced a thorough architecture review with prioritized findings:
 
-![Holden's architecture review](/assets/squad-without-touching-repo/squad-architecture-review.png)
+```
+> go over the docs and code and give your feedback and suggestions
+
+Holden's review is in. Here's the executive summary:
+
+🏗️ Holden's Architecture Review — Microsoft.BasePlatform Skeleton
+
+Verdict: The skeleton is architecturally sound — TypeSpec definitions
+are comprehensive, BaseRP framework integration is correct, and Aspire
+dev experience is polished. But only 1 of 5 resource types
+(ClusterHubWorkspace) is wired end-to-end.
+
+Critical Findings:
+ #  Issue                                                    Priority
+ 1  Only Workspace has Config, Validator, DeploymentProvider  P1
+ 2  Bug: ClusterHubWorkspaceResourceId references wrong type  P1
+ 3  RunCustomGlobalExceptionHandler only lists "workspaceName" P1
+ 4  AppHost only creates one Cosmos container                 P1
+ 5  Probe models in PRD but not in TypeSpec                   P2
+ 6  11 doc files still reference Microsoft.ClusterHub         P2
+ 7  API version mismatch: docs vs TypeSpec                    P2
+ 8  No unit test project — only integration tests             P2
+
+What's Working Well:
+ ✅ TypeSpec definitions cover all 5 resources with proper ARM conventions
+ ✅ Discriminated unions for polymorphism (providers, tiers)
+ ✅ Aspire AppHost with all 4 emulators
+ ✅ Central Package Management, TreatWarningsAsErrors, SourceLink
+```
 
 And when it's time to fix things, Squad delegates to the right team members in parallel—Amos handles the code fix while Drummer improves test diagnostics:
 
-![Squad spawning agents in parallel](/assets/squad-without-touching-repo/squad-spawning-agents.png)
+```
+> fix the things but first run the tests
+
+Found the root cause. AddAzureQueueServiceClient("queues") registers
+an unkeyed singleton, but line 57 tries to resolve a keyed service.
+The fix is AddKeyedAzureQueueServiceClient("queues").
+
+Now spawning Amos and Drummer — in parallel.
+
+🔧 Amos (claude-sonnet-4.5) — fixing Worker queue registration + TypeSpec bug
+🧪 Drummer (claude-sonnet-4.5) — improving test diagnostics on failure
+
+Both fixes applied and verified with a clean build (0 errors).
+
+FIX 1 — Worker/Program.cs:
+  AddAzureQueueServiceClient → AddKeyedAzureQueueServiceClient
+  AddAzureKeyVaultClient → AddKeyedAzureKeyVaultClient
+
+FIX 2 — cluster-group.tsp:
+  Microsoft.BasePlatform/ClusterHubWorkspace → Microsoft.BasePlatform/workspaces
+```
 
 All of this happened on my work repo, without a single Squad file being committed. Here's how I set it up.
 
