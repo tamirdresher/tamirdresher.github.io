@@ -11,6 +11,26 @@ The catch? Squad works by adding configuration files directly into your reposito
 
 So I found a way to use Squad on any repo without actually changing it. Here's how.
 
+## Squad in Action
+
+Before we get into the setup, here's what Squad looks like once it's running. When you first invoke it, it greets you and asks about your project:
+
+![Squad greeting](/assets/squad-without-touching-repo/squad-greeting.png)
+
+After describing what you're building, Squad creates a full team with specialized roles:
+
+![Squad team roster](/assets/squad-without-touching-repo/squad-team-roster.png)
+
+You can then ask the team to review your codebase. Here, "Holden" (the lead) produced a thorough architecture review with prioritized findings:
+
+![Holden's architecture review](/assets/squad-without-touching-repo/squad-architecture-review.png)
+
+And when it's time to fix things, Squad delegates to the right team members in parallel—Amos handles the code fix while Drummer improves test diagnostics:
+
+![Squad spawning agents in parallel](/assets/squad-without-touching-repo/squad-spawning-agents.png)
+
+All of this happened on my work repo, without a single Squad file being committed. Here's how I set it up.
+
 ## What is Squad?
 
 [Squad](https://bradygaster.github.io/squad/) is an AI team framework that sits on top of GitHub Copilot. Instead of you giving instructions to a single AI agent, you define a team—each member has a role, skills, and responsibilities. When you give Squad a task, it breaks it down and delegates work to the right team members.
@@ -131,23 +151,12 @@ Without both entries, `git check-ignore` silently fails to match, and your Squad
 
 ## Working with Squad
 
-Once everything is set up, you work with Squad through Copilot Chat using the `@squad` agent. Some examples of what you can tell it:
-
-- `@squad add a new team member for security reviews`
-- `@squad implement input validation for the API endpoints`
-- `@squad review the recent changes and suggest improvements`
+Once everything is set up, you work with Squad through Copilot Chat using the `squad` agent.
 
 Squad delegates work to the right team members based on their defined roles and skills. The team state (who's doing what, what's been decided) persists in the `.ai-team/` directory—which lives in your side repo and can be committed there independently.
 
-## Why Not Just Fork?
-
-You might wonder—why not just fork the repo and add Squad there? A few reasons:
-
-1. **Symlinks keep you on the real branch** - You're working directly on your feature branch, not a fork. PRs go straight to the upstream repo.
-2. **No sync overhead** - With a fork, you'd need to keep pulling upstream changes. Symlinks have zero sync cost.
-3. **Clean separation** - Squad's configuration is its own thing. It deserves its own repo with its own commit history.
-4. **Portable** - You can point the same Squad repo at different worktrees or even different projects.
-
+I also installed teh [SquadUI](https://marketplace.visualstudio.com/items?itemName=csharpfritz.squadui) extension by Jeffrey T. Fritz which allows me to see see the team and the decision it made and make it easy to insalls skills 
+![Squad UI](./../assets/trying-squad-without-touching-your-repo/squad-ui.png)
 ## Wrapping Up
 
 Squad is an interesting approach to AI-assisted development, and the symlink + git exclude pattern lets you try it on any repo without asking anyone's permission. The whole setup takes about 5 minutes, and if you decide Squad isn't for you, just delete the symlinks—your repo is exactly as it was.
@@ -155,8 +164,6 @@ Squad is an interesting approach to AI-assisted development, and the symlink + g
 The `git/info/exclude` trick is the real gem here. I've started using it for other local-only tooling too—anything I want on my machine but not in the shared codebase. It's one of those Git features that's been there forever but most people never discover.
 
 ---
-
-*Are you experimenting with AI team frameworks? Have you found other ways to try tools without modifying shared repos? I'd love to hear about it in the comments.*
 
 ## Related Posts
 
