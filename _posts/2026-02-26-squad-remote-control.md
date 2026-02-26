@@ -15,7 +15,7 @@ So I built it. Here's how it works and the technical journey to get there.
 
 You run `squad start --tunnel --yolo` in your terminal. Copilot CLI launches normally — full TUI with diffs, colors, tool calls, everything. A devtunnel URL and QR code appear. Open that URL on your phone:
 
-![Copilot CLI running in the browser via xterm.js](/assets/squad-remote-control/xterm-browser.png)
+![Copilot CLI running in the browser via xterm.js](/assets/squad-remote-control/mobile-terminal.png)
 
 That's the **real Copilot CLI** running in your browser. Not a simplified chat UI — the actual terminal output with all the ANSI colors, box drawing characters, and interactive prompts. You can type from your phone and it goes straight into the copilot session. Arrow keys, Tab, Escape, Ctrl+C — all available via a key bar at the bottom.
 
@@ -105,6 +105,16 @@ This was a non-negotiable requirement. Here's how it works:
 - **No central server.** There's no backend we deploy or maintain. The bridge runs on your machine, devtunnel handles the relay, xterm.js runs in the browser. Everything is peer-to-peer through Microsoft's infrastructure.
 
 To explicitly share with your team, you'd need to add `--tenant` (Entra org) or `--org` (GitHub org) — neither of which happens by default.
+
+## Multi-Session Dashboard
+
+Running multiple sessions across repos and worktrees? The "Sessions" button shows all your active Squad sessions:
+
+![Sessions dashboard showing two active sessions](/assets/squad-remote-control/sessions-dashboard.png)
+
+Each session card shows the repo, branch, and machine. Tap one to connect. The dashboard also lets you clean up stale tunnels — sessions where the bridge process died but the tunnel wasn't cleaned up.
+
+Under the hood, each `squad start --tunnel` tags its devtunnel with labels: repo name, branch, machine hostname, and port. The dashboard queries `devtunnel list --labels squad` to discover all your sessions. Since devtunnel scopes the list to your identity, you only see your own sessions — even across multiple machines.
 
 ## How to Use It
 
