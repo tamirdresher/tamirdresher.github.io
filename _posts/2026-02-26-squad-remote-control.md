@@ -5,7 +5,7 @@ date: 2026-02-26
 tags: [ai-agents, squad, github-copilot, remote-control, devtunnel, xterm, pty, mobile, development-workflow]
 ---
 
-I've been using GitHub Copilot CLI + [Squad](https://github.com/bradygaster/squad) as my daily driver for coding — it edits files, runs commands, searches my codebase, all from the terminal. But I kept running into the same frustration: I'd kick off a task, walk away from my desk, and have no way to check on it or send follow-up instructions from my phone.
+I've been using GitHub Copilot CLI as my daily driver for coding — it edits files, runs commands, searches my codebase, all from the terminal. But I kept running into the same frustration: I'd kick off a task, walk away from my desk, and have no way to check on it or send follow-up instructions from my phone.
 
 Claude Code has [Remote Control](https://code.claude.com/docs/en/remote-control). Matt Kotsenas built [Uplink](https://github.com/MattKotsenas/uplink) for Copilot. I wanted something similar but integrated into [Squad](https://github.com/bradygaster/squad) — my AI team framework — with multi-session support across repos and machines.
 
@@ -15,7 +15,7 @@ So I built it. Here's how it works and the technical journey to get there.
 
 You run `squad start --tunnel --yolo` in your terminal. Copilot CLI launches normally — full TUI with diffs, colors, tool calls, everything. A devtunnel URL and QR code appear. Open that URL on your phone:
 
-![Copilot CLI running in the browser via xterm.js](/assets/squad-remote-control/mobile-terminal.png)
+![Copilot CLI running in the browser via xterm.js](/assets/squad-remote-control/xterm-browser.png)
 
 That's the **real Copilot CLI** running in your browser. Not a simplified chat UI — the actual terminal output with all the ANSI colors, box drawing characters, and interactive prompts. You can type from your phone and it goes straight into the copilot session. Arrow keys, Tab, Escape, Ctrl+C — all available via a key bar at the bottom.
 
@@ -42,7 +42,7 @@ It worked. Real Copilot responses, streaming, tool calls, permissions. But it wa
 
 ### Attempt 3: The PTY Breakthrough
 
-The insight: **don't use `--acp` at all.** Instead, spawn `copilot` (without any flags) inside a pseudo-terminal using [node-pty](https://github.com/microsoft/node-pty). The copilot process thinks it's running in a real terminal and renders its full TUI. We capture the raw terminal output (ANSI escape codes and all) and stream it to the browser, where [xterm.js](https://xtermjs.org/) — a real terminal emulator — renders it pixel-perfectly.
+The insight: **don't use `--acp` at all.** Instead, spawn `copilot` (without any flags) inside a pseudo-terminal using [node-pty](https://github.com/nicely/node-pty). The copilot process thinks it's running in a real terminal and renders its full TUI. We capture the raw terminal output (ANSI escape codes and all) and stream it to the browser, where [xterm.js](https://xtermjs.org/) — a real terminal emulator — renders it pixel-perfectly.
 
 ```
 Your keyboard → PTY stdin ← Phone keyboard (via WebSocket)
@@ -106,16 +106,6 @@ This was a non-negotiable requirement. Here's how it works:
 
 To explicitly share with your team, you'd need to add `--tenant` (Entra org) or `--org` (GitHub org) — neither of which happens by default.
 
-## Multi-Session Dashboard
-
-Running multiple sessions across repos and worktrees? The "Sessions" button shows all your active Squad sessions:
-
-![Sessions dashboard showing two active sessions](/assets/squad-remote-control/sessions-dashboard.png)
-
-Each session card shows the repo, branch, and machine. Tap one to connect. The dashboard also lets you clean up stale tunnels — sessions where the bridge process died but the tunnel wasn't cleaned up.
-
-Under the hood, each `squad start --tunnel` tags its devtunnel with labels: repo name, branch, machine hostname, and port. The dashboard queries `devtunnel list --labels squad` to discover all your sessions. Since devtunnel scopes the list to your identity, you only see your own sessions — even across multiple machines.
-
 ## How to Use It
 
 ```bash
@@ -160,6 +150,6 @@ On your phone, you'll see:
 - **Push notifications** — get notified when an agent needs your input or a task completes
 - **Multi-machine dashboard** — the Sessions view works but needs OAuth for cross-machine tunnel discovery
 
-The code is on the `squad/remote-control` branch of the Squad repo. 23 commits from zero to working — including all the failed ACP attempts that led to the PTY breakthrough.
+The code is on the `squad/remote-control` branch of the Squad repo. 19 commits from zero to working — including all the failed ACP attempts that led to the PTY breakthrough.
 
 Sometimes the "wrong" approach teaches you why the right one works. 🖖
