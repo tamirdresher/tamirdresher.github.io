@@ -42,7 +42,7 @@ It worked. Real Copilot responses, streaming, tool calls, permissions. But it wa
 
 ### Attempt 3: The PTY Breakthrough
 
-The insight: **don't use `--acp` at all.** Instead, spawn `copilot` (without any flags) inside a pseudo-terminal using [node-pty](https://github.com/nicely/node-pty). The copilot process thinks it's running in a real terminal and renders its full TUI. We capture the raw terminal output (ANSI escape codes and all) and stream it to the browser, where [xterm.js](https://xtermjs.org/) — a real terminal emulator — renders it pixel-perfectly.
+The insight: **don't use `--acp` at all.** Instead, spawn `copilot` (without any flags) inside a pseudo-terminal using [node-pty](https://github.com/microsoft/node-pty). The copilot process thinks it's running in a real terminal and renders its full TUI. We capture the raw terminal output (ANSI escape codes and all) and stream it to the browser, where [xterm.js](https://xtermjs.org/) — a real terminal emulator — renders it pixel-perfectly.
 
 ```
 Your keyboard → PTY stdin ← Phone keyboard (via WebSocket)
@@ -160,6 +160,6 @@ On your phone, you'll see:
 - **Push notifications** — get notified when an agent needs your input or a task completes
 - **Multi-machine dashboard** — the Sessions view works but needs OAuth for cross-machine tunnel discovery
 
-The code is on the `squad/remote-control` branch of the Squad repo. 19 commits from zero to working — including all the failed ACP attempts that led to the PTY breakthrough.
+The code is on the `squad/remote-control` branch of the Squad repo. 23 commits from zero to working — including all the failed ACP attempts that led to the PTY breakthrough.
 
 Sometimes the "wrong" approach teaches you why the right one works. 🖖
