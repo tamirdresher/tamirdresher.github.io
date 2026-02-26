@@ -5,7 +5,7 @@ date: 2026-02-26
 tags: [ai-agents, squad, github-copilot, remote-control, devtunnel, xterm, pty, mobile, development-workflow]
 ---
 
-I've been using GitHub Copilot CLI as my daily driver for coding — it edits files, runs commands, searches my codebase, all from the terminal. But I kept running into the same frustration: I'd kick off a task, walk away from my desk, and have no way to check on it or send follow-up instructions from my phone.
+I've been using GitHub Copilot CLI + [Squad](https://github.com/bradygaster/squad) as my daily driver for coding — it edits files, runs commands, searches my codebase, all from the terminal. But I kept running into the same frustration: I'd kick off a task, walk away from my desk, and have no way to check on it or send follow-up instructions from my phone.
 
 Claude Code has [Remote Control](https://code.claude.com/docs/en/remote-control). Matt Kotsenas built [Uplink](https://github.com/MattKotsenas/uplink) for Copilot. I wanted something similar but integrated into [Squad](https://github.com/bradygaster/squad) — my AI team framework — with multi-session support across repos and machines.
 
