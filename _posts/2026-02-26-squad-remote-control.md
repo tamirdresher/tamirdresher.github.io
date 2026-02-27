@@ -163,3 +163,27 @@ On your phone, you'll see:
 The code is on the `squad/remote-control` branch of the Squad repo. 23 commits from zero to working — including all the failed ACP attempts that led to the PTY breakthrough.
 
 Sometimes the "wrong" approach teaches you why the right one works. 🖖
+
+---
+
+## Update: cli-tunnel — Standalone Tool
+
+After publishing this post, several people asked if they could use the tunneling capability without Squad. So I extracted it into a standalone tool: **[cli-tunnel](https://github.com/tamirdresher/cli-tunnel)**.
+
+It works with **any CLI app**, not just Copilot:
+
+```bash
+# Tunnel copilot to your phone
+npx cli-tunnel --tunnel copilot --yolo
+
+# Tunnel any interactive CLI
+npx cli-tunnel --tunnel python -i
+npx cli-tunnel --tunnel htop
+
+# Name your session for the dashboard
+npx cli-tunnel --tunnel --name wizard copilot --agent squad
+```
+
+Same PTY + devtunnel + xterm.js architecture, same security (private by default), same key bar for mobile navigation. Just without the Squad framework dependency.
+
+Install globally: `npm install -g cli-tunnel`, or use directly with `npx`.
