@@ -65,30 +65,19 @@ A few details that matter:
 - **Auto-stops on view change** — if you switch to the dashboard or disconnect, recording stops cleanly
 - **Canvas selection** — in grid fullscreen mode, it records the focused panel's canvas, not the hidden main terminal
 
-## The Security Journey: 4 Audits, 70+ Findings
+## Security: Seven Layers Deep
 
-This is the part I'm most proud of. Remote terminal access is inherently scary — someone types commands on your machine from the internet. The security had to be right.
-
-I ran four adversarial red team simulations using dual-model (Claude + GPT) 10-persona attacks. Each audit independently found findings, then results were merged and deduplicated. Across all four:
-
-| Audit | Findings | Grade | Key Fixes |
-|-------|----------|-------|-----------|
-| #1 | 21 | F | execFileSync, SRI hashes, CORS removal, XSS escaping |
-| #2 | 19 | D | HTTP API auth, redaction regex, Origin validation, env filtering |
-| #3 | 36 | C- | EISDIR crash, NaN guard, audit logging, ticket GC |
-| #4 | 16 | C | Hub auth, rate limiting, CSP hardening, HSTS |
-
-The security model now has seven layers:
+Remote terminal access is inherently scary — someone types commands on your machine from the internet. The security had to be right. Over several iterations, I hardened cli-tunnel with a layered security model:
 
 1. **Devtunnel** — private by default, only your MS/GitHub identity can connect
 2. **Session token** — random UUID, 4-hour TTL
 3. **Ticket-based WebSocket** — single-use, 60-second expiry tickets for WS auth
 4. **Rate limiting** — 30 req/min per IP for HTTP, 10/min for tickets, 429 on burst
 5. **Environment isolation** — dangerous vars (NODE_OPTIONS, BASH_ENV, LD_PRELOAD) stripped from PTY
-6. **Secret redaction** — JWT, Slack, npm, PEM, OpenAI, GitHub, AWS patterns scrubbed from audit logs
+6. **Secret redaction** — JWT, OpenAI, GitHub, AWS, and other credential patterns scrubbed from audit logs
 7. **Connection limits** — 5 global, 2 per IP, 30s ping/pong heartbeat
 
-Every release runs 32 integration tests before publish. GitHub Actions pinned to commit SHAs.
+Every release runs 32 integration tests before publish. The CI pipeline tests HTTP endpoints, WebSocket auth, hub mode, rate limiting, and secret redaction patterns. GitHub Actions are pinned to commit SHAs.
 
 ## Quality of Life
 
@@ -104,7 +93,7 @@ A few smaller things that made the experience much better:
 
 - **asciinema recording** — server-side `.cast` files alongside the browser video recording
 - **Cross-machine grid** — connect to sessions on other machines through their hubs
-- **Backport to Squad** — the security fixes are already backported, features coming next
+- **Session sharing** — share a read-only view of your terminal with teammates
 
 Try it: `npx cli-tunnel copilot --yolo`
 
