@@ -57,7 +57,7 @@ Each Codespace had a devcontainer.json that looked like this:
 }
 ```
 
-When `squad init` ran, it cast the same Star Trek TNG team in each Codespace — Riker as Lead, Troi on Frontend, Data on Backend, Worf on Testing, Geordi on DevOps. The casting is deterministic per repo name, so all three Codespaces got the same crew. But the `SQUAD_TEAM` env var told each Squad instance which issues to care about.
+When `squad init` ran, it cast the same Star Trek TNG team in each Codespace — Riker as Lead, Troi on Frontend, Geordi on Backend, Worf on Testing, Picard on DevOps. The casting is deterministic per repo name, so all three Codespaces got the same crew. But the `SQUAD_TEAM` env var told each Squad instance which issues to care about.
 
 The first message to each Codespace was simple:
 
