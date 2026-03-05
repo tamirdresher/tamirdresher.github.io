@@ -13,6 +13,8 @@ The technique works for **any** CLI tool or terminal-based demo. Here's the full
 
 I had a dotnet CLI tool with 12 commands to demo. Each command needed to run interactively in a real terminal — not a static screenshot. And I wanted AI narration explaining each step as it happened. Manual video editing? No thanks.
 
+![The CLI help output — 12 commands to demo](/assets/ai-produced-demo-video/demo-help.png)
+
 ## Step 1: CLI Tunnel — AI Typing Into a Real Terminal
 
 The first problem: how does an AI agent execute commands in an interactive terminal it can see? My agent runs in GitHub Copilot CLI, but I needed it to type commands into a **separate** PowerShell window that I was screen-recording.
@@ -115,6 +117,12 @@ const titleY = interpolate(
 The Remotion skills package (`remotion-dev/skills`) was installed globally, giving the AI agent best-practice patterns for compositions, sequencing, and animations.
 
 The final render: `npx remotion render MyVideo --output hackathon-video.mp4`
+
+![Remotion title card — spring-animated intro](/assets/ai-produced-demo-video/remotion-title-card.png)
+
+The lower-third labels appear during the demo, showing which command is running:
+
+![Lower-third label overlay during the demo](/assets/ai-produced-demo-video/remotion-lower-third.png)
 
 ## Step 6: Teams Notifications — Staying in the Loop
 
