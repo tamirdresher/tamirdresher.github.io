@@ -2,20 +2,16 @@
 layout: post
 title: "I Let AI Produce My Entire Hackathon Demo Video — Here's How"
 date: 2026-03-06
-tags: [ai-agents, github-copilot, video-production, edge-tts, remotion, ffmpeg, cli-tunnel, hackathon, configgen]
+tags: [ai-agents, github-copilot, video-production, edge-tts, remotion, ffmpeg, cli-tunnel, hackathon]
 ---
 
-I needed a demo video for my Hackathon 2026 project — the ConfigGen CLI. Twelve commands, live terminal recordings, synchronized narration, animated title cards, the whole thing. Instead of spending hours in a video editor, I had my AI agent produce everything end-to-end. The final video was rendered, narrated, and delivered to my OneDrive — all while I watched from my phone via Teams.
+I needed a demo video for my Hackathon 2026 project — an internal CLI tool at Microsoft. Twelve commands, live terminal recordings, synchronized narration, animated title cards, the whole thing. Instead of spending hours in a video editor, I had my AI agent produce everything end-to-end. The final video was rendered, narrated, and delivered to my OneDrive — all while I watched from my phone via Teams.
 
-Here's the full pipeline and the tools that made it work.
+The technique works for **any** CLI tool or terminal-based demo. Here's the full pipeline.
 
 ## The Challenge
 
-The ConfigGen CLI is a dotnet tool that helps teams scaffold, configure, deploy, and manage ConfigGen topology projects. I wanted to demo all 12 commands in a single video:
-
-`help` → `new` → `update` → `docs list` → `docs show` → `add` (fuzzy search) → `add` (with `--project`) → `generate` → `deploy` → `pipeline create` → `init` → `support`
-
-Each command needed to run interactively in a real terminal — not a static screenshot. And I wanted AI narration explaining each step as it happened.
+I had a dotnet CLI tool with 12 commands to demo. Each command needed to run interactively in a real terminal — not a static screenshot. And I wanted AI narration explaining each step as it happened. Manual video editing? No thanks.
 
 ## Step 1: CLI Tunnel — AI Typing Into a Real Terminal
 
@@ -31,16 +27,18 @@ The workflow:
 3. My AI agent connects via Playwright to `http://127.0.0.1:{port}?token={token}`
 4. Agent types each command, waits for output, then moves to the next
 
-The agent had a 12-step script with precise timing — wait for prompts, handle interactive selections (like choosing a template or confirming a marketplace install), and verify output before proceeding.
+The agent had a 12-step script with precise timing — wait for prompts, handle interactive selections (like choosing options from a list or confirming installs), and verify output before proceeding.
+
+**This works for any CLI tool** — npm, dotnet, pip, kubectl, terraform — anything you'd type in a terminal. The AI sees the web UI, types the command, reads the output, and decides what to do next.
 
 ## Step 2: Recording — 12 Takes and Counting
 
 Getting a clean recording was harder than expected. Over 12 attempts, we hit:
 
-- **Stale binaries**: The globally installed `configgen.exe` was running an old version, not the one I just fixed. The agent had to replace the DLL inside `~/.dotnet/tools/.store/` directly.
-- **Marketplace conflicts**: `configgen init` was failing because a marketplace plugin was "already registered." We fixed InitCommand.cs to treat that as success.
-- **Topology discovery bugs**: `configgen add` couldn't find the topology project when multiple candidates existed. We added interactive selection.
-- **Hidden files**: Template projects left `.editorconfig` and `.gitignore` files that blocked `configgen new` from creating a fresh project.
+- **Stale binaries**: The globally installed tool was running an old version, not the one I just fixed. The agent had to replace the DLL inside the global tool store directly.
+- **Plugin conflicts**: A marketplace plugin was "already registered," causing errors. We fixed the source code to treat that as success.
+- **Discovery bugs**: One command couldn't find the project when multiple candidates existed. We added interactive selection.
+- **Hidden files**: Previous project files blocked creating a fresh project from template.
 
 Each fix was committed, pushed, and the agent rebuilt the binary — all without me touching the keyboard. The final run (take 12) captured all 12 commands cleanly.
 
@@ -52,23 +50,16 @@ For voiceover, I used Microsoft's [Edge TTS](https://github.com/rany2/edge-tts) 
 import edge_tts
 
 communicate = edge_tts.Communicate(
-    "Meet the ConfigGen CLI.",
+    "Meet the CLI tool.",
     "en-US-GuyNeural",
     rate="+22%"
 )
 await communicate.save("segment.mp3")
 ```
 
-The key insight was **per-segment generation**. Instead of one long narration track, I generated 14 individual audio clips — one per command — each timed to match the video timestamps:
+The key insight was **per-segment generation**. Instead of one long narration track, I generated 14 individual audio clips — one per command — each timed to match the video timestamps.
 
-| Seconds | Narration |
-|---------|-----------|
-| 0-3 | "Meet the ConfigGen CLI." |
-| 4-14 | "The new command scaffolds a project interactively..." |
-| 55-59 | "Add supports fuzzy search. Type any resource name to find it." |
-| 83-89 | "Pipeline create registers your generated YAML pipelines in Azure DevOps." |
-
-Each segment was padded with silence using ffmpeg's `adelay` filter to place it at the exact timestamp, then all segments were mixed into a single narration track.
+To figure out the timestamps, I extracted one frame per second with ffmpeg, then analyzed frame file sizes — large files mean content on screen, small files mean a cleared terminal. This gave me precise boundaries for each command segment without manual timecoding.
 
 ## Step 4: FFmpeg — The Audio Swiss Army Knife
 
@@ -119,25 +110,27 @@ const titleY = interpolate(
 ))}
 ```
 
-**Outro.tsx** — Closing card with the install command.
+**Outro.tsx** — Closing card with the install command and credits.
 
-The final render: `npx remotion render ConfigGenCLI --output "ConfigGen CLI - Hackathon.mp4"`
+The Remotion skills package (`remotion-dev/skills`) was installed globally, giving the AI agent best-practice patterns for compositions, sequencing, and animations.
+
+The final render: `npx remotion render MyVideo --output hackathon-video.mp4`
 
 ![Remotion title card animation](/assets/ai-produced-demo-video/blog-animation.png)
 
 ## Step 6: Teams Notifications — Staying in the Loop
 
-Throughout the process, my agent sent me updates via a Teams incoming webhook. Every time a video was rendered or a fix was applied, I got a message:
+Throughout the process, my agent sent me updates via a Teams incoming webhook. Every time a video was rendered or a fix was applied, I got a message on my phone:
 
 ```
-🎬 ConfigGen CLI Videos — v3 (FINAL)
+🎬 Demo Videos — v3 (FINAL)
 - Volume tuned to 4x
-- Fixed "add" narration: finds any resource, not just StorageAccount
+- Fixed narration text for the add command
 - Correct install command in outro
 📂 Files in OneDrive > Videos
 ```
 
-I reviewed each version from my phone, sent feedback ("volume too low", "init should come before support"), and the agent iterated without me touching my laptop.
+I reviewed each version from my phone, sent feedback ("volume too low", "swap the order of two commands"), and the agent iterated without me touching my laptop.
 
 ## The Complete Tool Chain
 
@@ -156,7 +149,7 @@ Total cost for the entire video production pipeline: **$0**.
 
 ## What I Learned
 
-1. **Frame-by-frame analysis works.** Extracting 1 frame per second with ffmpeg and analyzing file sizes to detect screen clears gave me precise timestamps for narration sync.
+1. **Frame-by-frame analysis works.** Extracting 1 frame per second with ffmpeg and analyzing file sizes to detect screen clears gave me precise timestamps for narration sync — no manual timecoding needed.
 
 2. **Per-segment TTS is the way.** Generating one long narration and hoping it lines up is a fantasy. Generate individual clips timed to your video segments.
 
@@ -164,17 +157,19 @@ Total cost for the entire video production pipeline: **$0**.
 
 4. **The AI agent as video editor is surprisingly effective.** It can't judge aesthetics, but it can execute a precise production pipeline — generate audio, combine tracks, render frames, iterate on feedback — faster than I could in any GUI tool.
 
-5. **CLI Tunnel is magic for demo recordings.** Having the AI type real commands in a real terminal, visible to screen recording, is far more authentic than synthetic terminal screenshots.
+5. **CLI Tunnel is magic for demo recordings.** Having the AI type real commands in a real terminal, visible to screen recording, is far more authentic than synthetic terminal screenshots or asciinema recordings.
 
 ## Try It Yourself
 
-Install the ConfigGen CLI:
-```bash
-dotnet tool install -g ConfigurationGeneration.Cli \
-  --add-source https://pkgs.dev.azure.com/microsoft/_packaging/WDATP/nuget/v3/index.json
-```
+This pipeline works for any terminal-based demo:
 
-The full video is available on my OneDrive — ask me for a link if you're interested in seeing the final result.
+1. Install CLI Tunnel and start recording your terminal
+2. Have your AI agent connect via Playwright and execute your demo script
+3. Generate per-segment narration with Edge TTS
+4. Mix audio with ffmpeg using adelay + amix
+5. (Optional) Wrap in Remotion for title cards and labels
+
+The hardest part isn't the tools — it's getting a clean recording. Budget for multiple takes, and let the AI agent handle the retries.
 
 ---
 
