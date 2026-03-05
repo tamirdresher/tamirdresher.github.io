@@ -10,11 +10,11 @@ series_part: 2
 > *"We are the Borg. We will add your technological distinctiveness to our own."*
 > — The Borg, Star Trek: The Next Generation
 
-In [Part 1](/2026/03/04/scaling-ai-part1-first-team.html), I set up my first Squad team — Riker, Troi, Data, Worf, and Geordi — on a single repo and watched them tear through a backlog in parallel. It was incredible. Then I did what any excited engineer does: I set up Squad on a second repo.
+In [Part 1](/2026/03/04/scaling-ai-part1-first-team.html), I set up my first Squad team — Riker, Troi, Geordi, Worf, and Picard — on a single repo and watched them tear through a backlog in parallel. It was incredible. Then I did what any excited engineer does: I set up Squad on a second repo.
 
 And the second team didn't know *anything* the first team had learned.
 
-Data in `auth-service` had figured out our retry pattern, our error handling conventions, our logging format. Data in `token-manager` — same character, same role — stared at me blankly when I mentioned any of it. Each repo's Squad was an island. An isolated drone without a Collective.
+Geordi in `auth-service` had figured out our retry pattern, our error handling conventions, our logging format. Geordi in `token-manager` — same character, same role — stared at me blankly when I mentioned any of it. Each repo's Squad was an island. An isolated drone without a Collective.
 
 That's when I realized: the hard problem of scaling AI teams isn't making them work in one repo. It's making them share knowledge the way a real engineering organization does.
 
@@ -42,19 +42,19 @@ Each level produces knowledge that should flow down. Architecture standards are 
 
 ## The Problem Without Upstream
 
-Here's what happened to me. I set up Squad on `auth-service` and told Data: "Always use managed identity for Azure resources. Never use connection strings with secrets."
+Here's what happened to me. I set up Squad on `auth-service` and told Geordi: "Always use managed identity for Azure resources. Never use connection strings with secrets."
 
-Data nods. He remembers. Every time he touches Azure code in `auth-service`, he uses managed identity. Perfect.
+Geordi nods. He remembers. Every time he touches Azure code in `auth-service`, he uses managed identity. Perfect.
 
-Now I open `token-manager` — same team, different repo. I start a new Squad session. Data is there (I cast him again because he's great at infrastructure). I ask him to set up an Azure Key Vault connection.
+Now I open `token-manager` — same team, different repo. I start a new Squad session. Geordi is there (I cast him again because he's great at infrastructure). I ask him to set up an Azure Key Vault connection.
 
 He reaches for a connection string.
 
-*"Data, we talked about this. Managed identity."*
+*"Geordi, we talked about this. Managed identity."*
 
 *"I have no record of that decision."*
 
-Because I didn't talk about this — not with *this* Data. This Data lives in a different repo. He has no memory of what I told the other Data. I'm repeating myself, and I'll keep repeating myself across every repo in every team.
+Because I didn't talk about this — not with *this* Geordi. This Geordi lives in a different repo. He has no memory of what I told the other Geordi. I'm repeating myself, and I'll keep repeating myself across every repo in every team.
 
 Multiply this by an organization with thirty repos across five teams. You're not engineering anymore — you're a broken record, repeating "use managed identity" and "always add structured logging" and "error responses follow RFC 7807" to every new Squad you spin up. It's the AI equivalent of writing coding standards in a wiki that nobody reads.
 
@@ -90,7 +90,7 @@ acme/auth-team-squad.git           ← Team level (another repo with .squad/)
 
 auth-service/.squad/               ← Repo level
   decisions.md                     ← Repo-specific decisions
-  agents/                          ← This repo's team (Riker, Data, etc.)
+  agents/                          ← This repo's team (Riker, Geordi, etc.)
 ```
 
 When Squad starts a session, it reads the repo's own `.squad/` context, then reads each upstream in order. An agent working in `auth-service` knows about the org-wide TypeScript policy AND the team-level JWT deprecation AND the repo-specific implementation decisions. All without you saying a word.
@@ -172,13 +172,13 @@ Not everything flows through the hierarchy. Squad is deliberate about what cross
 - **Decisions** — Policies, conventions, architectural principles. "All APIs use OpenAPI spec." "Error responses follow RFC 7807." These are the laws of the org, the regulations of the team, and the local customs of the repo.
 - **Skills** — Reusable patterns with confidence levels. A retry-with-exponential-backoff skill. A structured-logging-setup skill. An Azure-managed-identity-connection skill.
 - **Wisdom** — Accumulated context and lessons learned. "Last time we changed the token format, three downstream services broke." "The billing API has a 500ms SLA."
-- **Casting Policy** — Default team shapes and role assignments. "Security-related issues always route to Worf." "Database migrations go to Data."
-- **Routing rules** — Work distribution patterns. "Frontend bugs go to Geordi." "API design tasks go to Riker."
+- **Casting Policy** — Default team shapes and role assignments. "Security-related issues always route to Worf." "Database migrations go to Geordi."
+- **Routing rules** — Work distribution patterns. "Frontend bugs go to Picard." "API design tasks go to Riker."
 
 **What does NOT get shared:**
 
 - **Agent identities** — Each repo casts its own team. Riker in `auth-service` and Riker in `payments-api` are different instances. They share knowledge through the hierarchy, not through some telepathic link.
-- **History** — An agent's conversation history is personal to that agent in that repo. What Data discussed with you about `auth-service`'s token rotation stays in `auth-service`.
+- **History** — An agent's conversation history is personal to that agent in that repo. What Geordi discussed with you about `auth-service`'s token rotation stays in `auth-service`.
 - **Orchestration logs** — Task assignment, parallel execution state, session artifacts — all repo-specific.
 
 Think of it like the Borg: individual drones have their own hardware and local task state. The Collective shares directives, tactics, and accumulated knowledge. No drone needs to know what another drone had for breakfast.
@@ -187,11 +187,11 @@ Think of it like the Borg: individual drones have their own hardware and local t
 
 Here's where the Collective analogy gets real.
 
-Data is working in `auth-service` and discovers a pattern: every time we connect to Azure Key Vault, we need to handle the `ManagedIdentityCredential` fallback chain in a specific way. He captures it as a **skill** — a reusable pattern with steps, context, and confidence metadata.
+Geordi is working in `auth-service` and discovers a pattern: every time we connect to Azure Key Vault, we need to handle the `ManagedIdentityCredential` fallback chain in a specific way. He captures it as a **skill** — a reusable pattern with steps, context, and confidence metadata.
 
 Initially, the skill is **low confidence**. One observation, one repo.
 
-Two weeks later, Geordi is working in `token-manager` — a different repo, same team. He hits the same Azure Key Vault pattern. Squad suggests Data's skill. Geordi uses it. Confidence bumps to **medium**.
+Two weeks later, Picard is working in `token-manager` — a different repo, same team. He hits the same Azure Key Vault pattern. Squad suggests Geordi's skill. Picard uses it. Confidence bumps to **medium**.
 
 A month later, Troi in `identity-provider` uses it too. The team runs a skill review ceremony. The pattern is validated across three repos. Confidence hits **high**.
 
@@ -224,7 +224,7 @@ I'm leading the Platform Engineering org. I create an org-level upstream repo �
 
 Riker is working in `auth-service`. He builds a new `/tokens` endpoint. He automatically generates an OpenAPI spec, writes it in TypeScript, and adds correlation ID logging. He didn't need to be told — he inherited the org decisions.
 
-Data is working in `payments-api`. He builds a `/invoices` endpoint. Same thing — OpenAPI spec, TypeScript, correlation IDs. Two different repos, two different teams, same standards. No copy-paste, no wiki nobody reads, no "we forgot to tell the new team."
+Geordi is working in `payments-api`. He builds a `/invoices` endpoint. Same thing — OpenAPI spec, TypeScript, correlation IDs. Two different repos, two different teams, same standards. No copy-paste, no wiki nobody reads, no "we forgot to tell the new team."
 
 Worf is working in `infra-tools`. He builds a Terraform validation CLI. The org decision says "TypeScript for all new services" — but this isn't a service, it's a CLI tool, and the team decides Go is a better fit. The repo-level decision overrides the org default. Worf builds it in Go. The org-wide logging and OpenAPI decisions? Those still apply where relevant.
 
@@ -257,7 +257,7 @@ Pre-built knowledge packages, ready to install:
 
 Installing a plugin adds its skills to your Squad's knowledge base at whatever level you choose — org-wide, team-level, or just one repo. Your agents immediately benefit from patterns that the community has validated across thousands of projects.
 
-And it flows both ways. That Azure Key Vault managed identity skill that Data discovered and your org promoted? If it's generic enough, publish it as a plugin. Other Squad teams worldwide benefit. The Collective grows beyond your organization.
+And it flows both ways. That Azure Key Vault managed identity skill that Geordi discovered and your org promoted? If it's generic enough, publish it as a plugin. Other Squad teams worldwide benefit. The Collective grows beyond your organization.
 
 ## What's Next
 
