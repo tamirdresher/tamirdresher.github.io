@@ -31,11 +31,11 @@ For my repo, Squad picked **Star Trek: The Next Generation**:
 |------|-------|-----------|
 | 🎖️ Lead | **Riker** | Architecture, task decomposition, delegation |
 | 🎨 Frontend | **Troi** | UI components, styling, user experience |
-| ⚙️ Backend | **Data** | APIs, data models, business logic |
+| ⚙️ Backend | **Geordi** | APIs, data models, business logic |
 | 🧪 Tester | **Worf** | Test suites, edge cases, validation |
-| 🔧 DevOps | **Geordi** | CI/CD, infrastructure, deployment |
+| 🔧 DevOps | **Picard** | CI/CD, infrastructure, deployment |
 
-The names aren't just cosmetic. Each agent gets a persona that shapes how they communicate and approach problems. Data is precise and thorough. Troi is empathetic about user experience. Worf is aggressive about edge cases. It sounds gimmicky until you watch them work — the persona system actually produces meaningfully different approaches to the same problem.
+The names aren't just cosmetic. Each agent gets a persona that shapes how they communicate and approach problems. Geordi is precise and thorough. Troi is empathetic about user experience. Worf is aggressive about edge cases. It sounds gimmicky until you watch them work — the persona system actually produces meaningfully different approaches to the same problem.
 
 ## Giving Your First Task
 
@@ -50,12 +50,12 @@ And then Riker takes over. As the Lead, he doesn't start coding — he *analyzes
 ```
 🎖️ Riker: Breaking down login page task...
    → Troi: Build login form component with email/password fields
-   → Data: Create authentication API endpoint with JWT
+   → Geordi: Create authentication API endpoint with JWT
    → Worf: Write integration tests for login flow
-   → Geordi: Add auth middleware to CI pipeline
+   → Picard: Add auth middleware to CI pipeline
 ```
 
-All four agents start working simultaneously. Troi is creating React components while Data is building the Express endpoint while Worf is writing test cases while Geordi is updating the pipeline config. This isn't sequential — it's genuinely parallel.
+All four agents start working simultaneously. Troi is creating React components while Geordi is building the Express endpoint while Worf is writing test cases while Picard is updating the pipeline config. This isn't sequential — it's genuinely parallel.
 
 The first time I saw this happen, I just sat there watching the terminal. Four agents, four branches of work, all moving forward at once. The Borg assimilation metaphor isn't accidental — it really does feel like a collective consciousness descending on your codebase.
 
@@ -88,11 +88,11 @@ Here's the thing that separates Squad from "just running multiple Copilot sessio
 
 **decisions.md** is the team's collective knowledge base. Every architectural decision, every convention, every "we tried X and it didn't work" gets recorded here. When an agent starts working on a task, it reads decisions.md first. When it makes a significant choice, it writes it back.
 
-This means your team accumulates institutional knowledge. Session 1, Data decides to use bcrypt for password hashing. Session 5, Troi is building a password reset form and she already knows bcrypt is the standard because it's in decisions.md.
+This means your team accumulates institutional knowledge. Session 1, Geordi decides to use bcrypt for password hashing. Session 5, Troi is building a password reset form and she already knows bcrypt is the standard because it's in decisions.md.
 
-Each agent also has **history.md** — their individual learning. Data's history tracks every API he's built, every database schema decision, every performance optimization. Over time, agents develop genuine expertise in *your specific codebase*.
+Each agent also has **history.md** — their individual learning. Geordi's history tracks every API he's built, every database schema decision, every performance optimization. Over time, agents develop genuine expertise in *your specific codebase*.
 
-Then there are **skills** — reusable patterns that agents discover and share. When Data figures out your project's error handling pattern, he captures it as a skill. Next time Troi needs to handle errors in a frontend API call, that skill is available to her. Knowledge doesn't just persist — it flows across the team.
+Then there are **skills** — reusable patterns that agents discover and share. When Geordi figures out your project's error handling pattern, he captures it as a skill. Next time Troi needs to handle errors in a frontend API call, that skill is available to her. Knowledge doesn't just persist — it flows across the team.
 
 The team literally gets smarter session over session. That's not marketing copy — I've watched it happen. By session 10, my Squad was making decisions that would have taken a new human developer weeks to learn about the codebase.
 
@@ -134,7 +134,7 @@ Squad pings me on Teams when it needs input. I don't have to watch the terminal.
 
 ### OpenTelemetry + Aspire
 
-I can see agent work in an Aspire dashboard. Traces, logs, metrics — full observability into what every agent is doing, how long tasks take, and where bottlenecks form. When Data spent 8 minutes on what should have been a 2-minute API endpoint, I could see exactly where the time went in the trace waterfall. This isn't just debugging — it's understanding your AI team's performance characteristics over time.
+I can see agent work in an Aspire dashboard. Traces, logs, metrics — full observability into what every agent is doing, how long tasks take, and where bottlenecks form. When Geordi spent 8 minutes on what should have been a 2-minute API endpoint, I could see exactly where the time went in the trace waterfall. This isn't just debugging — it's understanding your AI team's performance characteristics over time.
 
 ### Label Taxonomy
 
