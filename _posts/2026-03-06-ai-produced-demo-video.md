@@ -17,7 +17,7 @@ I had a dotnet CLI tool with 12 commands to demo. Each command needed to run int
 
 The first problem: how does an AI agent execute commands in an interactive terminal it can see? My agent runs in GitHub Copilot CLI, but I needed it to type commands into a **separate** PowerShell window that I was screen-recording.
 
-The answer was [CLI Tunnel](https://github.com/nicholasgasior/cli-tunnel) — a tool that exposes a local terminal via a web UI. My agent connected to it using the Playwright MCP server (browser automation), navigated to the tunnel URL, and literally typed commands character by character into the terminal input field.
+The answer was [CLI Tunnel](https://github.com/tamirdresher/cli-tunnel) — a tool I built that exposes a local terminal via a web UI. My agent connected to it using the Playwright MCP server (browser automation), navigated to the tunnel URL, and literally typed commands character by character into the terminal input field.
 
 ![CLI Tunnel connected](/assets/ai-produced-demo-video/cli-tunnel-connected.png)
 
@@ -136,7 +136,7 @@ I reviewed each version from my phone, sent feedback ("volume too low", "swap th
 
 | Tool | Role | Cost |
 |------|------|------|
-| [CLI Tunnel](https://github.com/nicholasgasior/cli-tunnel) | Remote terminal for AI to type into | Free |
+| [CLI Tunnel](https://github.com/tamirdresher/cli-tunnel) | Remote terminal for AI to type into | Free (my project) |
 | [Playwright MCP](https://github.com/anthropics/mcp-playwright) | Browser automation to drive CLI Tunnel | Free |
 | [Edge TTS](https://github.com/rany2/edge-tts) | Neural voice narration (en-US-GuyNeural) | Free |
 | [FFmpeg](https://ffmpeg.org/) | Audio mixing, video combining, frame extraction | Free |
