@@ -116,8 +116,6 @@ The Remotion skills package (`remotion-dev/skills`) was installed globally, givi
 
 The final render: `npx remotion render MyVideo --output hackathon-video.mp4`
 
-![Remotion title card animation](/assets/ai-produced-demo-video/blog-animation.png)
-
 ## Step 6: Teams Notifications — Staying in the Loop
 
 Throughout the process, my agent sent me updates via a Teams incoming webhook. Every time a video was rendered or a fix was applied, I got a message on my phone:
