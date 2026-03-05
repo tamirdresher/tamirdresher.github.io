@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "I Let AI Produce My Entire Hackathon Demo Video — Here's How"
-date: 2026-03-06
+date: 2026-03-05
 tags: [ai-agents, github-copilot, video-production, edge-tts, remotion, ffmpeg, cli-tunnel, hackathon]
 ---
 
