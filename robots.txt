@@ -16,18 +16,9 @@ Disallow: /norobots/
 # Block tag pages that don't exist (return 404)
 Disallow: /tags/
 
-# Block old WordPress-era asset files from crawling
+# Block old WordPress-era support file directories (JS, CSS, iframes)
+# These are companion directories to legacy HTML pages and contain no indexable content
 Disallow: /assets/*_files/
-
-# Block legacy asset directories with spaces in names
-Disallow: /assets/Adding*
-Disallow: /assets/Animations*
-Disallow: /assets/Automatically*
-Disallow: /assets/Catching*
-Disallow: /assets/Could_not*
-Disallow: /assets/Creating*
-Disallow: /assets/Dealing*
-Disallow: /assets/Easily*
 
 # Sitemap
 Sitemap: {{ site.url | append: site.baseurl }}/sitemap.xml
