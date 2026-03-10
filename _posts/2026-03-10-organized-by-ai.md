@@ -33,6 +33,8 @@ That last point is the breakthrough. I don't need to *maintain* the system. The 
 
 This is Part 0 of a series about scaling AI-native software engineering. The later parts dive into team composition ([Part 1](/2026/03/04/scaling-ai-part1-first-team.html)), knowledge sharing ([Part 2](/2026/03/05/scaling-ai-part2-collective.html)), and multi-team coordination ([Part 3](/2026/03/06/scaling-ai-part3-streams.html)). This post is the personal story — how I got here, what my daily workflow looks like, and why it works when nothing else did.
 
+> 🔗 **The full setup is open source: [squad-personal-demo](https://github.com/tamirdresher/squad-personal-demo)** — ralph-watch loop, squad-monitor, Outlook COM automation, podcaster, and more.
+
 ---
 
 ## Squad — My Force Multiplier
@@ -42,31 +44,6 @@ As you know from my previous blog posts, Squad really gave me a force multiplier
 I started initially by just creating my own private Squad and gave it access to the other repos I wanted it to scan so it could get more knowledgeable about what I'm working on. Using the `upstream` command from Squad helped me get the structure right — inheriting decisions, skills, and team context from parent squads without having to copy-paste everything.
 
 And here's where it gets fun: I like Star Trek. I like the personas there. I wanted my Squad to behave like real Star Trek characters, so... I did 🙂. My team roster (in `.squad/team.md`) has Picard as the Lead, B'Elanna on Infrastructure, Worf on Security, Data as the Code Expert, Seven on Research and Docs, plus Kes handling Communications and Scheduling, Neelix as the News Reporter, and Ralph watching the issue queue 24/7. Each one has a charter file — a markdown document defining exactly who they are, what they own, and how they think. It's like writing character sheets for a tabletop RPG, except these characters actually do work.
-
----
-
-## What Is Squad?
-
-[Squad](https://github.com/bradygaster/squad) is a framework built by Brady Gaster that turns GitHub Copilot CLI into a coordinated AI team. Instead of one generalist agent, you get a *team* of specialists — each with a defined role, expertise, and personality — working in parallel on your codebase.
-
-Brady used the Star Trek universe for team casting (it's deterministic per repo name, and there are 31+ universes built in). My team on this repo got **Star Trek: Voyager**:
-
-| Role | Agent | Specialty |
-|------|-------|-----------|
-| 🎖️ Lead | **Picard** | Architecture, task decomposition, delegation |
-| 🔧 Infrastructure | **B'Elanna** | Build systems, CI/CD, infrastructure |
-| 🛡️ Security | **Worf** | Security reviews, vulnerability scanning, hardening |
-| 💻 Code | **Data** | Implementation, refactoring, code quality |
-| 📚 Research & Docs | **Seven** | Research, documentation, technical writing |
-
-Plus **Ralph** — the tireless background monitor who never sleeps, scanning for new issues, picking up work, and keeping the pipeline moving.
-
-And yes, there's also **Neelix** — but I'll get to him later. He does something unexpected.
-
-Why Star Trek? Because it's a team I respect. Each character has a distinct specialty. They disagree productively. They have strong opinions but defer to the captain when it matters. It sounds gimmicky until you watch Data refactor your authentication module while Seven researches the latest OAuth best practices and Worf flags a security vulnerability in your dependency tree — all at the same time.
-
-![Squad site](/assets/img/posts/scaling-ai/squad-site.png)
-*The Squad framework — turning Copilot CLI into coordinated AI teams*
 
 ---
 
@@ -109,6 +86,7 @@ So I taught my Squad to manage their own repos when needed. Just like any engine
 A couple of examples:
 - **squad-monitor** — a real-time monitoring dashboard for watching what the Squad is doing. My Squad built it, I asked them to open source it, and it's now live at [github.com/tamirdresher/squad-monitor](https://github.com/tamirdresher/squad-monitor).
 - **cli-tunnel** — a tool for remote terminal access during demos and presentations.
+- **squad-personal-demo** — my full sanitized Squad setup, including ralph-watch, scripts, skills, and config: [github.com/tamirdresher/squad-personal-demo](https://github.com/tamirdresher/squad-personal-demo).
 
 It feels weirdly natural. They spin up repos the same way an engineer would say "hey, I'm going to build this in a separate repo so it doesn't clutter the main project."
 
@@ -118,7 +96,7 @@ It feels weirdly natural. They spin up repos the same way an engineer would say 
 
 Everybody already knows what Ralph is, right? Squad comes with Ralph built in — he's the work monitor who knows how to check for issues and solve them. But here's the thing: when there are no more pending tasks because they all wait for me, Ralph just... stops. Mission accomplished, nothing to do.
 
-So I added another layer around Squad's Ralph — an outer loop that basically knows how to keep things going. It pulls the latest code from the repo, checks if there are pending tasks, and starts a fresh Copilot process:
+So I added another layer around Squad's Ralph — an outer loop that basically knows how to keep things going. It pulls the latest code from the repo, checks if there are pending tasks, and starts a fresh Copilot process. You can see the full script in my demo repo: [`ralph-watch.ps1`](https://github.com/tamirdresher/squad-personal-demo/blob/main/ralph-watch.ps1).
 
 ```
 agency copilot --yolo --autopilot --agent squad -p $prompt
@@ -372,6 +350,10 @@ I don't know how far I can take this. Some days it feels like I'm genuinely 10x 
 But here's what I know for sure: my relationship with productivity tools has fundamentally changed. For twenty years, every system required *me* to change — to become more disciplined, more organized, more consistent. AI is the first approach that meets me where I am. It adapts to my chaos instead of demanding I adapt to its structure.
 
 Squad isn't perfect. The agents sometimes go down rabbit holes. Token costs can spike on complex research tasks. The Ralph loop occasionally picks up an issue that should have been left alone. But the trajectory is clear: every week, the system gets a little smarter, a little more autonomous, a little more like the brain extension I always wanted.
+
+**I don't manage tasks anymore. I manage decisions.** The squad does everything else — research, code, PRs, merging, closing issues, sending messages. I just review and approve.
+
+If you want to see how all of this works in practice, you can see my full setup here: [squad-personal-demo](https://github.com/tamirdresher/squad-personal-demo).
 
 I'm organized by AI now. And I never thought I'd say that. 🖖
 
