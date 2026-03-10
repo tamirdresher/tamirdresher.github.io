@@ -275,3 +275,11 @@ Spoiler: it broke spectacularly before it worked beautifully. 🟩⬛
 
 ![Borg collective](/assets/scaling-ai-part2-collective/borg-collective.png)
 *"We will add your organizational distinctiveness to our own."*
+
+---
+
+> 📚 **Series: Scaling Your AI Development Team**
+> - **Part 0**: [Organized by AI — How Squad Changed My Daily Workflow](/2026/03/10/organized-by-ai.html)
+> - **Part 1**: [Resistance is Futile — Your First AI Engineering Team](/2026/03/04/scaling-ai-part1-first-team.html)
+> - **Part 2**: [The Collective — Organizational Knowledge for AI Teams](/2026/03/05/scaling-ai-part2-collective.html) ← You are here
+> - **Part 3**: [Unimatrix Zero — Scaling Squad with Workstreams](/2026/03/06/scaling-ai-part3-streams.html)
