@@ -337,7 +337,7 @@ I really feel like it is my brain extension. Not a replacement — I still make 
 
 ## What's Next
 
-I'm working with Brady to see how squads can talk to each other and delegate tasks across squad boundaries. Think of it like different teams in your org that sometimes need to work together — each with its own expertise, abilities, and access. One squad handles infrastructure, another handles docs, and they can hand off work items to each other without a human playing traffic cop.
+I'm working with [Brady](https://github.com/bradygaster) to see how squads can talk to each other and delegate tasks across squad boundaries. Think of it like different teams in your org that sometimes need to work together — each with its own expertise, abilities, and access. One squad handles infrastructure, another handles docs, and they can hand off work items to each other without a human playing traffic cop.
 
 Also — and this one's a bit funny — I asked my Squad to create a mechanism where my wife could send me tasks and my Squad could start performing them for me. Shhhh, don't tell her 😄
 
