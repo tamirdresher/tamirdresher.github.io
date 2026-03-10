@@ -222,3 +222,11 @@ Resistance is futile — but collaboration is optional. Choose wisely. 🟩⬛
 ---
 
 *Check out the [squad-tetris experiment repo](https://github.com/tamirdresher/squad-tetris) if you want to see the actual code, issues, and PRs from the multi-Codespace experiment. And the [Workstreams PR](https://github.com/bradygaster/squad/pull/189) if you want to see how the feature was built.*
+
+---
+
+> 📚 **Series: Scaling Your AI Development Team**
+> - **Part 0**: [Organized by AI — How Squad Changed My Daily Workflow](/2026/03/10/organized-by-ai.html)
+> - **Part 1**: [Resistance is Futile — Your First AI Engineering Team](/2026/03/04/scaling-ai-part1-first-team.html)
+> - **Part 2**: [The Collective — Organizational Knowledge for AI Teams](/2026/03/05/scaling-ai-part2-collective.html)
+> - **Part 3**: [Unimatrix Zero — Scaling Squad with Workstreams](/2026/03/06/scaling-ai-part3-streams.html) ← You are here
