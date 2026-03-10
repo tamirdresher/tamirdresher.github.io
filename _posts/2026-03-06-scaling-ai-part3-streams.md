@@ -99,6 +99,9 @@ The branch isolation meant that even though three teams were working simultaneou
 
 The quality wasn't production-ready — this was an experiment, not a product launch — but the code was *real*. The game engine actually detected collisions. The WebSocket server actually handled connections. The React components actually rendered Tetrominos. These weren't hallucinated code snippets; they were functional implementations.
 
+![Experiment setup](/assets/scaling-ai-part3-streams/experiment-setup.png)
+*The multi-Codespace experiment: 3 teams, 30 issues, 1 repo — 9 issues closed with real code, plus hard lessons learned.*
+
 ## What Broke
 
 And now for the honest part. Because things absolutely broke.
@@ -168,6 +171,9 @@ Auto-detection via `SQUAD_TEAM` environment variable means you don't need to man
 
 Branch-per-issue is enforced at the workstream level. Each workstream creates branches with a team prefix: `ui-team/issue-7-game-board`, `backend-team/issue-18-websocket`. This makes it obvious in the PR list which team owns which work, and makes cleanup trivial.
 
+![Workstreams diagram](/assets/scaling-ai-part3-streams/workstreams.png)
+*Each workstream gets its own swim lane: label filters, folder scopes, and prefixed branches keep teams isolated.*
+
 ## Cost Optimization
 
 Three Codespaces running simultaneously is expensive. At $0.18/hour for a 4-core machine, that's $0.54/hour — or roughly $13/day if you're running them 24 hours.
@@ -215,7 +221,10 @@ Looking back at this three-part series, the scaling story follows a clear arc:
 
 Together, these features let you scale from "one developer trying Squad for the first time" to "multiple AI teams across multiple repos in an organization" — all using the same framework, the same Copilot CLI foundation, the same Borg-themed casting system.
 
-The Borg Collective assimilated entire civilizations. Your Squad Collective can assimilate your backlog. The difference is, your developers get to keep their individuality.
+![The scaling arc](/assets/scaling-ai-part3-streams/scaling-arc.png)
+*The three-part scaling arc: from one team in one repo, to shared knowledge across repos, to multiple teams in one repo.*
+
+The Borg Collective assimilated entire civilizations.Your Squad Collective can assimilate your backlog. The difference is, your developers get to keep their individuality.
 
 Resistance is futile — but collaboration is optional. Choose wisely. 🟩⬛
 
