@@ -157,3 +157,11 @@ This post covered a single repo with a single Squad team. But here's the questio
 In [Part 2: "The Collective — Sharing Knowledge Across Repos"](/2026/03/05/scaling-ai-part2-collective.html), I'll show how Squad's upstream inheritance model turns isolated teams into a connected collective — and why the Borg analogy is even more apt than you think.
 
 Resistance is futile. Your backlog will be assimilated. 🟩⬛
+
+---
+
+> 📚 **Series: Scaling Your AI Development Team**
+> - **Part 0**: [Organized by AI — How Squad Changed My Daily Workflow](/2026/03/10/organized-by-ai.html)
+> - **Part 1**: [Resistance is Futile — Your First AI Engineering Team](/2026/03/04/scaling-ai-part1-first-team.html) ← You are here
+> - **Part 2**: [The Collective — Organizational Knowledge for AI Teams](/2026/03/05/scaling-ai-part2-collective.html)
+> - **Part 3**: [Unimatrix Zero — Scaling Squad with Workstreams](/2026/03/06/scaling-ai-part3-streams.html)
