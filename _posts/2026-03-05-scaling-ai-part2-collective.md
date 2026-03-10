@@ -18,6 +18,9 @@ Geordi in `auth-service` had figured out our retry pattern, our error handling c
 
 That's when I realized: the hard problem of scaling AI teams isn't making them work in one repo. It's making them share knowledge the way a real engineering organization does.
 
+![The Collective](/assets/scaling-ai-part2-collective/borg-collective.png)
+*"We will add your organizational distinctiveness to our own."*
+
 ## The Real Shape of Software Orgs
 
 Here's something the "just use a monorepo" crowd glosses over: most real software organizations don't live in a monorepo. They look like this:
@@ -98,6 +101,9 @@ When Squad starts a session, it reads the repo's own `.squad/` context, then rea
 The resolution model is **closest-wins**: later upstream entries override earlier ones, and the repo's own context always takes priority. If the org says "use REST for all APIs" but the Payments Team's `billing-service` needs gRPC for performance, the repo-level decision overrides the org-level one — for that repo only. Org-wide defaults still apply everywhere else.
 
 Decisions cascade down. Overrides are local. You get organizational consistency with team-level autonomy.
+
+![Upstream inheritance hierarchy](/assets/scaling-ai-part2-collective/upstream-hierarchy.png)
+*Knowledge flows down through the hierarchy: org → team → repo. Each level can override with closest-wins resolution.*
 
 ## Connecting a Repo to Its Upstream
 
@@ -209,6 +215,9 @@ Is the pattern useful beyond the Auth Team? Commit it to the org-level upstream 
 
 The Collective learns. One drone's adaptation becomes everyone's advantage.
 
+![Skills confidence lifecycle](/assets/scaling-ai-part2-collective/skills-lifecycle.png)
+*Skills mature from discovery to org-wide adoption: low → medium → high confidence, then promoted upstream.*
+
 ## Practical Example
 
 Let's walk through a concrete scenario.
@@ -272,9 +281,6 @@ My `squad-tetris` project has a frontend team, a backend team, and a cloud infra
 In [Part 3: "Unimatrix Zero — Scaling Squad with Workstreams"](/2026/03/06/scaling-ai-part3-streams.html), I'll share the results of running three AI teams on one repo in three Codespaces simultaneously — what worked, what broke, and the Workstreams feature that makes it actually viable.
 
 Spoiler: it broke spectacularly before it worked beautifully. 🟩⬛
-
-![Borg collective](/assets/scaling-ai-part2-collective/borg-collective.png)
-*"We will add your organizational distinctiveness to our own."*
 
 ---
 
