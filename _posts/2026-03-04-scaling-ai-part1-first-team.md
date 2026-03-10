@@ -37,6 +37,9 @@ For my repo, Squad picked **Star Trek: The Next Generation**:
 
 The names aren't just cosmetic. Each agent gets a persona that shapes how they communicate and approach problems. Geordi is precise and thorough. Troi is empathetic about user experience. Worf is aggressive about edge cases. It sounds gimmicky until you watch them work — the persona system actually produces meaningfully different approaches to the same problem.
 
+![Squad team setup](/assets/scaling-ai-part1-first-team/team-setup.png)
+*Squad's team setup documentation — roles, capabilities, and how init works.*
+
 ## Giving Your First Task
 
 Here's where it gets real. You type a message to your Squad:
@@ -58,6 +61,9 @@ And then Riker takes over. As the Lead, he doesn't start coding — he *analyzes
 All four agents start working simultaneously. Troi is creating React components while Geordi is building the Express endpoint while Worf is writing test cases while Picard is updating the pipeline config. This isn't sequential — it's genuinely parallel.
 
 The first time I saw this happen, I just sat there watching the terminal. Four agents, four branches of work, all moving forward at once. The Borg assimilation metaphor isn't accidental — it really does feel like a collective consciousness descending on your codebase.
+
+![Parallel execution diagram](/assets/scaling-ai-part1-first-team/parallel-execution.png)
+*Squad's parallel execution flow: one task fans out to multiple agents working simultaneously.*
 
 ## Ralph — The Relentless Monitor
 
@@ -82,6 +88,9 @@ But Ralph isn't just one thing — he operates at three layers:
 
 The GitHub Actions layer is the one that makes enterprise teams pay attention. You can have Ralph watching your repo 24/7, picking up new issues, assigning them to agents, and creating PRs — all without a human touching the keyboard. I've woken up to merged PRs that I never manually reviewed (though Squad does support required human review, which I'll get to).
 
+![Ralph monitoring loop](/assets/scaling-ai-part1-first-team/ralph-loop.png)
+*Ralph operates at three layers: in-session, local daemon, and GitHub Actions — from interactive to fully autonomous.*
+
 ## Decisions & Memory
 
 Here's the thing that separates Squad from "just running multiple Copilot sessions": it has a shared brain.
@@ -95,6 +104,9 @@ Each agent also has **history.md** — their individual learning. Geordi's histo
 Then there are **skills** — reusable patterns that agents discover and share. When Geordi figures out your project's error handling pattern, he captures it as a skill. Next time Troi needs to handle errors in a frontend API call, that skill is available to her. Knowledge doesn't just persist — it flows across the team.
 
 The team literally gets smarter session over session. That's not marketing copy — I've watched it happen. By session 10, my Squad was making decisions that would have taken a new human developer weeks to learn about the codebase.
+
+![Decisions and memory system](/assets/scaling-ai-part1-first-team/decisions-memory.png)
+*Squad's knowledge system: shared decisions flow to all agents, individual history builds expertise, and skills transfer across the team.*
 
 ## Human Team Members
 
