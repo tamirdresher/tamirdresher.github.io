@@ -19,7 +19,7 @@ This isn't a playground. Could Squad actually work here?
 
 Turns out: yes. But not by copy-pasting my personal setup. The breakthrough wasn't teaching Squad to work *around* my team — it was teaching Squad to work *with* them.
 
-![Resistance is futile](/assets/scaling-ai-part1-first-team/borg-resistance-is-futile.png)
+![Resistance is futile](/assets/scaling-ai-part1-first-team/borg-resistance-is-futile.jpg)
 *"Resistance is futile. Your work team will be assimilated. Probably."*
 
 ---
@@ -411,7 +411,7 @@ From personal repo ([Part 0: Organized by AI](/blog/2026/03/10/organized-by-ai))
 
 The assimilation continues. 🖖
 
-![We are the Borg](/assets/scaling-ai-part1-first-team/borg-resistance-is-futile.png)
+![We are the Borg](/assets/scaling-ai-part1-first-team/borg-resistance-is-futile.jpg)
 *The assimilation continues. You have been warned.*
 
 ---
@@ -546,3 +546,4 @@ Resistance is futile. Your backlog will be assimilated. 🟩⬛
 > - **Part 1**: Resistance is Futile — Your First AI Engineering Team ← You are here
 > - **Part 2**: The Collective — coming soon
 > - **Part 3**: Unimatrix Zero — coming soon
+
