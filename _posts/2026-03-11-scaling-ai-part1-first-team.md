@@ -47,7 +47,7 @@ But here's what I did for the work repo: I added our *real engineers* to `.squad
 ```markdown
 ## Human Members
 
-- **[Brady Gaster](https://github.com/bradygaster)** (@bradygaster) — Human Squad Member
+- **[John Doe](https://github.com/johndoe)** (@johndoe) — Human Squad Member
   - Role: Engineering Lead
   - Expertise: Squad architecture, platform design, Go/C#
   - Scope: Architecture review, cross-team coordination, Squad framework itself
@@ -76,15 +76,15 @@ But here's what I did for the work repo: I added our *real engineers* to `.squad
 - **Picard** (AI Lead)
   - Role: Architecture & Orchestration
   - Scope: Task decomposition, design review, delegation
-  - Routes to: Brady (human), Tamir (human)
+  - Routes to: John Doe (human), Tamir (human)
 
 - **Data** (AI Code Expert)
   - Role: Code analysis, review, implementation
   - Scope: Go operators, C# tooling, code quality
-  - Routes to: Brady (human, for design), Worf (human, for security)
+  - Routes to: John Doe (human, for design), Worf (human, for security)
 ```
 
-See what happened there? **[Brady Gaster](https://github.com/bradygaster) isn't just "the guy who reviews PRs." He's a Squad member.** So is Worf. So is B'Elanna. They have charters, expertise areas, and scopes — just like the AI agents.
+See what happened there? **[John Doe](https://github.com/johndoe) isn't just "the guy who reviews PRs." He's a Squad member.** So is Worf. So is B'Elanna. They have charters, expertise areas, and scopes — just like the AI agents.
 
 The routing rules in `.squad/routing.md` define when AI squad members pause and escalate to human squad members:
 
@@ -93,7 +93,7 @@ The routing rules in `.squad/routing.md` define when AI squad members pause and 
 
 ### Architecture Decisions
 - **Trigger:** Changes to CRD schemas, API contracts, multi-repo dependencies
-- **Route to:** @bradygaster (human)
+- **Route to:** @johndoe (human)
 - **AI action:** Analysis + recommendations, then pause for human approval
 
 ### Security Reviews
@@ -103,11 +103,11 @@ The routing rules in `.squad/routing.md` define when AI squad members pause and 
 
 ### Go Operator Code
 - **Trigger:** Reconciler logic, Kubernetes client code, controller changes
-- **Route to:** Data (AI) → @bradygaster (human review)
+- **Route to:** Data (AI) → @johndoe (human review)
 - **AI action:** Implementation, tests, then PR for human review
 
 ### Documentation
-- **Trigger:** READMEs, runbooks, API docs, design docs
+- **Trigger:** READMEs, troubleshooting guides, API docs, design docs
 - **Route to:** Seven (AI) → @tamirdresher (human review)
 - **AI action:** Draft, then ping human for review before merge
 ```
@@ -134,7 +134,7 @@ Here's the thing nobody tells you about AI agents: you can't just point them at 
 
 So I did what any engineering lead would do — I built an onboarding plan. Seriously. The same kind of onboarding plan I'd build for a new human team member joining our infrastructure platform team. Except this one was for my AI squad.
 
-The first thing I did after creating the team? I told them to **scan everything**. Every file, every pattern, every architectural decision buried in commit history. I gave them links to our internal documentation, our internal reference materials, architecture decision records, runbook references — literally every piece of context a new team member would need to ramp up. And you know what? They indexed it all. Built their own knowledge base from scratch. By the time they started their first task, they already understood our conventions, our error handling patterns, our testing approach — better than most humans do in their first month.
+The first thing I did after creating the team? I told them to **scan everything**. Every file, every pattern, every architectural decision buried in commit history. I gave them links to our internal documentation, our internal reference materials, architecture decision records, troubleshooting guide references — literally every piece of context a new team member would need to ramp up. And you know what? They indexed it all. Built their own knowledge base from scratch. By the time they started their first task, they already understood our conventions, our error handling patterns, our testing approach — better than most humans do in their first month.
 
 This is the part that blew my mind: I was basically onboarding new team members, and they were *learning*. Not just following instructions — actually building an understanding of how we work. Here's how it went:
 
@@ -155,20 +155,19 @@ Picard delegated to Data (code expert) and Seven (docs expert), and within minut
 - Go tests always use table-driven patterns
 - Error wrapping with `fmt.Errorf` + `%w`
 - Kubernetes client-go patterns for reconcilers
-- Markdown docs with runbooks in `/docs/runbooks/`
 - Conventional Commits for all messages
 
 I didn't tell them any of this. They *figured it out* by reading the code. That's the moment I realized this wasn't just automation — it was genuine pattern recognition applied to our codebase.
 
 ### Step 2: Index Internal Documentation
 
-We have runbooks, architecture docs, and tribal knowledge scattered across:
+We have troubleshooting guides, architecture docs, and tribal knowledge scattered across:
 - Internal documentation pages
 - Team wiki on Azure DevOps
 - README files in 12 different repos
-- Slack threads (yes, really)
+- Teams threads (yes, really)
 
-I gave Seven (AI docs expert) links to our internal documentation, Azure DevOps wiki, and every internal reference I could think of — runbooks, architecture docs, deployment procedures, even the tribal knowledge buried in old design docs that nobody reads anymore. I told her:
+I gave Seven (AI docs expert) links to our internal documentation, Azure DevOps wiki, and every internal reference I could think of — troubleshooting guides, architecture docs, deployment procedures, even the tribal knowledge buried in old design docs that nobody reads anymore. I told her:
 
 ```
 Index everything. Build a knowledge base of:
@@ -178,7 +177,7 @@ Index everything. Build a knowledge base of:
 - Regulatory compliance requirements
 ```
 
-She created `.squad/knowledge/` with markdown summaries of all critical docs. Now when any squad member works on a task, they have instant access to our institutional knowledge — the stuff that normally takes months of hallway conversations and Slack scrolling to absorb.
+She created `.squad/knowledge/` with markdown summaries of all critical docs. Now when any squad member works on a task, they have instant access to our institutional knowledge — the stuff that normally takes months of hallway conversations and Teams scrolling to absorb.
 
 ### Step 3: Build the Onboarding Plan
 
@@ -195,7 +194,7 @@ Picard generated a structured onboarding doc (`.squad/onboarding.md`) covering:
 - Deployment process
 - Where to find docs when stuck
 
-Now when we add a new AI agent to the squad (or when [Brady Gaster](https://github.com/bradygaster) or I add a new *human* engineer), they go through the same onboarding. Human or AI, everyone learns the same conventions. The onboarding plan IS the knowledge base, and the knowledge base is always up to date because the squad maintains it.
+Now when we add a new AI agent to the squad (or when I or someone else on the team add a new *human* engineer), they go through the same onboarding. Human or AI, everyone learns the same conventions. The onboarding plan IS the knowledge base, and the knowledge base is always up to date because the squad maintains it.
 
 I can't stress this enough: **this is the single most impactful thing I did**. Before any agent wrote a single line of code, they understood our world. They knew our patterns, our conventions, where to find docs, what our deployment process looks like. They were *ready*.
 
@@ -231,19 +230,13 @@ When a PR is opened, Data (AI squad member) does the first pass:
 - Flags security concerns (credentials in code, unsafe resource access)
 - Writes a review summary
 
-Then routes to [Brady Gaster](https://github.com/bradygaster) or another human squad member if critical issues are found, or approves routine changes automatically.
+Then routes to John Doe or another human squad member if critical issues are found, or approves routine changes automatically.
 
 **Impact:** Human squad members see PRs that already passed basic quality checks. We spend time on architecture and design, not hunting for forgotten error handling.
 
 ### 2. Test Scaffolding
 
-For new Go operator features, Data (AI squad member) generates the test skeleton:
-- Unit tests for reconciler logic
-- Integration test structure
-- Mock Kubernetes client setup
-- Coverage tracking
-
-Then hands off to a human squad member to fill in the business logic assertions.
+For new C# service features, Data (AI squad member) generates the test skeleton. The tests include unit tests for business logic, integration test structure with dependency injection, mock service setup, and coverage tracking. Data then hands off to a human squad member to fill in the business logic assertions.
 
 **Impact:** New features ship with tests from day one. The "I'll add tests later" excuse doesn't work when Data already built the scaffolding.
 
@@ -278,7 +271,7 @@ Our platform has 12 repos. When a change in one repo affects others (API contrac
 - Creates a coordination plan with sequenced PRs
 - Monitors the rollout across repos
 
-Then hands the plan to [Brady Gaster](https://github.com/bradygaster) (human squad member, Engineering Lead) for approval before execution.
+Then hands the plan to [John Doe](https://github.com/johndoe) (human squad member, Engineering Lead) for approval before execution.
 
 **Impact:** Multi-repo changes that used to take days of coordination now happen with a single approved plan. The AI squad member handles the sequencing and tracking. The human squad member owns the decision.
 
@@ -317,7 +310,7 @@ Squad on a work repo isn't perfect. Here are the boundaries we've hit:
 
 AI squad members can *analyze* design trade-offs (performance vs. complexity, cost vs. scale), but they can't *decide* which trade-off to make. That requires understanding business priorities, team capacity, and long-term strategy.
 
-**Current approach:** Picard (AI squad member) drafts the analysis, [Brady Gaster](https://github.com/bradygaster) (human squad member) makes the call. Works well.
+**Current approach:** Picard (AI squad member) drafts the analysis, [John Doe](https://github.com/johndoe) (human squad member) makes the call. Works well.
 
 ### 2. Production Incidents
 
@@ -329,7 +322,7 @@ When a cluster goes down at 2 AM, AI squad members can gather logs, check recent
 
 AI squad members don't understand org dynamics. If a feature request comes from a VP, they treat it the same as a bug report from a junior engineer. That's technically correct, but politically naive.
 
-**Current approach:** [Brady Gaster](https://github.com/bradygaster) and I (human squad members) triage issues with organizational context before AI squad members pick them up. AI handles execution, humans handle stakeholder management.
+**Current approach:** [John Doe](https://github.com/johndoe) and I (human squad members) triage issues with organizational context before AI squad members pick them up. AI handles execution, humans handle stakeholder management.
 
 ---
 
@@ -383,7 +376,7 @@ The big wins:
 - **Security improved** because scanning was continuous (AI squad members) with human oversight (human squad member Worf)
 - **Human squad members had more time** for architecture and design
 
-The tricky part: measuring "quality of thought" on design decisions. Anecdotally, [Brady Gaster](https://github.com/bradygaster) and the human squad members report spending more time thinking deeply about architecture because they're not bogged down in toil. But that's hard to quantify.
+The tricky part: measuring "quality of thought" on design decisions. Anecdotally, [John Doe](https://github.com/johndoe) and the human squad members report spending more time thinking deeply about architecture because they're not bogged down in toil. But that's hard to quantify.
 
 ---
 
@@ -399,7 +392,7 @@ Squad on a personal repo is basically free (assuming you have GitHub Copilot). S
 
 **Token usage:** AI squad members are chatty. Decision logs, routing analysis, cross-repo coordination — all of it generates tokens. We don't have exact numbers (Copilot doesn't expose token-level billing), but anecdotally, our team's Copilot usage is 3-4x higher than before Squad.
 
-**Human time to maintain:** ~4 hours/week (mostly Tamir and [Brady Gaster](https://github.com/bradygaster) — human squad members) to update routing rules, refine agent charters, and handle edge cases where AI squad members get confused.
+**Human time to maintain:** ~4 hours/week (mostly Tamir and [John Doe](https://github.com/johndoe) — human squad members) to update routing rules, refine agent charters, and handle edge cases where AI squad members get confused.
 
 **Total estimated cost:** ~$400/month (compute + human time). For a 6-person team shipping 23 PRs/week, that's roughly $17 per merged PR. We consider that a bargain.
 
