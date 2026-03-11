@@ -7,7 +7,7 @@ series: "Scaling AI-Native Software Engineering"
 series_part: 1
 ---
 
-By now you know the story. In [Part 0](/blog/2026/03/10/organized-by-ai), I told you how Squad became the first productivity system I didn't abandon after three days. Now in **Part 1: Resistance is Futile** (← you are here!), I'll show you how Ralph and my Star Trek crew assimilated my backlog while I slept.
+By now you know the story. In [Part 0](/blog/2026/03/10/organized-by-ai), I told you how Squad became the first productivity system I didn't abandon after three days. Now I'll show you how Ralph and my Star Trek crew assimilated my backlog while I slept.
 
 That was the personal repo. My playground. My experimental sandbox where Picard could make architecture decisions at 2 AM and nobody would complain.
 
@@ -38,7 +38,7 @@ Actually... you kind of can. But only if you do the one thing that changes every
 
 ## Human Squad Members — Not a Workaround, The Whole Point
 
-Remember in Part 1 when I showed you the Squad casting system? Picard as Lead, Data as Code Expert, Worf on Security? That works great when you're the only human.
+Remember in Part 0 when I showed you the Squad casting system? Picard as Lead, Data as Code Expert, Worf on Security? That works great when you're the only human.
 
 But here's what I did for the work repo: I added our *real engineers* to `.squad/team.md`.
 
@@ -115,6 +115,16 @@ The routing rules in `.squad/routing.md` define when AI squad members pause and 
 This is the breakthrough. In my personal repo, Squad was *my team* — AI agents working for me. In the work repo, Squad became *our team* — humans and AI working together, with clear escalation paths when human judgment is required.
 
 The AI squad members handle grunt work. The human squad members handle judgment calls. Nobody wastes time on work the other can do better.
+
+---
+
+## But First: The Onboarding That Changed Everything
+
+Before I gave them their first task, I did something that turned out to be the single most important step: I onboarded them. Just like you'd onboard a new hire, I told the squad to scan the entire repo — conventions, docs, architecture, patterns, everything. I gave them links to our internal wiki, EngineeringHub docs, ADR channel, and any reference material I wanted them to know. They indexed it all and built their knowledge base before writing a single line of code.
+
+It's like hiring five engineers who actually READ the onboarding docs. Except they didn't just read them — they synthesized them. They found patterns I didn't even know existed. They built a `.squad/knowledge/` directory with structured summaries of our standards, our tooling, our deployment process, our testing conventions. By the time they started their first actual task, they understood our codebase better than most people who've been here for months.
+
+That's when it hit me: this wasn't just about automation. This was about knowledge transfer at scale.
 
 ---
 
