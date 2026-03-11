@@ -4,10 +4,10 @@ title: "From Personal Repo to Work Team — Scaling Squad to Production"
 date: 2026-03-04
 tags: [ai-agents, squad, github-copilot, scaling, team-workflows, productivity]
 series: "Scaling AI-Native Software Engineering"
-series_part: 2
+series_part: 1
 ---
 
-By now you know the story. In [Part 0](/2026/03/10/organized-by-ai.html), I told you how Squad became the first productivity system I didn't abandon after three days. In that personal repo, Ralph and my Star Trek crew assimilated my backlog while I slept.
+By now you know the story. In [Part 0](/blog/2026/03/10/organized-by-ai), I told you how Squad became the first productivity system I didn't abandon after three days. Now in **Part 1: Resistance is Futile** (← you are here!), I'll show you how Ralph and my Star Trek crew assimilated my backlog while I slept.
 
 That was the personal repo. My playground. My experimental sandbox where Picard could make architecture decisions at 2 AM and nobody would complain.
 
@@ -120,9 +120,13 @@ The AI squad members handle grunt work. The human squad members handle judgment 
 
 ## Teaching the Squad About Your Codebase
 
-Before Squad could work effectively on the DK8S repo, it needed to understand *how we work*. Not just the code structure, but our conventions, our decisions, our tribal knowledge.
+Here's the thing nobody tells you about AI agents: you can't just point them at a repo and say "go." That's like hiring a senior engineer and dropping them in on day one with no context, no wiki links, no architecture overview, and expecting production-quality PRs by lunch.
 
-Here's how we onboarded Squad:
+So I did what any engineering lead would do — I built an onboarding plan. Seriously. The same kind of onboarding plan I'd build for a new human team member joining the DK8S team. Except this one was for my AI squad.
+
+The first thing I did after creating the team? I told them to **scan everything**. Every file, every pattern, every architectural decision buried in commit history. I gave them links to our internal wiki, our EngineeringHub docs, architecture decision records, runbook references — literally every piece of context a new team member would need to ramp up. And you know what? They indexed it all. Built their own knowledge base from scratch. By the time they started their first task, they already understood our conventions, our error handling patterns, our testing approach — better than most humans do in their first month.
+
+This is the part that blew my mind: I was basically onboarding new team members, and they were *learning*. Not just following instructions — actually building an understanding of how we work. Here's how it went:
 
 ### Step 1: Scan the Repo
 
@@ -137,14 +141,14 @@ Scan the entire repo. Look for patterns in:
 - Commit message format
 ```
 
-Picard delegated to Data (code expert) and Seven (docs expert), and they came back with a detailed analysis:
+Picard delegated to Data (code expert) and Seven (docs expert), and within minutes they came back with a detailed analysis:
 - Go tests always use table-driven patterns
 - Error wrapping with `fmt.Errorf` + `%w`
 - Kubernetes client-go patterns for reconcilers
 - Markdown docs with runbooks in `/docs/runbooks/`
 - Conventional Commits for all messages
 
-This wasn't me telling Squad how we work — it was Squad *learning* how we work.
+I didn't tell them any of this. They *figured it out* by reading the code. That's the moment I realized this wasn't just automation — it was genuine pattern recognition applied to our codebase.
 
 ### Step 2: Index Internal Documentation
 
@@ -154,7 +158,7 @@ We have runbooks, architecture docs, and tribal knowledge scattered across:
 - README files in 12 different repos
 - Slack threads (yes, really)
 
-I gave Seven (AI docs expert) access to our EngineeringHub space and Azure DevOps wiki, and told her:
+I gave Seven (AI docs expert) links to our EngineeringHub space, Azure DevOps wiki, and every internal reference I could think of — TSGs, architecture docs, deployment runbooks, even the tribal knowledge buried in old design docs that nobody reads anymore. I told her:
 
 ```
 Index everything. Build a knowledge base of:
@@ -164,7 +168,7 @@ Index everything. Build a knowledge base of:
 - FedRAMP compliance requirements
 ```
 
-She created `.squad/knowledge/` with markdown summaries of all critical docs. Now when any squad member works on a task, they have instant access to our institutional knowledge.
+She created `.squad/knowledge/` with markdown summaries of all critical docs. Now when any squad member works on a task, they have instant access to our institutional knowledge — the stuff that normally takes months of hallway conversations and Slack scrolling to absorb.
 
 ### Step 3: Build the Onboarding Plan
 
@@ -181,7 +185,9 @@ Picard generated a structured onboarding doc (`.squad/onboarding.md`) covering:
 - Deployment process
 - Where to find docs when stuck
 
-Now when we add a new AI agent to the squad (or when [Brady Gaster](https://github.com/bradygaster) or I add a new *human* engineer), they go through the same onboarding. Human or AI, everyone learns the same conventions.
+Now when we add a new AI agent to the squad (or when [Brady Gaster](https://github.com/bradygaster) or I add a new *human* engineer), they go through the same onboarding. Human or AI, everyone learns the same conventions. The onboarding plan IS the knowledge base, and the knowledge base is always up to date because the squad maintains it.
+
+I can't stress this enough: **this is the single most impactful thing I did**. Before any agent wrote a single line of code, they understood our world. They knew our patterns, our conventions, where to find docs, what our deployment process looks like. They were *ready*.
 
 ### Step 4: Continuous Learning
 
@@ -401,22 +407,24 @@ But we're already seeing the next challenge:
 
 In Part 3, I'll cover **Squad upstreams** — how we're building a hierarchy of shared knowledge across teams, so that organizational context propagates down to every Squad without manual copy-paste.
 
-From personal repo ([Part 0: Organized by AI](/2026/03/10/organized-by-ai.html)) to personal AI team ([Part 1: Resistance is Futile](/2026/03/04/scaling-ai-part1-first-team.html)) to work team (this post) to organizational scale (coming next).
+From personal repo ([Part 0: Organized by AI](/blog/2026/03/10/organized-by-ai)) to **Part 1: Resistance is Futile** (this post!) to work team (coming next) to organizational scale (coming next).
 
 The assimilation continues. 🖖
 
-![We are the Borg](https://github.com/user-attachments/assets/06ab6aad-52d4-4e16-a904-4df98b0be3d3)
+![We are the Borg](/assets/scaling-ai-part1-first-team/borg-resistance-is-futile.png)
 *The assimilation continues. You have been warned.*
 
 ---
 
-> 📚 **Series: Scaling Your AI Development Team**
-> - **Part 0**: [Organized by AI — How Squad Changed My Daily Workflow](/2026/03/10/organized-by-ai.html)
-> - **Part 1**: [Resistance is Futile — Your First AI Engineering Team](/2026/03/04/scaling-ai-part1-first-team.html)
-> - **Part 2**: From Personal Repo to Work Team — Scaling Squad to Production ← You are here
-> - **Part 3**: Coming soon — Organizational Knowledge for AI Teams
-   → Worf: Write integration tests for login flow
-   → Picard: Add auth middleware to CI pipeline
+## Parallel Execution — The Borg Collective in Action
+
+When Ralph assigns a multi-part task, he fans it out across the squad. Here's what a typical multi-agent assignment looks like:
+
+```
+→ Troi: Build React component for login page
+→ Geordi: Create Express endpoint for authentication
+→ Worf: Write integration tests for login flow
+→ Picard: Add auth middleware to CI pipeline
 ```
 
 All four agents start working simultaneously. Troi is creating React components while Geordi is building the Express endpoint while Worf is writing test cases while Picard is updating the pipeline config. This isn't sequential — it's genuinely parallel.
@@ -519,7 +527,7 @@ decisions.md was getting huge. After three weeks of accumulated decisions across
 
 ### Remote Control
 
-`squad start --tunnel` exposes your session via a devtunnel URL. Open it on your phone, and you're controlling your AI team from the couch. I built this integration and [wrote about it here](/2026/02/26/squad-remote-control.html). It's become my default way to monitor Squad — kick off work at my desk, check progress from my phone during lunch.
+`squad start --tunnel` exposes your session via a devtunnel URL. Open it on your phone, and you're controlling your AI team from the couch. I built this integration and [wrote about it here](/blog/2026/02/26/squad-remote-control). It's become my default way to monitor Squad — kick off work at my desk, check progress from my phone during lunch.
 
 ## What's Next
 
@@ -527,14 +535,14 @@ This post covered a single repo with a single Squad team. But here's the questio
 
 *What happens when you have 5 repos? Do you copy-paste your Squad config into each one? Do decisions in repo A automatically apply to repo B? What about shared coding standards across your organization?*
 
-In [Part 2: "The Collective — Sharing Knowledge Across Repos"](/2026/03/12/scaling-ai-part2-collective.html), I'll show how Squad's upstream inheritance model turns isolated teams into a connected collective — and why the Borg analogy is even more apt than you think.
+In [Part 2: "The Collective — Sharing Knowledge Across Repos"](/blog/2026/03/12/scaling-ai-part2-collective), I'll show how Squad's upstream inheritance model turns isolated teams into a connected collective — and why the Borg analogy is even more apt than you think.
 
 Resistance is futile. Your backlog will be assimilated. 🟩⬛
 
 ---
 
 > 📚 **Series: Scaling Your AI Development Team**
-> - **Part 0**: [Organized by AI — How Squad Changed My Daily Workflow](/2026/03/10/organized-by-ai.html)
-> - **Part 1**: [Resistance is Futile — Your First AI Engineering Team](/2026/03/11/scaling-ai-part1-first-team.html) ← You are here
-> - **Part 2**: Part 2: The Collective — coming soon
-> - **Part 3**: Part 3: Unimatrix Zero — coming soon
+> - **Part 0**: [Organized by AI — How Squad Changed My Daily Workflow](/blog/2026/03/10/organized-by-ai)
+> - **Part 1**: Resistance is Futile — Your First AI Engineering Team ← You are here
+> - **Part 2**: The Collective — coming soon
+> - **Part 3**: Unimatrix Zero — coming soon
