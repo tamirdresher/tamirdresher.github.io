@@ -13,7 +13,7 @@ That was the personal repo. My playground. My experimental sandbox where Picard 
 
 Then came the question I'd been avoiding: *Can I bring this to my actual job?*
 
-My team at Microsoft — the DK8S (Distributed Kubernetes) platform team — manages infrastructure that real Azure services depend on. We have code review standards, security scanning, FedRAMP requirements, deployment gates. Six engineers, each with deep expertise. Production systems that can't tolerate "my AI agent had an interesting idea at 3 AM."
+My team at Microsoft manages a large-scale infrastructure platform — the kind where real Azure services depend on what we ship. We have code review standards, security scanning, compliance requirements, deployment gates. Six engineers, each with deep expertise. Production systems that can't tolerate "my AI agent had an interesting idea at 3 AM."
 
 This isn't a playground. Could Squad actually work here?
 
@@ -59,7 +59,7 @@ But here's what I did for the work repo: I added our *real engineers* to `.squad
 
 - **Worf** (@worf-security) — Human Squad Member
   - Role: Security & Compliance
-  - Expertise: FedRAMP, supply chain security, threat modeling
+  - Expertise: Compliance & security, supply chain security, threat modeling
   - Scope: Security reviews, compliance validation, infrastructure hardening
 
 - **B'Elanna Torres** (@belanna-infra) — Human Squad Member
@@ -120,7 +120,7 @@ The AI squad members handle grunt work. The human squad members handle judgment 
 
 ## But First: The Onboarding That Changed Everything
 
-Before I gave them their first task, I did something that turned out to be the single most important step: I onboarded them. Just like you'd onboard a new hire, I told the squad to scan the entire repo — conventions, docs, architecture, patterns, everything. I gave them links to our internal wiki, EngineeringHub docs, ADR channel, and any reference material I wanted them to know. They indexed it all and built their knowledge base before writing a single line of code.
+Before I gave them their first task, I did something that turned out to be the single most important step: I onboarded them. Just like you'd onboard a new hire, I told the squad to scan the entire repo — conventions, docs, architecture, patterns, everything. I gave them links to our internal documentation, internal reference materials, ADR channel, and any reference material I wanted them to know. They indexed it all and built their knowledge base before writing a single line of code.
 
 It's like hiring five engineers who actually READ the onboarding docs. Except they didn't just read them — they synthesized them. They found patterns I didn't even know existed. They built a `.squad/knowledge/` directory with structured summaries of our standards, our tooling, our deployment process, our testing conventions. By the time they started their first actual task, they understood our codebase better than most people who've been here for months.
 
@@ -132,9 +132,9 @@ That's when it hit me: this wasn't just about automation. This was about knowled
 
 Here's the thing nobody tells you about AI agents: you can't just point them at a repo and say "go." That's like hiring a senior engineer and dropping them in on day one with no context, no wiki links, no architecture overview, and expecting production-quality PRs by lunch.
 
-So I did what any engineering lead would do — I built an onboarding plan. Seriously. The same kind of onboarding plan I'd build for a new human team member joining the DK8S team. Except this one was for my AI squad.
+So I did what any engineering lead would do — I built an onboarding plan. Seriously. The same kind of onboarding plan I'd build for a new human team member joining our infrastructure platform team. Except this one was for my AI squad.
 
-The first thing I did after creating the team? I told them to **scan everything**. Every file, every pattern, every architectural decision buried in commit history. I gave them links to our internal wiki, our EngineeringHub docs, architecture decision records, runbook references — literally every piece of context a new team member would need to ramp up. And you know what? They indexed it all. Built their own knowledge base from scratch. By the time they started their first task, they already understood our conventions, our error handling patterns, our testing approach — better than most humans do in their first month.
+The first thing I did after creating the team? I told them to **scan everything**. Every file, every pattern, every architectural decision buried in commit history. I gave them links to our internal documentation, our internal reference materials, architecture decision records, runbook references — literally every piece of context a new team member would need to ramp up. And you know what? They indexed it all. Built their own knowledge base from scratch. By the time they started their first task, they already understood our conventions, our error handling patterns, our testing approach — better than most humans do in their first month.
 
 This is the part that blew my mind: I was basically onboarding new team members, and they were *learning*. Not just following instructions — actually building an understanding of how we work. Here's how it went:
 
@@ -163,19 +163,19 @@ I didn't tell them any of this. They *figured it out* by reading the code. That'
 ### Step 2: Index Internal Documentation
 
 We have runbooks, architecture docs, and tribal knowledge scattered across:
-- EngineeringHub (eng.ms) pages
+- Internal documentation pages
 - Team wiki on Azure DevOps
 - README files in 12 different repos
 - Slack threads (yes, really)
 
-I gave Seven (AI docs expert) links to our EngineeringHub space, Azure DevOps wiki, and every internal reference I could think of — TSGs, architecture docs, deployment runbooks, even the tribal knowledge buried in old design docs that nobody reads anymore. I told her:
+I gave Seven (AI docs expert) links to our internal documentation, Azure DevOps wiki, and every internal reference I could think of — runbooks, architecture docs, deployment procedures, even the tribal knowledge buried in old design docs that nobody reads anymore. I told her:
 
 ```
 Index everything. Build a knowledge base of:
 - How our platform works
 - Common failure patterns
 - Deployment procedures
-- FedRAMP compliance requirements
+- Regulatory compliance requirements
 ```
 
 She created `.squad/knowledge/` with markdown summaries of all critical docs. Now when any squad member works on a task, they have instant access to our institutional knowledge — the stuff that normally takes months of hallway conversations and Slack scrolling to absorb.
@@ -264,7 +264,7 @@ Our human squad member Worf (the security lead) delegates continuous scanning to
 - Dependency vulnerability scans
 - Secrets detection
 - Supply chain analysis (SBOM generation)
-- FedRAMP compliance checks
+- Regulatory compliance checks
 
 Findings are logged in `.squad/decisions.md` with remediation steps. Critical issues pause the build and route to Worf (human) for review.
 
@@ -286,9 +286,9 @@ Then hands the plan to [Brady Gaster](https://github.com/bradygaster) (human squ
 
 ---
 
-## The First Real Test: FedRAMP Compliance Audit
+## The First Real Test: Regulatory Compliance Audit
 
-Three weeks after integrating Squad into the work repo, we had a FedRAMP compliance audit. 47 infrastructure components to validate against security controls. Each component needed vulnerability scans, supply chain attestation, network isolation verification, secrets management audit, and documentation.
+Three weeks after integrating Squad into the work repo, we had a regulatory compliance audit. 47 infrastructure components to validate against security controls. Each component needed vulnerability scans, supply chain attestation, network isolation verification, secrets management audit, and documentation.
 
 Normally this takes two human engineers a full week.
 
@@ -409,7 +409,7 @@ Squad on a personal repo is basically free (assuming you have GitHub Copilot). S
 
 ## What's Next: When Work Teams Become a Collective
 
-This post covered a single team (DK8S) with a single Squad — human squad members and AI squad members working together.
+This post covered a single team (our infrastructure platform) with a single Squad — human squad members and AI squad members working together.
 
 But we're already seeing the next challenge:
 
