@@ -220,60 +220,21 @@ This is critical: **Squad doesn't just execute tasks — it learns your team's c
 
 ## What AI Squad Members Actually Do
 
-With routing rules in place, here's what our AI squad members handle:
+Here's what surprised me most about how this played out in practice.
 
-### 1. Code Review Pre-Screening
+I expected the AI squad members to be like junior developers — useful for grunt work, but needing constant supervision. What I got was something closer to having five teammates who never sleep, never complain about boring work, and actually *read the team conventions doc* before submitting a PR. (If you've managed engineers, you know that last part is the real miracle.)
 
-When a PR is opened, Data (AI squad member) does the first pass:
-- Scans for obvious issues (unhandled errors, leaked contexts, missing tests)
-- Checks against team conventions (from `.squad/decisions.md`)
-- Flags security concerns (credentials in code, unsafe resource access)
-- Writes a review summary
+The first thing I noticed was code reviews. When a PR comes in, Data does a first pass before any human sees it. Not a quick linting check — I mean a real review. He scans for unhandled errors, leaked contexts, missing tests, credentials in code, the whole thing. He checks everything against our team conventions in `.squad/decisions.md`. By the time John Doe or one of the other human squad members opens the PR, the obvious stuff is already flagged. It's like having a tireless reviewer who catches the things humans miss because they're on their fourth PR of the afternoon and just want to go home.
 
-Then routes to John Doe or another human squad member if critical issues are found, or approves routine changes automatically.
+Then there's test scaffolding. This one genuinely changed how we ship features. For every new feature, Data generates the full test skeleton — unit tests, integration test structure, dependency injection setup, mocks, coverage tracking. He hands it off to a human squad member to fill in the business logic assertions. The "I'll add tests later" excuse? Dead. You can't say you'll add tests later when the test file is already there, waiting for you, with helpful comments about what to assert. It's the most passive-aggressive productivity boost I've ever experienced.
 
-**Impact:** Human squad members see PRs that already passed basic quality checks. We spend time on architecture and design, not hunting for forgotten error handling.
+Seven handles documentation sync, and honestly, this is the one I underestimated the most. She watches for code changes that affect docs — CRD schema changes, new command flags, Helm chart modifications — and automatically drafts doc updates, creates a PR, and pings the human who authored the code change for review. Documentation drift used to be our quiet shame. Now it just... doesn't happen. Unlike my personal repo where Seven can merge docs freely, here she waits for a human squad member to approve. But the drafts are good enough that reviews take seconds.
 
-### 2. Test Scaffolding
+Security scanning became continuous instead of a gate at the end. Worf (our human security lead) delegates the systematic scanning to AI squad members — dependency vulnerabilities, secrets detection, supply chain analysis, SBOM generation, compliance checks. Findings get logged in `.squad/decisions.md` with remediation steps. Critical issues pause the build and route to Worf for review. Security isn't something we bolt on at release time anymore. It's just... running. All the time.
 
-For new C# service features, Data (AI squad member) generates the test skeleton. The tests include unit tests for business logic, integration test structure with dependency injection, mock service setup, and coverage tracking. Data then hands off to a human squad member to fill in the business logic assertions.
+And then there's cross-repo coordination, which used to be the thing I dreaded most. Our platform spans 12 repos. When a change in one repo affects others — an API contract change, a shared library update — Picard identifies the downstream impact, opens tracking issues in affected repos, creates a coordination plan with sequenced PRs, and monitors the rollout. Then hands the plan to [John Doe](https://github.com/johndoe) for approval before execution. Multi-repo changes that used to take days of "hey, did you update repo X?" conversations now happen with a single approved plan.
 
-**Impact:** New features ship with tests from day one. The "I'll add tests later" excuse doesn't work when Data already built the scaffolding.
-
-### 3. Documentation Sync
-
-Seven (AI squad member for docs) watches for code changes that affect documentation:
-- CRD schema changes → update API reference
-- New command flags → update CLI docs
-- Helm chart changes → update deployment guide
-
-Drafts the doc updates, creates a PR, and pings the human squad member who authored the code for review.
-
-**Impact:** Documentation stays in sync with code because the sync is automatic. Docs debt doesn't accumulate. And unlike my personal repo where Seven can merge docs freely, here she waits for a human squad member to approve.
-
-### 4. Security Scanning
-
-Our human squad member Worf (the security lead) delegates continuous scanning to AI squad members:
-- Dependency vulnerability scans
-- Secrets detection
-- Supply chain analysis (SBOM generation)
-- Regulatory compliance checks
-
-Findings are logged in `.squad/decisions.md` with remediation steps. Critical issues pause the build and route to Worf (human) for review.
-
-**Impact:** Security isn't a gate at the end. It's continuous. Vulnerabilities are caught before they reach production, but a human squad member still makes the final call.
-
-### 5. Cross-Repo Coordination
-
-Our platform has 12 repos. When a change in one repo affects others (API contract change, shared library update), Picard (AI squad member, Lead):
-- Identifies downstream impact
-- Opens tracking issues in affected repos
-- Creates a coordination plan with sequenced PRs
-- Monitors the rollout across repos
-
-Then hands the plan to [John Doe](https://github.com/johndoe) (human squad member, Engineering Lead) for approval before execution.
-
-**Impact:** Multi-repo changes that used to take days of coordination now happen with a single approved plan. The AI squad member handles the sequencing and tracking. The human squad member owns the decision.
+The pattern across all of this is the same: AI squad members handle the systematic work. Human squad members handle judgment calls. Nobody wastes time on work the other can do better. And honestly? The humans got better at their jobs too, because they finally had time to think deeply about architecture instead of drowning in the daily grind.
 
 ---
 
@@ -500,37 +461,21 @@ This is the killer feature for enterprise adoption. It means Squad doesn't repla
 
 "📌 Still waiting on Tamir for architecture review." I've seen this message more times than I'd like to admit. But it means the system is working correctly — it respects human authority in the loop.
 
-## Features the Squad Blogs Don't Cover (From a User's Perspective)
+## The Things Nobody Told Me About
 
-Squad has a lot of surface area. Brady's docs and blog posts cover the architecture well — but here are the features I discovered as a practitioner that changed my daily workflow:
+[Brady Gaster](https://github.com/bradygaster)'s docs and blog posts cover Squad's architecture well, but there's a whole layer of features I only discovered by using it daily. These aren't in the "getting started" guide. They're the things that turned Squad from "cool experiment" into "I can't work without this."
 
-### Export/Import
+The first one that blew my mind was export/import. I'd spent three weeks building up my Squad's knowledge — decisions, skills, routing rules, everything. Then I needed a Squad in a different repo. I dreaded starting from scratch. Turns out, `squad export` packages your team's accumulated knowledge into a portable bundle, and `squad import` drops it into a new repo. My new repo's Squad was productive from session one. Three weeks of learning, transferred in seconds.
 
-I exported my team from one repo and imported into another. All the decisions and skills came with them. `squad export` packages your team's accumulated knowledge — decisions.md, skills, routing rules — into a portable bundle. `squad import` drops it into a new repo. Instead of repeating three weeks of learning, my new repo's Squad was productive from session one.
+Notifications changed everything about "human in the loop." Squad pings me on Teams when it needs input. I don't have to watch the terminal. When a code review needs my sign-off, or Worf finds a test failure that requires a human decision, I get a notification on my phone. I respond right there, and Squad picks it up. This is what makes the whole "pause and wait for the human" thing actually work in real life — you're not chained to your desk watching agent output scroll by.
 
-### `squad doctor`
+Then I discovered the observability story. Squad integrates with OpenTelemetry and Aspire, so I can see agent work in an Aspire dashboard — traces, logs, metrics, full visibility into what every agent is doing and how long tasks take. When Data spent 8 minutes on what should have been a 2-minute API endpoint, I could see exactly where the time went in the trace waterfall. This isn't just debugging — it's understanding your AI team's performance characteristics over time.
 
-Run `squad doctor` and it validates your entire setup — 9 checks covering config files, agent definitions, upstream connections, and more. All green means you're good. Anything wrong gets a clear diagnostic with a fix suggestion. I run it every time I modify the Squad config. It's saved me from "why isn't this working?" debugging sessions more times than I can count.
+The label taxonomy was one of those "oh, so THAT'S why my issues feel organized" moments. Squad uses a 7-namespace label system (`status:`, `type:`, `priority:`, `squad:`, `go:`, `release:`, `era:`) that gives structure to what used to be chaos. Every issue has a clear lifecycle, a type, and Squad knows exactly how to route it. It's opinionated, and the opinions are right.
 
-### Notifications
+Context optimization was a lifesaver I didn't know I needed. After three weeks, `decisions.md` had ballooned in token count — every decision from every feature piled up. Squad auto-prunes it, consolidating redundant decisions, archiving stale ones, keeping the active context lean. I watched it go from 80K tokens down to 33K without losing anything important. My agents got faster because they weren't wading through outdated decisions about features that shipped two weeks ago.
 
-Squad pings me on Teams when it needs input. I don't have to watch the terminal. When Riker's review needs my sign-off, or Worf finds a test failure that requires a human decision, I get a notification on my phone. I respond in Teams, and Squad picks up the thread. This is what makes "human in the loop" actually practical — you're not chained to your desk watching agent output scroll by.
-
-### OpenTelemetry + Aspire
-
-I can see agent work in an Aspire dashboard. Traces, logs, metrics — full observability into what every agent is doing, how long tasks take, and where bottlenecks form. When Geordi spent 8 minutes on what should have been a 2-minute API endpoint, I could see exactly where the time went in the trace waterfall. This isn't just debugging — it's understanding your AI team's performance characteristics over time.
-
-### Label Taxonomy
-
-Squad's 7-namespace label system (`status:`, `type:`, `priority:`, `squad:`, `go:`, `release:`, `era:`) gives structure to the chaos. Before Squad, my GitHub issues were a flat list with inconsistent labeling. Now every issue has a clear lifecycle (`status:new` → `status:triaged` → `status:in-progress` → `status:done`), a type (`type:feature`, `type:bug`, `type:chore`), and Squad knows exactly how to route it. It's opinionated, and the opinions are right.
-
-### Context Optimization
-
-decisions.md was getting huge. After three weeks of accumulated decisions across multiple features, it had ballooned in token count. Squad auto-prunes it — consolidating redundant decisions, archiving stale ones, keeping the active context lean. I watched it go from 80K tokens down to 33K without losing any important context. My agents got faster because they weren't wading through outdated decisions about features that shipped two weeks ago.
-
-### Remote Control
-
-`squad start --tunnel` exposes your session via a devtunnel URL. Open it on your phone, and you're controlling your AI team from the couch. I built this integration and [wrote about it here](/blog/2026/02/26/squad-remote-control). It's become my default way to monitor Squad — kick off work at my desk, check progress from my phone during lunch.
+And remote control — `squad start --tunnel` exposes your session via a devtunnel URL. Open it on your phone, and you're controlling your AI team from the couch. I [wrote about it here](/blog/2026/02/26/squad-remote-control). It's become my default way to monitor Squad — kick off work at my desk, check progress from my phone during lunch. The future is managing your AI team in your pajamas. I'm not even joking.
 
 ## What's Next
 
