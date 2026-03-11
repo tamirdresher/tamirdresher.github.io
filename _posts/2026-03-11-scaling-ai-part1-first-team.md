@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "From Personal Repo to Work Team — Scaling Squad to Production"
-date: 2026-03-04
+date: 2026-03-11
 tags: [ai-agents, squad, github-copilot, scaling, team-workflows, productivity]
 series: "Scaling AI-Native Software Engineering"
 series_part: 1
