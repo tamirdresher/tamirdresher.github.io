@@ -7,7 +7,7 @@ series: "Scaling AI-Native Software Engineering"
 series_part: 2
 ---
 
-By now you know the story. In [Part 0](/2026/03/10/organized-by-ai.html), I told you how Squad became the first productivity system I didn't abandon after three days. In [Part 1](/2026/03/04/scaling-ai-part1-first-team.html), you saw how Ralph and my Star Trek crew assimilated my backlog while I slept.
+By now you know the story. In [Part 0](/2026/03/10/organized-by-ai.html), I told you how Squad became the first productivity system I didn't abandon after three days. In that personal repo, Ralph and my Star Trek crew assimilated my backlog while I slept.
 
 That was the personal repo. My playground. My experimental sandbox where Picard could make architecture decisions at 2 AM and nobody would complain.
 
@@ -19,7 +19,7 @@ This isn't a playground. Could Squad actually work here?
 
 Turns out: yes. But not by copy-pasting my personal setup. The breakthrough wasn't teaching Squad to work *around* my team — it was teaching Squad to work *with* them.
 
-![Resistance is futile](https://github.com/user-attachments/assets/06ab6aad-52d4-4e16-a904-4df98b0be3d3)
+![Resistance is futile](/assets/scaling-ai-part1-first-team/borg-resistance-is-futile.png)
 *"Resistance is futile. Your work team will be assimilated. Probably."*
 
 ---
