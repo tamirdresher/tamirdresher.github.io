@@ -47,7 +47,7 @@ But here's what I did for the work repo: I added our *real engineers* to `.squad
 ```markdown
 ## Human Members
 
-- **[John Doe](https://github.com/johndoe)** (@johndoe) — Human Squad Member
+- **John Doe** (@j__ohndoe) — Human Squad Member
   - Role: Engineering Lead
   - Expertise: Squad architecture, platform design, Go/C#
   - Scope: Architecture review, cross-team coordination, Squad framework itself
@@ -84,7 +84,7 @@ But here's what I did for the work repo: I added our *real engineers* to `.squad
   - Routes to: John Doe (human, for design), Worf (human, for security)
 ```
 
-See what happened there? **[John Doe](https://github.com/johndoe) isn't just "the guy who reviews PRs." He's a Squad member.** So is Worf. So is B'Elanna. They have charters, expertise areas, and scopes — just like the AI agents.
+See what happened there? **John Doe isn't just "the guy who reviews PRs." He's a Squad member.** So is Worf. So is B'Elanna. They have charters, expertise areas, and scopes — just like the AI agents.
 
 The routing rules in `.squad/routing.md` define when AI squad members pause and escalate to human squad members:
 
@@ -93,7 +93,7 @@ The routing rules in `.squad/routing.md` define when AI squad members pause and 
 
 ### Architecture Decisions
 - **Trigger:** Changes to CRD schemas, API contracts, multi-repo dependencies
-- **Route to:** @johndoe (human)
+- **Route to:** @j__ohndoe (human)
 - **AI action:** Analysis + recommendations, then pause for human approval
 
 ### Security Reviews
@@ -103,7 +103,7 @@ The routing rules in `.squad/routing.md` define when AI squad members pause and 
 
 ### Go Operator Code
 - **Trigger:** Reconciler logic, Kubernetes client code, controller changes
-- **Route to:** Data (AI) → @johndoe (human review)
+- **Route to:** Data (AI) → @j__ohndoe (human review)
 - **AI action:** Implementation, tests, then PR for human review
 
 ### Documentation
@@ -232,7 +232,7 @@ Seven handles documentation sync, and honestly, this is the one I underestimated
 
 Security scanning became continuous instead of a gate at the end. Worf (our human security lead) delegates the systematic scanning to AI squad members — dependency vulnerabilities, secrets detection, supply chain analysis, SBOM generation, compliance checks. Findings get logged in `.squad/decisions.md` with remediation steps. Critical issues pause the build and route to Worf for review. Security isn't something we bolt on at release time anymore. It's just... running. All the time.
 
-And then there's cross-repo coordination, which used to be the thing I dreaded most. Our platform spans 12 repos. When a change in one repo affects others — an API contract change, a shared library update — Picard identifies the downstream impact, opens tracking issues in affected repos, creates a coordination plan with sequenced PRs, and monitors the rollout. Then hands the plan to [John Doe](https://github.com/johndoe) for approval before execution. Multi-repo changes that used to take days of "hey, did you update repo X?" conversations now happen with a single approved plan.
+And then there's cross-repo coordination, which used to be the thing I dreaded most. Our platform spans 12 repos. When a change in one repo affects others — an API contract change, a shared library update — Picard identifies the downstream impact, opens tracking issues in affected repos, creates a coordination plan with sequenced PRs, and monitors the rollout. Then hands the plan to John Doe for approval before execution. Multi-repo changes that used to take days of "hey, did you update repo X?" conversations now happen with a single approved plan.
 
 The pattern across all of this is the same: AI squad members handle the systematic work. Human squad members handle judgment calls. Nobody wastes time on work the other can do better. And honestly? The humans got better at their jobs too, because they finally had time to think deeply about architecture instead of drowning in the daily grind.
 
