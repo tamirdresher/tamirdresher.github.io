@@ -294,20 +294,6 @@ That's it. Now when Picard finishes decomposing a task, when Data opens a PR for
 
 ---
 
-## What I Learned
-
-1. **Onboarding agents is like onboarding humans.** Skip the repo scan and knowledge indexing step, and your agents write code that doesn't match your team's patterns. Do it right, and they understand your conventions better than most new hires in their first month.
-
-2. **The human-in-the-loop routing is the whole product.** Without clear escalation paths — "this goes to a human" — agents are a liability on a real team. With them, agents become the best pair of hands your senior engineers ever had.
-
-3. **Parallel worktrees changed the math.** Five agents working five tasks across five worktrees isn't 5x faster in theory — it's 5x faster in practice. No merge conflicts, no stepping on each other, no waiting.
-
-4. **Your team's trust is earned incrementally, not declared.** Starting with observation-only mode is what convinced the skeptics that agents weren't going to push garbage into their branches. Gradual delegation builds confidence.
-
-5. **Agents find bugs humans miss — and miss bugs humans find.** They're relentless at pattern-matching (the hardcoded `gpt-4o` catch was impressive). They're terrible at "this feels wrong" intuition. You need both.
-
----
-
 ## What's Next
 
 This post covered one team with one Squad. But what happens when decisions in repo A should apply to repo B? When coding standards need to propagate across 12 repos without copy-paste?
