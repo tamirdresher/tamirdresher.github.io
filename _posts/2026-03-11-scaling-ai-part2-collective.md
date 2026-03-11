@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "The Collective — Organizational Knowledge for AI Teams"
-date: 2026-03-05
+date: 2026-03-11
 tags: [ai-agents, squad, github-copilot, scaling, star-trek, borg]
 series: "Scaling AI-Native Software Engineering"
 series_part: 2
