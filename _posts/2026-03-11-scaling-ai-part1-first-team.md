@@ -240,11 +240,11 @@ The pattern across all of this is the same: AI squad members handle the systemat
 
 ## The First Real Test
 
-Three weeks in, I connected Squad to our provisioning-wizard repo — the DK8S Onboarding Wizard. Matrix-themed squad this time: Morpheus as Lead, Trinity on Backend, Switch on Frontend, Dozer on Testing. I pointed them at our Microsoft Planner board (52 open tasks), configured each task to get its own git worktree, and said "go."
+Three weeks in, I connected Squad to our Kubernetes provisioning wizard repo. Matrix-themed squad this time: Morpheus as Lead, Trinity on Backend, Switch on Frontend, Dozer on Testing. I pointed them at our Microsoft Planner board (52 open tasks), configured each task to get its own git worktree, and said "go."
 
 Five investigations launched simultaneously. I watched five terminal sessions spin up in parallel, each agent pulling a different Planner task into its own worktree.
 
-Within the first hour, Dozer found a real bug: the MCP ClientID was misconfigured — we'd been passing the wrong value to our auth layer and nobody had caught it because the integration tests were mocking it. Trinity flagged that we had `gpt-4o` hardcoded in three places — a retirement risk since Azure OpenAI was deprecating that deployment name. Switch found an `onClick` handler in the React onboarding wizard that was wired up in JSX but had no implementation. Just an empty function sitting there, waiting to confuse someone.
+Within the first hour, Dozer found a real bug: the MCP ClientID was misconfigured — we'd been passing the wrong value to our auth layer and nobody had caught it because the integration tests were mocking it. Trinity flagged that we had `gpt-4o` hardcoded in three places — a retirement risk since Azure OpenAI was deprecating that deployment name. Switch found an `onClick` handler in the React provisioning wizard that was wired up in JSX but had no implementation. Just an empty function sitting there, waiting to confuse someone.
 
 None of these were hypothetical. These were real bugs in production-adjacent code that six humans had missed during regular reviews.
 
@@ -254,45 +254,43 @@ Teams notifications helped here too. Every time an agent needed human input or f
 
 ---
 
-## What Doesn't Work (Yet)
+## Hidden Capabilities That Changed Everything
 
-I don't want to oversell this. Squad on a real team has real limits:
+Once Squad was running on the work repo, I stumbled into features I hadn't seen in any docs. These weren't buried — I just hadn't needed them until I was operating at team scale.
 
-- **Architecture decisions still need humans.** Picard can lay out trade-offs beautifully — performance vs. complexity, this API shape vs. that one — but he can't weigh business priorities or team capacity. He drafts the analysis, a human makes the call.
-- **Production incidents need humans.** When something's down at 2 AM, AI can gather logs and surface likely root causes. But the "what do we actually do right now" decision? That's a human with pager anxiety and institutional memory.
-- **Org politics are invisible to agents.** A feature request from a VP and a bug report from a junior engineer look identical to Squad. Technically correct, politically naive. We triage with organizational context before agents pick up work.
-- **Agents get confused by ambiguity.** Clear tasks with acceptance criteria? Excellent. Vague "improve the deployment experience" requests? You'll get a 400-line PR that refactors things nobody asked to refactor. Garbage in, garbage out — just faster.
+### Export/Import: Seed New Repos Without Starting From Scratch
 
----
+Squad configs can be exported from one repo and imported into another. This is how you seed new repos without starting from scratch — you take the team definitions, routing rules, knowledge base, and decision log from a working repo and transplant them.
 
-## The Rollout That Didn't Cause a Revolt
+```bash
+squad export --output ./squad-template
+```
 
-My teammates didn't sign up for AI agents appearing in their repos. I had to roll this out carefully:
+This dumps your entire `.squad/` directory into a portable template. Then in a new repo:
 
-- **Week 1 — Observation only.** Squad had read-only access. Agents scanned, analyzed, drafted reports. No PRs, no code changes. Humans reviewed output to build trust.
-- **Week 2 — Draft PRs.** Agents created `WIP` PRs with detailed explanations. Humans reviewed, edited, merged. When drafts were wrong, we logged corrections in `.squad/decisions.md` so agents learned.
-- **Week 3 — Low-risk delegation.** Docs, test scaffolding, dependency updates — delegated to agents with human review. Architecture and security stayed fully human-owned.
-- **Week 4 — Full integration.** Routing rules active. Agents handle routine work autonomously. Humans focus on design, incidents, judgment calls.
+```bash
+squad import --from ./squad-template
+```
 
-We never forced adoption. Engineers who wanted in joined as human squad members. Engineers who preferred traditional workflows kept going — nobody was blocked. Over time, as people saw faster reviews and docs that stayed current, adoption grew on its own.
+The new repo gets your team structure, routing rules, conventions, and decision history — ready to customize. When we onboarded our second repo, what took two weeks the first time took twenty minutes.
 
-Resistance? Mostly futile. 🟩⬛
+### Aspire/OpenTelemetry Integration: The Missing Observability Layer
 
----
+When running Squad agents through .NET Aspire (which I covered in a [previous post](/blog/2025/12/16/scaling-ai-agents-with-aspire-isolation.html)), you get full distributed tracing of agent operations. Each agent task shows up as a span in the Aspire dashboard. You can see token usage, API call latency, and which agent is doing what — all in the same place you monitor your actual services.
 
-## The Numbers
+This was the missing observability layer. Before this, agent operations were a black box — you'd kick off five parallel tasks and just... hope. Now I can see that Data spent 45 seconds on a code review, used 12K tokens, made 3 API calls to the language model, and produced a review with 7 findings. When an agent task takes too long, I can see exactly where it's stuck. When costs spike, I can trace it to the specific agent and operation.
 
-After 6 weeks with Squad on the work repo:
+### Teams Notifications: Keep Humans in the Loop Without Context-Switching
 
-| Metric | Before | After | Change |
-|--------|--------|-------|--------|
-| PR review time (avg) | 18 hrs | 4 hrs | -78% |
-| PRs merged / week | 12 | 23 | +92% |
-| Test coverage | 67% | 84% | +17 pts |
-| Outdated docs | 22 files | 3 files | -86% |
-| Security findings / sprint | 8 | 2 | -75% |
-| Human time on toil (self-reported) | ~35% | ~12% | -66% |
-| Estimated cost (compute + maintenance) | — | ~$400/mo | ~$17/PR |
+Squad can notify your team channel when tasks complete, when it needs human review, or when something fails. Config is one line in `.squad/config.yml`:
+
+```yaml
+notifications:
+  teams:
+    webhook: <url>
+```
+
+That's it. Now when Picard finishes decomposing a task, when Data opens a PR for review, when Worf flags a security finding — your team gets a ping in Teams. No more checking terminals. No more "did the agent finish yet?" The notification includes a summary and a direct link to the PR or issue. This is what made the "reviewed PRs from my phone during a meeting" workflow possible.
 
 ---
 
@@ -304,7 +302,7 @@ After 6 weeks with Squad on the work repo:
 
 3. **Parallel worktrees changed the math.** Five agents working five tasks across five worktrees isn't 5x faster in theory — it's 5x faster in practice. No merge conflicts, no stepping on each other, no waiting.
 
-4. **Your team's trust is earned weekly, not declared.** The 4-week rollout wasn't optional. Week 1's observation period is what convinced the skeptics that agents weren't going to push garbage into their branches.
+4. **Your team's trust is earned incrementally, not declared.** Starting with observation-only mode is what convinced the skeptics that agents weren't going to push garbage into their branches. Gradual delegation builds confidence.
 
 5. **Agents find bugs humans miss — and miss bugs humans find.** They're relentless at pattern-matching (the hardcoded `gpt-4o` catch was impressive). They're terrible at "this feels wrong" intuition. You need both.
 
