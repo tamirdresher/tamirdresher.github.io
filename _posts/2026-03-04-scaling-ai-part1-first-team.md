@@ -40,6 +40,30 @@ The names aren't just cosmetic. Each agent gets a persona that shapes how they c
 ![Squad team setup](/assets/scaling-ai-part1-first-team/team-setup.png)
 *Squad's team setup documentation — roles, capabilities, and how init works.*
 
+## Making the Squad Yours
+
+Here's what I learned fast: `squad init` gives you a great starting point, but the real power comes from what you do *next*. The default roster is a solid generalist team — but your project isn't generic, so your squad shouldn't be either.
+
+### Assessing the Roster
+
+I don't just accept the default five and move on. The first thing I do after init is step back and ask: *does this team actually have what my project needs?* If I'm building a data pipeline, maybe I don't need a frontend specialist. If I'm doing infrastructure-heavy work, maybe I need more than one DevOps agent. The init gives you a starting lineup, but you're the coach — you should be thinking about what expertise is actually going to matter.
+
+### Adding Domain-Specific Experts
+
+This is where it gets interesting. As my project evolves, I add specialists to the roster. For example, I knew I'd be working heavily with Azure infrastructure, so I added an Azure expert to the team. When regulatory compliance work came up, I brought in a compliance-focused agent. These aren't generic additions — they're targeted responses to what the project actually demands.
+
+The squad grows organically based on real needs, not hypothetical ones. I don't front-load ten agents on day one. I start with the default cast, hit a gap, and add the expert who fills it. It's the same way you'd hire on a real team — you don't staff a compliance specialist until you actually have compliance work.
+
+### Installing the Toolbox — MCPs and Skills
+
+The squad is only as useful as the tools it can reach. This is the part most people skip during onboarding, and it's the part that matters most.
+
+I tell the squad exactly which Model Context Protocol servers it needs — Azure DevOps for work item tracking, GitHub for repo operations, Playwright for browser automation, EngineeringHub for internal docs. These aren't nice-to-haves; they're the integrations that let agents interact with *real systems* instead of just generating code in a vacuum.
+
+I configure them at two levels: globally on the machine (`~/.copilot/mcp-config.json`) for tools every project needs, and repo-specific (`.github/copilot/` settings) for project-specific integrations. Same with skills — I specify which ones the squad should have loaded so agents can do things like run builds, query dashboards, or navigate internal documentation.
+
+Without this step, you've got a team of brilliant engineers locked in a room with no internet, no access to your ticketing system, and no way to deploy anything. The MCPs and skills are the toolbox. Give your squad the right tools and they'll surprise you with what they can build.
+
 ## Giving Your First Task
 
 Here's where it gets real. You type a message to your Squad:
