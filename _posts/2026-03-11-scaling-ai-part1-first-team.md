@@ -238,254 +238,83 @@ The pattern across all of this is the same: AI squad members handle the systemat
 
 ---
 
----
+## The First Real Test
 
-## The First Real Test: Regulatory Compliance Audit
+Three weeks in, I connected Squad to our provisioning-wizard repo — the DK8S Onboarding Wizard. Matrix-themed squad this time: Morpheus as Lead, Trinity on Backend, Switch on Frontend, Dozer on Testing. I pointed them at our Microsoft Planner board (52 open tasks), configured each task to get its own git worktree, and said "go."
 
-Three weeks after integrating Squad into the work repo, we had a regulatory compliance audit. 47 infrastructure components to validate against security controls. Each component needed vulnerability scans, supply chain attestation, network isolation verification, secrets management audit, and documentation.
+Five investigations launched simultaneously. I watched five terminal sessions spin up in parallel, each agent pulling a different Planner task into its own worktree.
 
-Normally this takes two human engineers a full week.
+Within the first hour, Dozer found a real bug: the MCP ClientID was misconfigured — we'd been passing the wrong value to our auth layer and nobody had caught it because the integration tests were mocking it. Trinity flagged that we had `gpt-4o` hardcoded in three places — a retirement risk since Azure OpenAI was deprecating that deployment name. Switch found an `onClick` handler in the React onboarding wizard that was wired up in JSX but had no implementation. Just an empty function sitting there, waiting to confuse someone.
 
-We gave it to the Squad — both AI and human members.
+None of these were hypothetical. These were real bugs in production-adjacent code that six humans had missed during regular reviews.
 
-The AI squad members (Worf's delegation rules kicked in here) ran the scans, generated the SBOM, validated network policies, and produced the compliance report — 47 components, 200+ pages — in 6 hours.
+The most useful part wasn't the bugs themselves — it was the *speed*. Five parallel investigations, each in its own worktree, each producing a PR with tests. By end of day, I had five PRs ready for human review. On a normal day, that's a week of work across the team.
 
-Then routed the report to Worf (human squad member, Security Lead) for review.
-
-Findings: 6 vulnerabilities (all patched within the same day), 2 missing network policies (fixed), 1 outdated dependency (upgraded). The report passed human review with minor edits.
-
-**What we learned:**
-1. AI squad members are excellent at systematic, repetitive validation work
-2. Human squad members are still essential for edge cases and judgment calls
-3. The handoff between AI squad members and human squad members needs to be seamless (which Squad's routing handles perfectly)
-
----
+Teams notifications helped here too. Every time an agent needed human input or finished a task, I got a ping. I reviewed PRs from my phone during a meeting (don't tell my manager).
 
 ---
 
 ## What Doesn't Work (Yet)
 
-Squad on a work repo isn't perfect. Here are the boundaries we've hit:
+I don't want to oversell this. Squad on a real team has real limits:
 
-### 1. Architecture Decisions
-
-AI squad members can *analyze* design trade-offs (performance vs. complexity, cost vs. scale), but they can't *decide* which trade-off to make. That requires understanding business priorities, team capacity, and long-term strategy.
-
-**Current approach:** Picard (AI squad member) drafts the analysis, [John Doe](https://github.com/johndoe) (human squad member) makes the call. Works well.
-
-### 2. Production Incidents
-
-When a cluster goes down at 2 AM, AI squad members can gather logs, check recent changes, and surface likely root causes — but the final diagnosis and mitigation requires human judgment.
-
-**Current approach:** Ralph pages the on-call human squad member with context. The human decides the fix. AI squad members execute the remediation steps.
-
-### 3. Political/Organizational Context
-
-AI squad members don't understand org dynamics. If a feature request comes from a VP, they treat it the same as a bug report from a junior engineer. That's technically correct, but politically naive.
-
-**Current approach:** [John Doe](https://github.com/johndoe) and I (human squad members) triage issues with organizational context before AI squad members pick them up. AI handles execution, humans handle stakeholder management.
+- **Architecture decisions still need humans.** Picard can lay out trade-offs beautifully — performance vs. complexity, this API shape vs. that one — but he can't weigh business priorities or team capacity. He drafts the analysis, a human makes the call.
+- **Production incidents need humans.** When something's down at 2 AM, AI can gather logs and surface likely root causes. But the "what do we actually do right now" decision? That's a human with pager anxiety and institutional memory.
+- **Org politics are invisible to agents.** A feature request from a VP and a bug report from a junior engineer look identical to Squad. Technically correct, politically naive. We triage with organizational context before agents pick up work.
+- **Agents get confused by ambiguity.** Clear tasks with acceptance criteria? Excellent. Vague "improve the deployment experience" requests? You'll get a 400-line PR that refactors things nobody asked to refactor. Garbage in, garbage out — just faster.
 
 ---
 
----
+## The Rollout That Didn't Cause a Revolt
 
-## How We Onboarded the Team (Without the Pitchforks)
+My teammates didn't sign up for AI agents appearing in their repos. I had to roll this out carefully:
 
-Introducing AI squad members to a team that didn't sign up for them is tricky. Here's how we did it:
+- **Week 1 — Observation only.** Squad had read-only access. Agents scanned, analyzed, drafted reports. No PRs, no code changes. Humans reviewed output to build trust.
+- **Week 2 — Draft PRs.** Agents created `WIP` PRs with detailed explanations. Humans reviewed, edited, merged. When drafts were wrong, we logged corrections in `.squad/decisions.md` so agents learned.
+- **Week 3 — Low-risk delegation.** Docs, test scaffolding, dependency updates — delegated to agents with human review. Architecture and security stayed fully human-owned.
+- **Week 4 — Full integration.** Routing rules active. Agents handle routine work autonomously. Humans focus on design, incidents, judgment calls.
 
-### Week 1: Observation Only
-- Squad read-only access to the repos
-- AI squad members ran analysis and drafted reports, but no PRs, no code changes
-- Human squad members reviewed the output to build trust
-
-### Week 2: Drafts and Suggestions
-- AI squad members created draft PRs marked `WIP` with detailed explanations
-- Human squad members reviewed, edited, and merged
-- Feedback loop: when a draft needed changes, we updated `.squad/decisions.md` so the AI squad members learned team conventions
-
-### Week 3: Delegated Work
-- Low-risk tasks (documentation, test scaffolding, dependency updates) delegated to AI squad members with human review
-- Critical work (architecture, security, production changes) still owned by human squad members
-
-### Week 4: Full Integration
-- Routing rules in place
-- AI squad members handle routine work autonomously
-- Human squad members focus on design, incidents, and high-judgment calls
-
-**The key:** We never forced it. Engineers who wanted to join as human squad members did. Engineers who preferred traditional workflows weren't blocked. Over time, as people saw the value (faster reviews, better test coverage, docs that stay updated), adoption grew organically.
+We never forced adoption. Engineers who wanted in joined as human squad members. Engineers who preferred traditional workflows kept going — nobody was blocked. Over time, as people saw faster reviews and docs that stayed current, adoption grew on its own.
 
 Resistance? Mostly futile. 🟩⬛
 
 ---
 
-## Metrics: What Changed
+## The Numbers
 
-After 6 weeks with Squad integrated into the work repo, here's what we measured:
+After 6 weeks with Squad on the work repo:
 
-| Metric | Before Squad | After Squad | Change |
-|--------|-------------|-------------|---------|
-| Average PR review time | 18 hours | 4 hours | -78% |
-| PRs merged per week | 12 | 23 | +92% |
-| Test coverage | 67% | 84% | +17 points |
-| Documentation drift (outdated docs) | 22 files | 3 files | -86% |
-| Security findings (avg per sprint) | 8 | 2 | -75% |
-| Human time spent on toil (estimates, self-reported) | ~35% | ~12% | -66% |
-
-The big wins:
-- **Review latency dropped** because AI squad members pre-screened PRs
-- **More PRs shipped** because test scaffolding and doc sync were automated by AI squad members
-- **Security improved** because scanning was continuous (AI squad members) with human oversight (human squad member Worf)
-- **Human squad members had more time** for architecture and design
-
-The tricky part: measuring "quality of thought" on design decisions. Anecdotally, [John Doe](https://github.com/johndoe) and the human squad members report spending more time thinking deeply about architecture because they're not bogged down in toil. But that's hard to quantify.
+| Metric | Before | After | Change |
+|--------|--------|-------|--------|
+| PR review time (avg) | 18 hrs | 4 hrs | -78% |
+| PRs merged / week | 12 | 23 | +92% |
+| Test coverage | 67% | 84% | +17 pts |
+| Outdated docs | 22 files | 3 files | -86% |
+| Security findings / sprint | 8 | 2 | -75% |
+| Human time on toil (self-reported) | ~35% | ~12% | -66% |
+| Estimated cost (compute + maintenance) | — | ~$400/mo | ~$17/PR |
 
 ---
 
----
+## What I Learned
 
-## Cost: What This Actually Costs
+1. **Onboarding agents is like onboarding humans.** Skip the repo scan and knowledge indexing step, and your agents write code that doesn't match your team's patterns. Do it right, and they understand your conventions better than most new hires in their first month.
 
-Squad on a personal repo is basically free (assuming you have GitHub Copilot). Squad on a work repo with a team? There's a cost.
+2. **The human-in-the-loop routing is the whole product.** Without clear escalation paths — "this goes to a human" — agents are a liability on a real team. With them, agents become the best pair of hands your senior engineers ever had.
 
-**Copilot seats:** 6 human squad members + 7 AI squad members = 13 concurrent Copilot sessions during peak hours. Copilot pricing is per-seat, so this matters.
+3. **Parallel worktrees changed the math.** Five agents working five tasks across five worktrees isn't 5x faster in theory — it's 5x faster in practice. No merge conflicts, no stepping on each other, no waiting.
 
-**Compute:** Ralph's watch loop runs 24/7. Background monitoring, scheduled tasks, continuous scanning. We run this on a dedicated VM (Standard D4s v3 in Azure, ~$140/month).
+4. **Your team's trust is earned weekly, not declared.** The 4-week rollout wasn't optional. Week 1's observation period is what convinced the skeptics that agents weren't going to push garbage into their branches.
 
-**Token usage:** AI squad members are chatty. Decision logs, routing analysis, cross-repo coordination — all of it generates tokens. We don't have exact numbers (Copilot doesn't expose token-level billing), but anecdotally, our team's Copilot usage is 3-4x higher than before Squad.
-
-**Human time to maintain:** ~4 hours/week (mostly Tamir and [John Doe](https://github.com/johndoe) — human squad members) to update routing rules, refine agent charters, and handle edge cases where AI squad members get confused.
-
-**Total estimated cost:** ~$400/month (compute + human time). For a 6-person team shipping 23 PRs/week, that's roughly $17 per merged PR. We consider that a bargain.
+5. **Agents find bugs humans miss — and miss bugs humans find.** They're relentless at pattern-matching (the hardcoded `gpt-4o` catch was impressive). They're terrible at "this feels wrong" intuition. You need both.
 
 ---
-
----
-
-## What's Next: When Work Teams Become a Collective
-
-This post covered a single team (our infrastructure platform) with a single Squad — human squad members and AI squad members working together.
-
-But we're already seeing the next challenge:
-
-**What happens when multiple teams across Microsoft adopt Squad?** Do they each build isolated AI teams, or do they share knowledge? Can Squad in the Azure Kubernetes team learn from Squad in the Azure Networking team? What about organizational standards — coding conventions, security policies, architectural patterns — that should apply across all teams?
-
-In Part 3, I'll cover **Squad upstreams** — how we're building a hierarchy of shared knowledge across teams, so that organizational context propagates down to every Squad without manual copy-paste.
-
-From personal repo ([Part 0: Organized by AI](/blog/2026/03/10/organized-by-ai)) to **Part 1: Resistance is Futile** (this post!) to work team (coming next) to organizational scale (coming next).
-
-The assimilation continues. 🖖
-
-![We are the Borg](/assets/scaling-ai-part1-first-team/borg-resistance-is-futile.jpg)
-*The assimilation continues. You have been warned.*
-
----
-
-## Parallel Execution — The Borg Collective in Action
-
-When Ralph assigns a multi-part task, he fans it out across the squad. Here's what a typical multi-agent assignment looks like:
-
-```
-→ Troi: Build React component for login page
-→ Geordi: Create Express endpoint for authentication
-→ Worf: Write integration tests for login flow
-→ Picard: Add auth middleware to CI pipeline
-```
-
-All four agents start working simultaneously. Troi is creating React components while Geordi is building the Express endpoint while Worf is writing test cases while Picard is updating the pipeline config. This isn't sequential — it's genuinely parallel.
-
-The first time I saw this happen, I just sat there watching the terminal. Four agents, four branches of work, all moving forward at once. The Borg assimilation metaphor isn't accidental — it really does feel like a collective consciousness descending on your codebase.
-
-![Parallel execution diagram](/assets/scaling-ai-part1-first-team/parallel-execution.png)
-*Squad's parallel execution flow: one task fans out to multiple agents working simultaneously.*
-
-## Ralph — The Relentless Monitor
-
-Every Squad has a secret member that doesn't show up in the casting table: **Ralph**. Ralph is the monitor — the tireless process that never sleeps, never takes a break, and never stops looking for work to do.
-
-When you say "Ralph, go", here's what happens:
-
-1. Ralph scans your GitHub issues
-2. Triages them by labels and priority
-3. Assigns them to the right agent based on role
-4. Spawns agent sessions to do the work
-5. Collects results and updates issues
-6. Goes back to step 1
-
-It's a loop, and it's relentless. Ralph doesn't stop until you tell him to stop or there's nothing left to do.
-
-But Ralph isn't just one thing — he operates at three layers:
-
-- **In-session loop**: The basic scan-triage-assign cycle running in your current Copilot session
-- **`squad watch`**: A local daemon that persists across sessions, surviving terminal restarts
-- **GitHub Actions heartbeat**: A scheduled workflow that runs Ralph in CI, fully unattended — your AI team works while you sleep
-
-The GitHub Actions layer is the one that makes enterprise teams pay attention. You can have Ralph watching your repo 24/7, picking up new issues, assigning them to agents, and creating PRs — all without a human touching the keyboard. I've woken up to merged PRs that I never manually reviewed (though Squad does support required human review, which I'll get to).
-
-![Ralph monitoring loop](/assets/scaling-ai-part1-first-team/ralph-loop.png)
-*Ralph operates at three layers: in-session, local daemon, and GitHub Actions — from interactive to fully autonomous.*
-
-## Decisions & Memory
-
-Here's the thing that separates Squad from "just running multiple Copilot sessions": it has a shared brain.
-
-**decisions.md** is the team's collective knowledge base. Every architectural decision, every convention, every "we tried X and it didn't work" gets recorded here. When an agent starts working on a task, it reads decisions.md first. When it makes a significant choice, it writes it back.
-
-This means your team accumulates institutional knowledge. Session 1, Geordi decides to use bcrypt for password hashing. Session 5, Troi is building a password reset form and she already knows bcrypt is the standard because it's in decisions.md.
-
-Each agent also has **history.md** — their individual learning. Geordi's history tracks every API he's built, every database schema decision, every performance optimization. Over time, agents develop genuine expertise in *your specific codebase*.
-
-Then there are **skills** — reusable patterns that agents discover and share. When Geordi figures out your project's error handling pattern, he captures it as a skill. Next time Troi needs to handle errors in a frontend API call, that skill is available to her. Knowledge doesn't just persist — it flows across the team.
-
-The team literally gets smarter session over session. That's not marketing copy — I've watched it happen. By session 10, my Squad was making decisions that would have taken a new human developer weeks to learn about the codebase.
-
-![Decisions and memory system](/assets/scaling-ai-part1-first-team/decisions-memory.png)
-*Squad's knowledge system: shared decisions flow to all agents, individual history builds expertise, and skills transfer across the team.*
-
-## Human Team Members
-
-This is the feature that made me realize Squad isn't a toy — it's a legitimate engineering workflow tool.
-
-You can add humans to the Squad roster. Real people, with real GitHub handles, assigned to real roles. When work routes to a human team member, Squad doesn't hallucinate their response or skip the step — it **pauses and waits**.
-
-I added myself to the roster as a human member. Now when Riker's Lead review needs my input, Squad pauses and pings me:
-
-```
-📌 Waiting on @tamirdresher for architecture review...
-   Task: Login API design needs sign-off before implementation
-   Status: Pinged on GitHub, awaiting response
-```
-
-The AI team continues working on everything else that doesn't depend on that human review. When I respond, Squad picks up the thread and continues.
-
-This is the killer feature for enterprise adoption. It means Squad doesn't replace your team — it augments it. Senior architects can still own critical decisions. Security reviews still go through humans. But the implementation work, the boilerplate, the test scaffolding — that's handled by agents while humans focus on the hard problems.
-
-"📌 Still waiting on Tamir for architecture review." I've seen this message more times than I'd like to admit. But it means the system is working correctly — it respects human authority in the loop.
-
-## The Things Nobody Told Me About
-
-[Brady Gaster](https://github.com/bradygaster)'s docs and blog posts cover Squad's architecture well, but there's a whole layer of features I only discovered by using it daily. These aren't in the "getting started" guide. They're the things that turned Squad from "cool experiment" into "I can't work without this."
-
-The first one that blew my mind was export/import. I'd spent three weeks building up my Squad's knowledge — decisions, skills, routing rules, everything. Then I needed a Squad in a different repo. I dreaded starting from scratch. Turns out, `squad export` packages your team's accumulated knowledge into a portable bundle, and `squad import` drops it into a new repo. My new repo's Squad was productive from session one. Three weeks of learning, transferred in seconds.
-
-Notifications changed everything about "human in the loop." Squad pings me on Teams when it needs input. I don't have to watch the terminal. When a code review needs my sign-off, or Worf finds a test failure that requires a human decision, I get a notification on my phone. I respond right there, and Squad picks it up. This is what makes the whole "pause and wait for the human" thing actually work in real life — you're not chained to your desk watching agent output scroll by.
-
-Then I discovered the observability story. Squad integrates with OpenTelemetry and Aspire, so I can see agent work in an Aspire dashboard — traces, logs, metrics, full visibility into what every agent is doing and how long tasks take. When Data spent 8 minutes on what should have been a 2-minute API endpoint, I could see exactly where the time went in the trace waterfall. This isn't just debugging — it's understanding your AI team's performance characteristics over time.
-
-The label taxonomy was one of those "oh, so THAT'S why my issues feel organized" moments. Squad uses a 7-namespace label system (`status:`, `type:`, `priority:`, `squad:`, `go:`, `release:`, `era:`) that gives structure to what used to be chaos. Every issue has a clear lifecycle, a type, and Squad knows exactly how to route it. It's opinionated, and the opinions are right.
-
-Context optimization was a lifesaver I didn't know I needed. After three weeks, `decisions.md` had ballooned in token count — every decision from every feature piled up. Squad auto-prunes it, consolidating redundant decisions, archiving stale ones, keeping the active context lean. I watched it go from 80K tokens down to 33K without losing anything important. My agents got faster because they weren't wading through outdated decisions about features that shipped two weeks ago.
-
-And remote control — `squad start --tunnel` exposes your session via a devtunnel URL. Open it on your phone, and you're controlling your AI team from the couch. I [wrote about it here](/blog/2026/02/26/squad-remote-control). It's become my default way to monitor Squad — kick off work at my desk, check progress from my phone during lunch. The future is managing your AI team in your pajamas. I'm not even joking.
 
 ## What's Next
 
-This post covered a single repo with a single Squad team. But here's the question that kept me up at night after the first week:
+This post covered one team with one Squad. But what happens when decisions in repo A should apply to repo B? When coding standards need to propagate across 12 repos without copy-paste?
 
-*What happens when you have 5 repos? Do you copy-paste your Squad config into each one? Do decisions in repo A automatically apply to repo B? What about shared coding standards across your organization?*
-
-In [Part 2: "The Collective — Sharing Knowledge Across Repos"](/blog/2026/03/12/scaling-ai-part2-collective), I'll show how Squad's upstream inheritance model turns isolated teams into a connected collective — and why the Borg analogy is even more apt than you think.
-
-Resistance is futile. Your backlog will be assimilated. 🟩⬛
+In [Part 2](/blog/2026/03/12/scaling-ai-part2-collective), I'll show how Squad's upstream inheritance model turns isolated teams into a connected collective. The Borg analogy gets more apt. 🖖
 
 ---
 
