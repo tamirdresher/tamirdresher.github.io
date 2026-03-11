@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Unimatrix Zero — Scaling Squad with Workstreams"
-date: 2026-03-06
+date: 2026-03-11
 tags: [ai-agents, squad, github-copilot, scaling, star-trek, borg]
 series: "Scaling AI-Native Software Engineering"
 series_part: 3
