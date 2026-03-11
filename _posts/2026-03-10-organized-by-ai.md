@@ -45,6 +45,20 @@ I started initially by just creating my own private Squad and gave it access to 
 
 And here's where it gets fun: I like Star Trek. I like the personas there. I wanted my Squad to behave like real Star Trek characters, so... I did 🙂. My team roster (in `.squad/team.md`) has Picard as the Lead, B'Elanna on Infrastructure, Worf on Security, Data as the Code Expert, Seven on Research and Docs, plus Kes handling Communications and Scheduling, Neelix as the News Reporter, and Ralph watching the issue queue 24/7. Each one has a charter file — a markdown document defining exactly who they are, what they own, and how they think. It's like writing character sheets for a tabletop RPG, except these characters actually do work.
 
+### Onboarding the Squad
+
+But creating the roster is only half the story. There's a whole onboarding phase that I think most people skip — and it makes a huge difference.
+
+When I first set up the Squad, I didn't just accept the default cast and move on. I told the squad to actually *think* about whether extra team members were needed. What expertise does this project require that the initial roster doesn't cover? Don't just take the defaults — evaluate the gaps. It's the same thing you'd do when staffing a real team: you look at the problem space and figure out who you need.
+
+And that's exactly what happened. I knew I'd be working with Azure infrastructure, so I added an Azure expert. I knew regulatory and compliance work was coming, so I added a compliance person. The team grew based on what the project actually needed, not some pre-baked template. Every expert I added was there because the *work* demanded it.
+
+The other big piece is tooling. A squad without the right integrations is like an engineer without access to the systems they need to work on. So during onboarding, I specified exactly which MCP servers — Model Context Protocol servers — the squad should have: Azure DevOps, GitHub, Playwright, EngineeringHub, and others. I told the squad to configure them both globally on my machine (`~/.copilot/mcp-config.json`) and repo-specific (`.github/copilot/` settings). Same thing with skills — I installed the ones the squad would need for this particular project.
+
+This is how the squad gets its "toolbox." The MCPs and skills are what let the agents actually *interact* with real systems — create PRs, query pipelines, browse web pages, search docs. Without them, you've got smart agents that can't *do* anything. With them, the agents can reach out into the real world and get things done.
+
+Setting up a squad isn't "hire and go." It's more like onboarding a new team: you assess what you need, bring in the right specialists, and make sure everyone has access to the right tools. The difference is it takes minutes instead of weeks.
+
 ---
 
 ## GitHub Issues + Project Board — My Todo System
