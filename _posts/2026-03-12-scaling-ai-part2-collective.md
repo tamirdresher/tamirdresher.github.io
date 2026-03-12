@@ -18,7 +18,7 @@ Trinity in the provisioning wizard had figured out our PR format, our doc conven
 
 That's when I realized: the hard problem of scaling AI teams isn't making them work in one repo. It's making them share knowledge the way a real engineering organization does.
 
-![The Collective](/assets/scaling-ai-part2-collective/borg-collective.png)
+![The Collective](/assets/scaling-ai-part2-collective/5cf7a532-9c3f-435c-aedf-b7cba6fb9555.png)
 *"We will add your organizational distinctiveness to our own."*
 
 ## The Real Shape of Software Orgs
@@ -221,3 +221,4 @@ In [Part 3: "Unimatrix Zero"](/blog/2026/03/13/scaling-ai-part3-streams), I'll s
 > - **Part 1**: [From Personal Repo to Work Team — Scaling Squad to Production](/blog/2026/03/11/scaling-ai-part1-first-team)
 > - **Part 2**: The Collective — Organizational Knowledge for AI Teams ← You are here
 > - **Part 3**: Unimatrix Zero — coming soon
+
