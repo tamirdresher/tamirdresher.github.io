@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Unimatrix Zero — Scaling Squad with Workstreams"
+title: "Unimatrix Zero — Many Teams, One Repo with SubSquads"
 date: 2026-03-13
 tags: [ai-agents, squad, github-copilot, scaling, star-trek, borg]
 series: "Scaling AI-Native Software Engineering"
@@ -10,27 +10,27 @@ series_part: 3
 > *"Unimatrix Zero: where individual drones regain their identity within the collective."*
 > — Star Trek: Voyager
 
-In [Part 1](/2026/03/04/scaling-ai-part1-first-team.html), I set up my first Squad team and watched AI agents work in parallel. In [Part 2](/2026/03/05/scaling-ai-part2-collective.html), I learned how to share knowledge across repos using upstream inheritance. But there was one question I couldn't stop thinking about:
+In [Part 2](/2026/03/12/scaling-ai-part2-collective.html), the Collective gave us upstream inheritance — one team's knowledge flowing across many repos. That solved the "many repos" problem. But it left the inverse unsolved:
 
-*Can you run three AI teams on the same repo simultaneously?*
+*What happens when multiple AI teams need to work on the same repo, at the same time?*
 
-Not three agents on one team — three *separate teams*, each owning a different slice of the codebase, each with their own backlog, each working concurrently. Like three Borg unimatrix clusters operating on the same vessel.
+Not three agents on one team. Three *separate teams*, each owning a different slice of the codebase, each with their own backlog, working concurrently. Like three Borg unimatrix clusters operating on the same vessel.
 
-I decided to find out. This is the story of the experiment, what broke, what worked, and the feature that emerged from the wreckage.
+I ran the experiment. This is the story of what worked, what broke, and the feature that emerged from the wreckage.
 
 ![Unimatrix Zero](/assets/scaling-ai-part3-streams/unimatrix-zero.png)
-*"Each workstream has its own identity, but they're all part of the same collective."*
+*"Each SubSquad has its own identity, but they're all part of the same collective."*
 
 ## The Experiment
 
-The repo is [tamirdresher/squad-tetris](https://github.com/tamirdresher/squad-tetris) — a multiplayer Tetris game built as a monorepo. It's not a toy project; it has real architecture:
+The repo is [tamirdresher/squad-tetris](https://github.com/tamirdresher/squad-tetris) — a multiplayer Tetris game built as a monorepo:
 
 - **React frontend** — game board, lobby, player UI
 - **Node.js backend** — WebSocket server, matchmaking, game state sync
 - **Game engine** — collision detection, piece rotation, scoring (shared package)
 - **Azure infrastructure** — Container Apps, Cosmos DB, SignalR
 
-I created 30 GitHub issues across three teams using labels:
+I created 30 GitHub issues across three teams:
 
 | Team | Label | Issues | Focus |
 |------|-------|--------|-------|
@@ -38,13 +38,7 @@ I created 30 GitHub issues across three teams using labels:
 | Backend Team | `team:backend` | 10 | WebSocket server, game state, matchmaking |
 | Cloud Team | `team:cloud` | 10 | Azure infra, CI/CD, monitoring |
 
-Then I spun up **three GitHub Codespaces**, each with its own devcontainer configuration and a `SQUAD_TEAM` environment variable identifying which team it belonged to.
-
-Three machines. Three Squad instances. One repo. Let's go.
-
-## Setting It Up
-
-Each Codespace had a devcontainer.json that looked like this:
+Then I spun up **three GitHub Codespaces**, each with its own devcontainer and a `SQUAD_TEAM` environment variable:
 
 ```json
 {
@@ -57,82 +51,61 @@ Each Codespace had a devcontainer.json that looked like this:
 }
 ```
 
-When `squad init` ran, it cast the same Star Trek TNG team in each Codespace — Riker as Lead, Troi on Frontend, Geordi on Backend, Worf on Testing, Picard on DevOps. The casting is deterministic per repo name, so all three Codespaces got the same crew. But the `SQUAD_TEAM` env var told each Squad instance which issues to care about.
+Each Codespace got the same deterministic crew casting (Riker as Lead, Troi on Frontend, Geordi on Backend, Worf on Testing, Picard on DevOps), but `SQUAD_TEAM` told each instance which issues to care about.
 
-The first message to each Codespace was simple:
-
-```
-Ralph, go. Pick up all team:ui issues and start working through them.
-```
-
-```
-Ralph, go. Pick up all team:backend issues and start working through them.
-```
-
-```
-Ralph, go. Pick up all team:cloud issues and start working through them.
-```
-
-And then I sat back and watched three terminals simultaneously.
+Three machines. Three Squad instances. One repo. Go.
 
 ## What Worked
 
-The results were genuinely impressive. In roughly two hours:
+In roughly two hours, **9 issues closed** with real, working code:
 
-**9 issues closed** with real, working code:
-
-- A Tetris game engine with full collision detection and piece rotation (7 standard Tetrominos — I, O, T, S, Z, J, L)
+- A Tetris game engine with full collision detection and piece rotation (all 7 standard Tetrominos)
 - A WebSocket server handling multiplayer game state synchronization
-- A React game board component rendering a 10×20 grid with ghost pieces and next-piece preview
-- CI/CD pipelines for building and deploying to Azure Container Apps
+- A React game board rendering a 10×20 grid with ghost pieces and next-piece preview
+- CI/CD pipelines deploying to Azure Container Apps
 
-Branch-per-issue was followed consistently. Each agent created a feature branch named after the issue number, worked in isolation, and opened a PR when done. Actual commit messages from the experiment:
+Branch-per-issue was followed consistently. Actual commit messages:
 
 ```
 feat(game-engine): implement tetromino rotation with wall kick (#12)
 feat(websocket): add room-based multiplayer with spectator mode (#18)
 feat(ui): create responsive game board with CSS grid (#7)
-ci: add GitHub Actions workflow for Container Apps deployment (#25)
 ```
 
-The branch isolation meant that even though three teams were working simultaneously, their day-to-day commits didn't interfere with each other. Each PR was a clean diff against main.
-
-The quality wasn't production-ready — this was an experiment, not a product launch — but the code was *real*. The game engine actually detected collisions. The WebSocket server actually handled connections. The React components actually rendered Tetrominos. These weren't hallucinated code snippets; they were functional implementations.
+The branch isolation meant three teams working simultaneously without their daily commits interfering. Each PR was a clean diff against main. The code wasn't production-ready — this was an experiment — but the game engine actually detected collisions, the WebSocket server actually handled connections, the React components actually rendered Tetrominos.
 
 ![Experiment setup](/assets/scaling-ai-part3-streams/experiment-setup.png)
-*The multi-Codespace experiment: 3 teams, 30 issues, 1 repo — 9 issues closed with real code, plus hard lessons learned.*
+*3 teams, 30 issues, 1 repo — 9 issues closed in 2 hours, plus hard lessons learned.*
 
 ## What Broke
 
 And now for the honest part. Because things absolutely broke.
 
-**Label leakage.** The Cloud team's Ralph picked up a UI issue that had been mislabeled. An Azure infrastructure agent spent 20 minutes trying to build a React component. It did not go well. The issue was eventually reassigned, but it wasted a cycle and produced a garbage PR that had to be closed.
+**1. Label leakage.** The Cloud team picked up a UI issue that had been mislabeled. An Azure infrastructure agent spent 20 minutes trying to build a React component. It produced a garbage PR that had to be closed. *Human parallel: a mislabeled Jira ticket landing on the wrong sprint board.*
 
-**Merge conflicts in shared packages.** The game engine was a shared package used by both the UI and Backend teams. When both teams modified `packages/game-engine/src/types.ts` in the same two-hour window, the resulting PRs had merge conflicts. Neither agent knew about the other's changes because they were working in isolated branches.
+**2. Merge conflicts in shared packages.** Both the UI and Backend teams modified `packages/game-engine/src/types.ts` in the same window. Neither agent knew about the other's changes — isolated branches, no coordination. *Human parallel: exactly why monorepo teams have CODEOWNERS files.*
 
-**Branch proliferation.** The three teams created 15 branches total, but only 6 PRs actually merged cleanly. Some branches had conflicts. Some had code that didn't compile because it depended on another branch's changes that hadn't merged yet. Some were abandoned when Ralph re-triaged the issue to a different approach.
+**3. Branch proliferation.** 15 branches created, only 6 PRs merged cleanly. Some had conflicts. Some depended on unmerged branches. Some were abandoned mid-approach. *Human parallel: every team without a branch cleanup policy.*
 
-**Codespace timeouts.** GitHub Codespaces have an idle timeout. When one Codespace went to sleep during a long-running agent task, it killed the in-progress work. The agent came back to a half-written file and got confused about state. I had to manually clean up and restart twice.
+**4. Codespace timeouts.** GitHub Codespaces idle-timeout killed an in-progress agent task. The agent came back to a half-written file and got confused about state. I had to manually clean up and restart twice. *Human parallel: your laptop dying mid-deploy.*
 
-**Cross-team dependencies.** Issue #14 (Backend: "implement game state serialization") depended on types defined in Issue #8 (UI: "create tetromino type definitions"). The Backend agent started before the UI agent had merged its types, so it invented its own — which were subtly different. Two sources of truth for the same data model. Classic distributed systems problem, now with AI agents.
+**5. Cross-team dependencies.** Issue #14 ("implement game state serialization") depended on types from Issue #8 ("create tetromino type definitions"). The Backend agent started before the UI agent merged its types, so it invented its own — subtly different. Two sources of truth for the same data model. *Human parallel: the reason architecture review boards exist.*
 
 ## The Insight
 
-Here's what I realized watching this experiment unfold: **every single problem I hit is a problem human teams face too.**
-
-Label leakage? That's a mislabeled Jira ticket. Merge conflicts in shared code? That's why monorepo teams have code ownership files. Branch proliferation? That's every team without a branch cleanup policy. Cross-team dependencies? That's why organizations invented architecture review boards.
+Here's what I realized watching this unfold: **every single problem is a problem human teams face too.**
 
 The AI teams weren't failing in novel ways. They were failing in *exactly the same ways human teams fail* when you put three teams on one repo without coordination guardrails.
 
-For human teams, we solve this with swim lanes — clear boundaries around who owns what code, which issues belong to which team, and how cross-team dependencies are communicated.
+For human teams, we solve this with swim lanes — clear boundaries around who owns what code, which issues belong to which team, how cross-team dependencies get communicated.
 
-For AI teams, we need the same thing. And that's what Workstreams are.
+For AI teams, we need the same thing. That's what SubSquads are.
 
-## Workstreams — The Solution
+## SubSquads — The Solution
 
-After the experiment, I contributed to [a PR](https://github.com/bradygaster/squad/pull/189) that introduced **Workstreams** — Squad's answer to multi-team coordination in a single repo.
+After the experiment, I contributed to [a PR](https://github.com/bradygaster/squad/pull/189) that introduced **SubSquads** — Squad's answer to multi-team coordination in a single repo. (You may see the older name "workstreams" in some docs — it's a deprecated alias. The commands and concepts are the same.)
 
-A Workstream is defined in `workstreams.json`:
+A SubSquad is defined in `.squad/streams.json`:
 
 ```json
 {
@@ -144,7 +117,7 @@ A Workstream is defined in `workstreams.json`:
       "workflow": "default"
     },
     {
-      "name": "backend-team", 
+      "name": "backend-team",
       "labelFilter": "team:backend",
       "folderScope": ["packages/server", "packages/game-engine"],
       "workflow": "default"
@@ -159,83 +132,74 @@ A Workstream is defined in `workstreams.json`:
 }
 ```
 
-Each workstream defines three things:
+Each SubSquad defines three things:
 
-1. **labelFilter** — Which GitHub issues this team picks up. Ralph only processes issues matching the workstream's label filter. No more label leakage.
+1. **labelFilter** — Which GitHub issues this team picks up. No more label leakage. *(Solves problem #1.)*
 
-2. **folderScope** — Which directories this team primarily works in. This is *advisory*, not a hard lock — the backend team can still read from `packages/ui` to understand interfaces, and shared packages like `game-engine` are accessible to multiple workstreams. But when creating new files, agents prefer their scoped directories.
+2. **folderScope** — Which directories this team primarily works in. Advisory, not a hard lock — the backend team can still *read* from `packages/ui` to understand interfaces. But when creating files, agents prefer their scoped directories. *(Reduces problem #2 — conflicts in shared code.)*
 
-3. **workflow** — Which ceremony and decision-making workflow to use. Different teams might have different review requirements or deployment processes.
+3. **workflow** — Which ceremony and decision-making workflow to use. Different teams can have different review requirements or deployment gates.
 
-Auto-detection via `SQUAD_TEAM` environment variable means you don't need to manually select a workstream. Set `SQUAD_TEAM=ui-team` in your Codespace's devcontainer, and Squad automatically activates the right workstream.
-
-Branch-per-issue is enforced at the workstream level. Each workstream creates branches with a team prefix: `ui-team/issue-7-game-board`, `backend-team/issue-18-websocket`. This makes it obvious in the PR list which team owns which work, and makes cleanup trivial.
-
-![Workstreams diagram](/assets/scaling-ai-part3-streams/workstreams.png)
-*Each workstream gets its own swim lane: label filters, folder scopes, and prefixed branches keep teams isolated.*
-
-## Cost Optimization
-
-Three Codespaces running simultaneously is expensive. At $0.18/hour for a 4-core machine, that's $0.54/hour — or roughly $13/day if you're running them 24 hours.
-
-Workstreams enable a cheaper alternative: **sequential activation on one machine**.
+Activate a SubSquad with:
 
 ```bash
-squad workstreams activate ui-team
-# Ralph works through ui-team issues...
-
-squad workstreams activate backend-team  
-# Now Ralph switches to backend-team issues...
-
-squad workstreams activate cloud-team
-# And now cloud-team...
+squad subsquads activate ui-team
 ```
 
-Same branch-per-issue isolation. Same label filtering. Same folder scoping. But on one machine instead of three, at one-third the cost.
+Or list and check status:
 
-The tradeoff is speed — sequential execution takes 3x longer than parallel. But for many teams, the cost savings are worth it. You can also hybrid: run the high-priority workstream in a dedicated Codespace and cycle the lower-priority workstreams sequentially on a second machine.
+```bash
+squad subsquads list
+squad subsquads status
+```
 
-The cost math gets even better when you factor in model selection. Squad already uses cheaper models for triage and planning, reserving expensive models for code generation. With Workstreams, Ralph's triage loop — scanning issues, checking labels, assigning to agents — runs almost entirely on fast/cheap models. The expensive model only activates when an agent starts writing code.
+Auto-detection via `SQUAD_TEAM` environment variable means you don't need to manually activate. Set `SQUAD_TEAM=ui-team` in your Codespace's devcontainer, and Squad activates the right SubSquad automatically. *(Solves problem #3 — branches get team prefixes like `ui-team/issue-7-game-board`, making ownership and cleanup obvious.)*
 
-## What's Next
+![SubSquads diagram](/assets/scaling-ai-part3-streams/workstreams.png)
+*Each SubSquad gets its own swim lane: label filters, folder scopes, and prefixed branches keep teams isolated.*
 
-Workstreams solved the immediate problem of multi-team coordination on a single repo. But the experiment revealed deeper questions that we're still working on:
+## Cost
 
-- **Meta-coordinator**: A coordinator of coordinators — an agent that watches all workstreams, detects cross-team dependencies, and proactively resolves conflicts before they happen. Think of it as the Borg Queen, if the Borg Queen were helpful instead of terrifying.
+Three Codespaces at $0.18/hour (4-core) is $0.54/hour. SubSquads enable a cheaper alternative — sequential activation on one machine:
 
-- **Round-robin mode**: Instead of manually activating workstreams, Ralph cycles through them automatically. Work on UI issues for 30 minutes, switch to backend for 30 minutes, switch to cloud for 30 minutes, repeat. Fully automated, fully unattended.
+```bash
+squad subsquads activate ui-team      # work through UI issues
+squad subsquads activate backend-team  # switch to backend
+squad subsquads activate cloud-team    # then cloud
+```
 
-- **Cross-workstream dependency detection**: When Issue #14 depends on types from Issue #8, the meta-coordinator should detect this and either sequence them correctly or coordinate the type definitions up front.
-
-- **Conflict detection for overlapping PRs**: Before two PRs from different workstreams merge, check if they modify the same files. If they do, flag it for human review or attempt an automated merge resolution.
+Same isolation, one-third the cost. The tradeoff is speed (3× longer), but you can hybrid: dedicated Codespace for the high-priority SubSquad, sequential cycling for the rest.
 
 ## The Full Picture
 
-Looking back at this three-part series, the scaling story follows a clear arc:
+Looking back at this three-part series, the scaling arc is clear:
 
-1. **One team, one repo** ([Part 1](/2026/03/04/scaling-ai-part1-first-team.html)) — Squad gives you a coordinated AI team that works in parallel. Riker leads, agents specialize, Ralph monitors. It's impressive and immediately useful.
+1. **One team, one repo** ([Part 1](/2026/03/11/scaling-ai-part1-first-team.html)) — Squad gives you a coordinated AI team working in parallel. Riker leads, agents specialize, Ralph monitors.
 
-2. **One team, many repos** ([Part 2](/2026/03/05/scaling-ai-part2-collective.html)) — Upstream inheritance connects isolated teams into a collective. Knowledge flows up, decisions flow down, skills accumulate across your entire organization.
+2. **One team, many repos** ([Part 2](/2026/03/12/scaling-ai-part2-collective.html)) — Upstream inheritance connects isolated teams into a collective. Knowledge flows up, decisions flow down.
 
-3. **Many teams, one repo** (this post) — Workstreams give each team a swim lane within a shared codebase. Label filtering, folder scoping, and branch-per-issue keep teams from stepping on each other.
+3. **Many teams, one repo** (this post) — SubSquads give each team a swim lane within a shared codebase. Label filtering, folder scoping, and branch-per-issue keep teams from stepping on each other.
 
-Together, these features let you scale from "one developer trying Squad for the first time" to "multiple AI teams across multiple repos in an organization" — all using the same framework, the same Copilot CLI foundation, the same Borg-themed casting system.
+Together, these let you scale from "one developer trying Squad" to "multiple AI teams across multiple repos" — same framework, same Copilot CLI foundation, same Borg-themed casting system.
 
 ![The scaling arc](/assets/scaling-ai-part3-streams/scaling-arc.png)
 *The three-part scaling arc: from one team in one repo, to shared knowledge across repos, to multiple teams in one repo.*
 
-The Borg Collective assimilated entire civilizations.Your Squad Collective can assimilate your backlog. The difference is, your developers get to keep their individuality.
+## What's Next
+
+SubSquads solved multi-team coordination, but the experiment revealed deeper questions. A **meta-coordinator** — a coordinator of coordinators — could watch all SubSquads, detect cross-team dependencies like the types.ts conflict, and resolve them before they happen. Think Borg Queen, but helpful. And **cross-SubSquad dependency detection** could sequence issues correctly when one team's work blocks another's.
+
+The Borg Collective assimilated entire civilizations. Your Squad Collective can assimilate your backlog. The difference is, your developers get to keep their individuality.
 
 Resistance is futile — but collaboration is optional. Choose wisely. 🟩⬛
 
 ---
 
-*Check out the [squad-tetris experiment repo](https://github.com/tamirdresher/squad-tetris) if you want to see the actual code, issues, and PRs from the multi-Codespace experiment. And the [Workstreams PR](https://github.com/bradygaster/squad/pull/189) if you want to see how the feature was built.*
+*Check out the [squad-tetris experiment repo](https://github.com/tamirdresher/squad-tetris) to see the actual code, issues, and PRs from the multi-Codespace experiment.*
 
 ---
 
-> 📚 **Series: Scaling Your AI Development Team**
-> - **Part 0**: [Organized by AI — How Squad Changed My Daily Workflow](/2026/03/10/organized-by-ai.html)
-> - **Part 1**: [Resistance is Futile — Your First AI Engineering Team](/2026/03/04/scaling-ai-part1-first-team.html)
-> - **Part 2**: [The Collective — Organizational Knowledge for AI Teams](/2026/03/05/scaling-ai-part2-collective.html)
-> - **Part 3**: [Unimatrix Zero — Scaling Squad with Workstreams](/2026/03/06/scaling-ai-part3-streams.html) ← You are here
+> 📚 **Series: Scaling AI-Native Software Engineering**
+> - **Part 1**: [Resistance is Futile — Your First AI Engineering Team](/2026/03/11/scaling-ai-part1-first-team.html)
+> - **Part 2**: [The Collective — Organizational Knowledge for AI Teams](/2026/03/12/scaling-ai-part2-collective.html)
+> - **Part 3**: [Unimatrix Zero — Many Teams, One Repo with SubSquads](/2026/03/13/scaling-ai-part3-streams.html) ← You are here
