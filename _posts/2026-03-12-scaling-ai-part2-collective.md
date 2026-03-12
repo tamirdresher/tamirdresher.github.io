@@ -10,11 +10,11 @@ series_part: 2
 > *"We are the Borg. We will add your technological distinctiveness to our own."*
 > — The Borg, Star Trek: The Next Generation
 
-In [Part 1](/2026/03/04/scaling-ai-part1-first-team.html), I set up my first Squad team — Riker, Troi, Geordi, Worf, and Picard — on a single repo and watched them tear through a backlog in parallel. It was incredible. Then I did what any excited engineer does: I set up Squad on a second repo.
+In [Part 1](/blog/2026/03/11/scaling-ai-part1-first-team), I set up my first Squad on the Kubernetes provisioning wizard — Morpheus, Trinity, Switch, Dozer — and watched them tear through 52 Planner tasks in parallel. It was incredible. Then I did what any excited engineer does: I set up Squad on a second repo.
 
 And the second team didn't know *anything* the first team had learned.
 
-Geordi in `auth-service` had figured out our retry pattern, our error handling conventions, our logging format. Geordi in `token-manager` — same character, same role — stared at me blankly when I mentioned any of it. Each repo's Squad was an island. An isolated drone without a Collective.
+Trinity in the provisioning wizard had figured out our PR format, our doc conventions, our MCP integration patterns. The agents in ConfigurationGeneration — same org, same team — stared at me blankly when I mentioned any of it. Each repo's Squad was an island. An isolated drone without a Collective.
 
 That's when I realized: the hard problem of scaling AI teams isn't making them work in one repo. It's making them share knowledge the way a real engineering organization does.
 
@@ -23,82 +23,60 @@ That's when I realized: the hard problem of scaling AI teams isn't making them w
 
 ## The Real Shape of Software Orgs
 
-Here's something the "just use a monorepo" crowd glosses over: most real software organizations don't live in a monorepo. They look like this:
+Most real engineering organizations don't live in a monorepo. They have layers:
 
-**Organization: Platform Engineering**
-- Architecture standards, coding conventions, security policies
-- "All services use managed identity," "TypeScript for all new services," "OpenAPI spec for every API"
+- **Organization** — Architecture standards, coding conventions, security policies. "All services use managed identity." "OpenAPI spec for every API."
+- **Team** — Domain expertise spanning multiple repos. "Our .NET SDKs follow this pattern." "ADRs go in `docs/decisions/`."
+- **Repo** — Implementation details. The specific context files, the local decisions, the repo-specific quirks.
 
-**Team: Auth Team**
-- Owns: `auth-service`, `identity-provider`, `token-manager`
-- Domain expertise: "JWT v1 is deprecated, migrate to v2," "OAuth flows must use PKCE"
+Each level produces knowledge that should flow down. Architecture standards are universal. Domain expertise is team-wide. Implementation details are repo-specific. This isn't overhead — it's how engineering organizations actually function.
 
-**Team: Payments Team**
-- Owns: `payments-api`, `billing-service`, `invoice-generator`
-- Domain expertise: "PCI compliance requires field-level encryption," "All monetary values stored as integers in cents"
+When you set up Squad on each repo, each team gets its own AI squad. But without shared context, those squads are drones without a Collective.
 
-**Team: Infrastructure Team**
-- Owns: `deploy-tools`, `monitoring-config`, `infra-as-code`
-- Domain expertise: "Terraform modules follow our naming convention," "All alerts route through PagerDuty"
+## The Problem: Copy-Paste Knowledge
 
-Each level produces knowledge that should flow down. Architecture standards are universal. Domain expertise is team-wide. Implementation details are repo-specific. This isn't overhead — it's how engineering organizations actually function. And when you set up Squad on each of those repos, each team gets its own AI squad. But without shared context, those squads are drones without a Collective.
+Here's what actually happened to me. I'd spent weeks building up context in ConfigurationGeneration — a .NET SDK that generates deployment artifacts. It has `.roo/context/` with 8 topic files covering everything from the SDK's architecture to our deployment patterns. It has `docs/decisions/` with 70+ ADRs. It has `docs/designs/` with detailed design documents. The agents working in that repo *know things*. They know our naming conventions, our error handling patterns, our test structure.
 
-## The Problem Without Upstream
+Then I opened the provisioning wizard repo. Different repo, same team. I started a new Squad session. The agents there had their own `.squad/skills/` with 3 shared skills — `docs-hygiene`, `fabric-rti-mcp`, and `pr-format`. But they knew nothing about the organizational patterns I'd painstakingly documented in ConfigurationGeneration.
 
-Here's what happened to me. I set up Squad on `auth-service` and told Geordi: "Always use managed identity for Azure resources. Never use connection strings with secrets."
-
-Geordi nods. He remembers. Every time he touches Azure code in `auth-service`, he uses managed identity. Perfect.
-
-Now I open `token-manager` — same team, different repo. I start a new Squad session. Geordi is there (I cast him again because he's great at infrastructure). I ask him to set up an Azure Key Vault connection.
-
-He reaches for a connection string.
-
-*"Geordi, we talked about this. Managed identity."*
-
-*"I have no record of that decision."*
-
-Because I didn't talk about this — not with *this* Geordi. This Geordi lives in a different repo. He has no memory of what I told the other Geordi. I'm repeating myself, and I'll keep repeating myself across every repo in every team.
-
-Multiply this by an organization with thirty repos across five teams. You're not engineering anymore — you're a broken record, repeating "use managed identity" and "always add structured logging" and "error responses follow RFC 7807" to every new Squad you spin up. It's the AI equivalent of writing coding standards in a wiki that nobody reads.
+I was repeating myself. Across every repo, for every new Squad I spun up, I was re-explaining the same org-wide conventions. It's the AI equivalent of writing coding standards in a wiki that nobody reads.
 
 ## Upstream Inheritance
 
 Squad's answer is **upstream inheritance** — a hierarchical knowledge system that mirrors how real organizations work. Each repo has its own `.squad/` directory, and you connect repos to shared knowledge sources using `squad upstream add`:
 
 ```bash
-# In the auth-service repo:
+# In your repo:
 squad init
-squad upstream add https://github.com/acme/platform-squad.git --name org
-squad upstream add https://github.com/acme/auth-team-squad.git --name team
+squad upstream add https://github.com/my-org/platform-squad.git --name org
+squad upstream add https://github.com/my-org/my-team-squad.git --name team
 ```
 
-This creates a hierarchy without any special global directory:
+This creates a hierarchy:
 
 ```
-acme/platform-squad.git            ← Org level (a regular repo with .squad/)
+my-org/platform-squad.git             ← Org level (a regular repo with .squad/)
   .squad/
-    decisions.md                   ← "Always use managed identity"
-                                     "TypeScript for all new services"
-                                     "APIs follow OpenAPI spec"
-    skills/                        ← Shared patterns: error handling,
-                                     logging, API conventions
-    routing.md                     ← Default routing rules
+    decisions.md                       ← "Always use managed identity"
+                                         "APIs follow OpenAPI spec"
+    skills/                            ← Shared patterns: error handling,
+                                         logging, API conventions
+    routing.md                         ← Default routing rules
 
-acme/auth-team-squad.git           ← Team level (another repo with .squad/)
+my-org/my-team-squad.git              ← Team level (another repo with .squad/)
   .squad/
-    decisions.md                   ← "JWT v1 deprecated, migrate to v2"
-                                     "OAuth flows must use PKCE"
-    skills/                        ← Auth-specific patterns:
-                                     token rotation, session management
+    decisions.md                       ← "ADRs in docs/decisions/"
+                                         ".NET SDK naming conventions"
+    skills/                            ← Team-specific patterns
 
-auth-service/.squad/               ← Repo level
-  decisions.md                     ← Repo-specific decisions
-  agents/                          ← This repo's team (Riker, Geordi, etc.)
+my-repo/.squad/                        ← Repo level
+  decisions.md                         ← Repo-specific decisions
+  agents/                              ← This repo's team
 ```
 
-When Squad starts a session, it reads the repo's own `.squad/` context, then reads each upstream in order. An agent working in `auth-service` knows about the org-wide TypeScript policy AND the team-level JWT deprecation AND the repo-specific implementation decisions. All without you saying a word.
+When Squad starts a session, it reads the repo's own `.squad/` context, then reads each upstream in order. An agent working in your repo knows about org-wide policies AND team-level conventions AND repo-specific decisions. All without you saying a word.
 
-The resolution model is **closest-wins**: later upstream entries override earlier ones, and the repo's own context always takes priority. If the org says "use REST for all APIs" but the Payments Team's `billing-service` needs gRPC for performance, the repo-level decision overrides the org-level one — for that repo only. Org-wide defaults still apply everywhere else.
+The resolution model is **closest-wins**: the repo's own context always takes priority. If the org says "TypeScript for all new services" but your repo is a Go CLI tool, the repo-level decision overrides the org-level one — for that repo only. Org-wide defaults still apply everywhere else.
 
 Decisions cascade down. Overrides are local. You get organizational consistency with team-level autonomy.
 
@@ -107,19 +85,14 @@ Decisions cascade down. Overrides are local. You get organizational consistency 
 
 ## Connecting a Repo to Its Upstream
 
-Here's the thing the diagram above doesn't show: **upstream inheritance isn't automatic.** When you create a new repo and run `squad init`, Squad doesn't magically know where to look for org or team knowledge. You have to tell it — by adding upstreams after init.
-
-Squad supports three types of upstream sources:
+Upstream inheritance isn't automatic. When you run `squad init` in a new repo, Squad doesn't magically know where to look. You tell it:
 
 ```bash
-# 1. Git repository — cloned and cached locally
-squad upstream add https://github.com/acme/platform-squad.git --name org
+# Git repository — cloned and cached locally
+squad upstream add https://github.com/my-org/platform-squad.git --name org
 
-# 2. Local directory — read live at session start, no sync needed
+# Local directory — read live at session start
 squad upstream add ../org-practices/.squad --name org-local
-
-# 3. Export file — a snapshot from squad export
-squad upstream add ./exports/snapshot.json --name snapshot
 ```
 
 You manage upstreams with a small set of commands:
@@ -128,36 +101,14 @@ You manage upstreams with a small set of commands:
 squad upstream list              # See what's connected
 squad upstream remove org        # Disconnect an upstream
 squad upstream sync              # Update all git-based upstreams
-squad upstream sync org          # Update a specific git upstream
+squad upstream sync org          # Update a specific upstream
 ```
 
-Here's what `squad upstream list` looks like in practice:
+**Under the hood:** Git upstreams get cloned to `.squad/_upstream_repos/{name}` (gitignored). They update when you run `squad upstream sync`. Local upstreams are read live — change the source, and the next session picks it up.
 
-```
-Name      Source                                              Type
-────      ──────                                              ────
-org       https://github.com/acme/platform-squad.git          git
-team      https://github.com/acme/auth-team-squad.git         git
-local     ../shared-practices/.squad                          local
-```
+**On each session start:** Squad reads the repo's own `.squad/` context, then reads each upstream in order and merges using closest-wins. The repo always wins.
 
-**What happens under the hood:**
-
-1. **Git upstreams** get cloned to `.squad/_upstream_repos/{name}` (this directory is gitignored). Updated when you run `squad upstream sync`.
-2. **Local upstreams** are read **live** at session start — no sync step needed. Change the source, and the next session picks it up.
-3. **Export files** are static snapshots, useful for pinning a known-good version of shared knowledge.
-
-**What happens on each session start:**
-
-1. Squad reads the repo's own `.squad/` context — decisions, skills, wisdom, casting policy, routing.
-2. Squad reads each upstream in order and merges inherited context using closest-wins resolution.
-3. The repo's own context always takes priority over any upstream.
-
-**What gets inherited:** Skills, Decisions, Wisdom, Casting Policy, and Routing rules all flow down from upstreams automatically at session start.
-
-**The flow is one-directional: upstream flows DOWN.**
-
-Agents in a repo can *read* upstream decisions and skills, but they never *write* back to upstream. From the repo's perspective, upstream knowledge is read-only. If Data discovers a great pattern in `auth-service` and you want the whole team to benefit, you don't push it up automatically — you export it and contribute it back manually:
+**The flow is one-directional: upstream flows DOWN.** Agents in a repo can *read* upstream decisions and skills, but they never *write* back. If an agent discovers a great pattern and you want the whole team to benefit, you export it and contribute it back manually:
 
 ```bash
 # Export a skill from this repo
@@ -167,106 +118,87 @@ squad export --skill azure-keyvault-identity -o keyvault-skill.json
 # (commit it there so every downstream repo picks it up on next sync)
 ```
 
-This is deliberate. Upstream knowledge is curated, not crowdsourced. You don't want every repo-level experiment polluting the team's shared knowledge. Promotion is a conscious decision — like a code review for organizational knowledge.
+This is deliberate. Upstream knowledge is curated, not crowdsourced. Promotion is a conscious decision — like a code review for organizational knowledge.
 
 ## What Gets Shared (And What Doesn't)
 
-Not everything flows through the hierarchy. Squad is deliberate about what crosses boundaries and what stays local.
-
-**What gets shared:**
-
-- **Decisions** — Policies, conventions, architectural principles. "All APIs use OpenAPI spec." "Error responses follow RFC 7807." These are the laws of the org, the regulations of the team, and the local customs of the repo.
-- **Skills** — Reusable patterns with confidence levels. A retry-with-exponential-backoff skill. A structured-logging-setup skill. An Azure-managed-identity-connection skill.
-- **Wisdom** — Accumulated context and lessons learned. "Last time we changed the token format, three downstream services broke." "The billing API has a 500ms SLA."
-- **Casting Policy** — Default team shapes and role assignments. "Security-related issues always route to Worf." "Database migrations go to Geordi."
-- **Routing rules** — Work distribution patterns. "Frontend bugs go to Picard." "API design tasks go to Riker."
-
-**What does NOT get shared:**
-
-- **Agent identities** — Each repo casts its own team. Riker in `auth-service` and Riker in `payments-api` are different instances. They share knowledge through the hierarchy, not through some telepathic link.
-- **History** — An agent's conversation history is personal to that agent in that repo. What Geordi discussed with you about `auth-service`'s token rotation stays in `auth-service`.
-- **Orchestration logs** — Task assignment, parallel execution state, session artifacts — all repo-specific.
+| Shared via upstream | NOT shared |
+|---|---|
+| **Decisions** — Policies, conventions, architectural principles | **Agent identities** — Each repo casts its own team |
+| **Skills** — Reusable patterns with confidence levels | **History** — Conversation history stays per-repo |
+| **Wisdom** — Accumulated context and lessons learned | **Orchestration logs** — Task state, session artifacts |
+| **Casting Policy** — Default team shapes and roles | |
+| **Routing rules** — Work distribution patterns | |
 
 Think of it like the Borg: individual drones have their own hardware and local task state. The Collective shares directives, tactics, and accumulated knowledge. No drone needs to know what another drone had for breakfast.
 
-## Skills Flow Upstream
+## Skills and the Confidence Lifecycle
 
 Here's where the Collective analogy gets real.
 
-Geordi is working in `auth-service` and discovers a pattern: every time we connect to Azure Key Vault, we need to handle the `ManagedIdentityCredential` fallback chain in a specific way. He captures it as a **skill** — a reusable pattern with steps, context, and confidence metadata.
+An agent discovers a pattern — say, the right way to format PRs for your team's code review process. It captures it as a **skill**: a reusable pattern with steps, context, and confidence metadata.
 
-Initially, the skill is **low confidence**. One observation, one repo.
+Skills have a confidence lifecycle:
 
-Two weeks later, Picard is working in `token-manager` — a different repo, same team. He hits the same Azure Key Vault pattern. Squad suggests Geordi's skill. Picard uses it. Confidence bumps to **medium**.
+- **Low** — One observation, one repo. The pattern works here but hasn't been validated elsewhere.
+- **Medium** — Used successfully in multiple contexts. Looks like a real pattern, not a one-off.
+- **High** — Validated across repos, reviewed by humans. This is an established practice.
 
-A month later, Troi in `identity-provider` uses it too. The team runs a skill review ceremony. The pattern is validated across three repos. Confidence hits **high**.
+I have a real example of this. In the provisioning wizard repo, the `.squad/skills/` directory has a `pr-format` skill. It defines exactly how PRs should be structured — title format, description sections, checklist items. After being used across multiple PRs and validated by the team, it reached `confidence: high`:
 
-Now you promote it. Export the skill from `auth-service` and commit it to the team's upstream repo — `acme/auth-team-squad`. Every repo that lists that upstream picks it up on the next `squad upstream sync`. Any new repo the Auth Team creates just needs `squad upstream add https://github.com/acme/auth-team-squad.git --name team` and the pattern is there from day one.
-
-```bash
-# In auth-service: export the validated skill
-squad export --skill azure-keyvault-identity -o keyvault-skill.json
-
-# In the auth-team-squad repo: add it and push
-# (every downstream repo inherits it on next sync)
+```yaml
+# .squad/skills/pr-format/skill.yml
+name: pr-format
+description: Standard PR format for team repos
+confidence: high
+steps:
+  - title follows conventional commits format
+  - description includes context, changes, and testing sections
+  - checklist includes review items for security, docs, tests
 ```
 
-Is the pattern useful beyond the Auth Team? Commit it to the org-level upstream repo — `acme/platform-squad`. Now the Payments Team's Squad knows it. Infrastructure Team's Squad knows it. The entire org benefits from one agent's discovery in one repo. Skills flow UP manually (export → commit to upstream repo) but flow DOWN automatically (read at session start).
+That `confidence: high` means this skill has been battle-tested. It started as a low-confidence observation — "this PR format seems to work well" — and graduated through usage and human validation.
 
-The Collective learns. One drone's adaptation becomes everyone's advantage.
+Once a skill hits high confidence, you promote it. Export it from the repo, commit it to the team's upstream. Every repo that lists that upstream picks it up on the next `squad upstream sync`. Any new repo the team creates just needs one `squad upstream add` command and the pattern is there from day one.
+
+Skills flow UP manually (export → commit to upstream) but flow DOWN automatically (read at session start). The Collective learns. One drone's adaptation becomes everyone's advantage.
 
 ![Skills confidence lifecycle](/assets/scaling-ai-part2-collective/skills-lifecycle.png)
 *Skills mature from discovery to org-wide adoption: low → medium → high confidence, then promoted upstream.*
 
-## Practical Example
+## Real Example: ConfigurationGeneration + Provisioning Wizard
 
-Let's walk through a concrete scenario.
+Let me walk through my actual scenario.
 
-I'm leading the Platform Engineering org. I create an org-level upstream repo — `acme/platform-squad` — run `squad init` in it, and set org-wide decisions:
+**ConfigurationGeneration** is our .NET SDK for generating deployment artifacts. Over months of working with Squad, that repo accumulated serious organizational knowledge:
 
-```markdown
-## Org Decisions
-- All APIs must publish an OpenAPI specification
-- TypeScript for all new services
-- Structured logging with correlation IDs on every request
-```
+- `.roo/context/` — 8 topic files covering the SDK architecture, deployment patterns, naming conventions, error handling, and test structure
+- `docs/decisions/` — 70+ Architecture Decision Records documenting why we chose specific patterns
+- `docs/designs/` — Design documents for major features
 
-Riker is working in `auth-service`. He builds a new `/tokens` endpoint. He automatically generates an OpenAPI spec, writes it in TypeScript, and adds correlation ID logging. He didn't need to be told — he inherited the org decisions.
+That's a lot of knowledge. And most of it isn't repo-specific — it's team-level or even org-level. Things like "ADRs go in `docs/decisions/`", "use this error handling pattern", "PR descriptions follow this format" — those apply to every repo our team owns.
 
-Geordi is working in `payments-api`. He builds a `/invoices` endpoint. Same thing — OpenAPI spec, TypeScript, correlation IDs. Two different repos, two different teams, same standards. No copy-paste, no wiki nobody reads, no "we forgot to tell the new team."
+**Provisioning wizard** is our Kubernetes provisioning tool. It has its own `.squad/skills/` with 3 skills (`docs-hygiene`, `fabric-rti-mcp`, `pr-format`). Different domain, but same team conventions.
 
-Worf is working in `infra-tools`. He builds a Terraform validation CLI. The org decision says "TypeScript for all new services" — but this isn't a service, it's a CLI tool, and the team decides Go is a better fit. The repo-level decision overrides the org default. Worf builds it in Go. The org-wide logging and OpenAPI decisions? Those still apply where relevant.
+Before upstream inheritance, setting up Squad on a new repo meant:
 
-Now the real payoff: Troi is setting up Squad on a brand new repo — `session-manager`, just created yesterday. She runs `squad init`, adds the upstreams, casts her team, and starts working:
+1. Copy the relevant context files manually
+2. Re-explain organizational conventions
+3. Hope you didn't miss anything
+4. Repeat for the next repo
+
+With upstream inheritance, it's two commands:
 
 ```bash
 squad init
-squad upstream add https://github.com/acme/platform-squad.git --name org
-squad upstream add https://github.com/acme/auth-team-squad.git --name team
+squad upstream add https://github.com/my-org/my-team-squad.git --name team
 ```
 
-On her very first task, her agents already know about the OpenAPI requirement, the TypeScript policy, the logging standard, the JWT v2 migration, and every high-confidence skill the Auth Team has accumulated over months — because Squad read every upstream at session start and loaded all of it.
+Done. The team-level upstream repo contains the distilled organizational knowledge — the conventions from ConfigurationGeneration's context files, the validated skills from the provisioning wizard, the ADR templates, the PR format. Every new repo our team creates inherits all of it immediately.
 
-Day one, and she's operating with the Collective's full knowledge. No onboarding lag, no "go read the wiki," no repeating yourself for the thirty-first time. Two `upstream add` commands, and the entire hierarchy is connected.
+The 70+ ADRs stay in ConfigurationGeneration (they're repo-specific implementation decisions). But the *pattern* — "we write ADRs, here's the template, here's where they go" — that lives in the team upstream. The `pr-format` skill with `confidence: high` from the provisioning wizard? Already in the upstream. The error handling conventions from ConfigurationGeneration's context files? Extracted and committed to the team upstream.
 
-## Plugin Marketplace
-
-The Borg don't just assimilate internally — they assimilate across species, across civilizations, across the galaxy. Squad's plugin marketplace is the same idea applied to community knowledge.
-
-```bash
-squad plugin marketplace browse
-```
-
-Pre-built knowledge packages, ready to install:
-
-- **azure-best-practices**: Managed identity patterns, resource naming conventions, cost optimization skills
-- **react-testing**: Component testing strategies, mock patterns, accessibility checks
-- **api-design**: REST conventions, error response formats, pagination patterns, rate limiting
-- **security-hardening**: Input validation, OWASP patterns, dependency scanning, secret detection
-
-Installing a plugin adds its skills to your Squad's knowledge base at whatever level you choose — org-wide, team-level, or just one repo. Your agents immediately benefit from patterns that the community has validated across thousands of projects.
-
-And it flows both ways. That Azure Key Vault managed identity skill that Geordi discovered and your org promoted? If it's generic enough, publish it as a plugin. Other Squad teams worldwide benefit. The Collective grows beyond your organization.
+Setting up a new repo went from hours of manual context building to two commands and a `squad upstream sync`.
 
 ## What's Next
 
@@ -276,16 +208,14 @@ But there's another scaling challenge I haven't addressed:
 
 *What happens when multiple teams need to work on the same repo simultaneously?*
 
-My `squad-tetris` project has a frontend team, a backend team, and a cloud infrastructure team. They're all working in the same codebase. If I spin up three Squad sessions, will they step on each other's toes? Will they pick up each other's issues? Will merge conflicts bring everything crashing down?
+Right now, one Squad per repo works. But what if you need a frontend workstream, a backend workstream, and an infrastructure workstream — all in the same codebase, all running in parallel? If you spin up three Squad sessions, will they step on each other's toes? Will merge conflicts bring everything crashing down?
 
-In [Part 3: "Unimatrix Zero — Scaling Squad with Workstreams"](/2026/03/06/scaling-ai-part3-streams.html), I'll share the results of running three AI teams on one repo in three Codespaces simultaneously — what worked, what broke, and the Workstreams feature that makes it actually viable.
-
-Spoiler: it broke spectacularly before it worked beautifully. 🟩⬛
+In [Part 3: "Unimatrix Zero"](/blog/2026/03/13/scaling-ai-part3-streams), I'll show you SubSquads — how to run multiple AI teams on one repo with isolated workstreams. What worked, what broke, and why it broke spectacularly before it worked beautifully. 🟩⬛
 
 ---
 
 > 📚 **Series: Scaling Your AI Development Team**
-> - **Part 0**: [Organized by AI — How Squad Changed My Daily Workflow](/2026/03/10/organized-by-ai.html)
-> - **Part 1**: [Resistance is Futile — Your First AI Engineering Team](/2026/03/04/scaling-ai-part1-first-team.html)
-> - **Part 2**: [The Collective — Organizational Knowledge for AI Teams](/2026/03/05/scaling-ai-part2-collective.html) ← You are here
-> - **Part 3**: [Unimatrix Zero — Scaling Squad with Workstreams](/2026/03/06/scaling-ai-part3-streams.html)
+> - **Part 0**: [Organized by AI — How Squad Changed My Daily Workflow](/blog/2026/03/10/organized-by-ai)
+> - **Part 1**: [From Personal Repo to Work Team — Scaling Squad to Production](/blog/2026/03/11/scaling-ai-part1-first-team)
+> - **Part 2**: The Collective — Organizational Knowledge for AI Teams ← You are here
+> - **Part 3**: Unimatrix Zero — coming soon
