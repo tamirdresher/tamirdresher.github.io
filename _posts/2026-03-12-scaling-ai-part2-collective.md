@@ -10,7 +10,7 @@ series_part: 2
 > *"We are the Borg. We will add your technological distinctiveness to our own."*
 > — The Borg, Star Trek: The Next Generation
 
-In [Part 1](/blog/2026/03/11/scaling-ai-part1-first-team), I set up my first Squad on the Kubernetes provisioning wizard — Morpheus, Trinity, Switch, Dozer — and watched them tear through 52 Planner tasks in parallel. It was incredible. Then I did what any excited engineer does: I set up Squad on a second repo.
+In [Part 1](/blog/2026/03/11/scaling-ai-part1-first-team), I set up my first Squad on an internal project called the provisioning wizard — with a Matrix-themed squad: Morpheus, Trinity, Switch, Dozer (Star Trek was already taken by my personal repo) — and watched them tear through 52 Planner tasks in parallel. It was incredible. Then I did what any excited engineer does: I set up Squad on a second repo.
 
 And the second team didn't know *anything* the first team had learned.
 
@@ -178,7 +178,7 @@ Let me walk through my actual scenario.
 
 That's a lot of knowledge. And most of it isn't repo-specific — it's team-level or even org-level. Things like "ADRs go in `docs/decisions/`", "use this error handling pattern", "PR descriptions follow this format" — those apply to every repo our team owns.
 
-**Provisioning wizard** is our Kubernetes provisioning tool. It has its own `.squad/skills/` with 3 skills (`docs-hygiene`, `fabric-rti-mcp`, `pr-format`). Different domain, but same team conventions.
+**Provisioning wizard** is our internal provisioning tool. It has its own `.squad/skills/` with 3 skills (`docs-hygiene`, `fabric-rti-mcp`, `pr-format`). Different domain, but same team conventions.
 
 Before upstream inheritance, setting up Squad on a new repo meant:
 
@@ -203,6 +203,8 @@ Setting up a new repo went from hours of manual context building to two commands
 ## What's Next
 
 Upstream inheritance solves the organizational knowledge problem. Your AI teams share context the way real engineering orgs should — hierarchically, deliberately, with local autonomy and global consistency.
+
+We're also working on making the upstream more dynamic and auto-synced — just like normal human teams work. Today you run `squad upstream sync` manually, but the vision is continuous synchronization where upstream knowledge flows to downstream repos automatically, keeping every Squad in the org up to date without human intervention.
 
 But there's another scaling challenge I haven't addressed:
 
