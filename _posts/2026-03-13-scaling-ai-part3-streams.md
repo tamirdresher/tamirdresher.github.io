@@ -185,9 +185,121 @@ Together, these let you scale from "one developer trying Squad" to "multiple AI 
 ![The scaling arc](/assets/scaling-ai-part3-streams/scaling-arc.png)
 *The three-part scaling arc: from one team in one repo, to shared knowledge across repos, to multiple teams in one repo.*
 
+## Multi-Machine Coordination — Ralph Is Everywhere
+
+SubSquads solved parallel work within one machine. But here's the thing — I don't work on one machine.
+
+I've got my work laptop. A Cloud PC dev box. A home desktop. Ralph runs on each one. Three Ralphs, three machines, one repo. How do they not step on each other?
+
+### The Distributed Task Queue (It's Just Git)
+
+We built a distributed task system. The transport layer? Git. The message format? YAML. The worker process? Ralph.
+
+It's not Kafka. It's `git pull && scan && do && git push`. And honestly? For an AI team of agents across machines, it works surprisingly well.
+
+The structure lives in `.squad/cross-machine/`:
+
+```
+.squad/cross-machine/
+├── config.json              # Per-machine settings
+├── tasks/                   # Task queue (YAML files)
+│   ├── blog-part3-review.yaml
+│   └── sample-test-task.yaml
+└── responses/               # Machine responses
+    └── blog-part3-CPC-tamir-WCBED.md
+```
+
+A task file looks like this — no message brokers required:
+
+```yaml
+id: blog-part3-whats-next-section
+source_machine: production-main
+target_machine: ANY
+priority: high
+created_at: 2026-03-15T14:08:00Z
+task_type: review
+description: "Add 'What's Next' section (~200 words) to blog Part 3"
+payload:
+  command: "echo 'Read blog-part2-refresh.md, write 200-word What's Next...'"
+  expected_duration_min: 30
+status: completed
+```
+
+Each machine has a `config.json` that declares who it is:
+
+```json
+{
+  "enabled": true,
+  "poll_interval_seconds": 300,
+  "this_machine_aliases": ["TAMIRDRESHER", "CPC-tamir-WCBED"],
+  "max_concurrent_tasks": 2,
+  "task_timeout_minutes": 60,
+  "command_whitelist_patterns": [
+    "python scripts/*", "node scripts/*", "pwsh scripts/*",
+    "gh *", "git *", "echo *"
+  ]
+}
+```
+
+Yes, there's a command whitelist. Worf would insist. You don't let a YAML file from another machine run arbitrary code on yours.
+
+`scripts/cross-machine-watcher.ps1` is the engine. It polls every 5 minutes, pulls new tasks, checks if `target_machine` matches (or is `ANY`), validates the command against the whitelist, executes, and pushes the result back. Git pull before scan, git push after response. That's the whole protocol.
+
+### Mutex and Ownership
+
+On a single machine, Ralph uses a system-wide named mutex to prevent duplicates:
+
+```powershell
+$mutexName = "Global\RalphWatch_tamresearch1"
+$mutex = New-Object System.Threading.Mutex($false, $mutexName)
+$acquired = $mutex.WaitOne(0)
+if (-not $acquired) {
+    Write-Host "Another Ralph is already running on this machine" -ForegroundColor Red
+    exit 1
+}
+```
+
+Cross-machine, the task YAML itself is the lock. Ralph claims a task by updating its `status` from `pending` to `executing`, adding its machine name, and pushing. If two Ralphs race, git's merge conflict is the tiebreaker. Not elegant. Effective.
+
+Branch names include `$env:COMPUTERNAME` so you can trace which machine did what: `squad/591-voice-cloning-LAPTOP` vs `squad/591-voice-cloning-DEVBOX-GPU`. When my laptop has no GPU and the DevBox does, the laptop Squad creates a cross-machine task for voice cloning inference. Ralph on the DevBox picks it up, runs the model, pushes the result. Two machines, one workflow, zero manual coordination.
+
+### The Debugging Story (Or: The Hardest Bug Was a File Extension)
+
+Here's the real punchline. I used this system for *this blog post*. I pushed a task asking all machines to contribute a "What's Next" section — roughly 200 words each, different perspective per machine.
+
+The CPC machine responded within an hour. Solid content about Squad Mesh and skills marketplaces. 
+
+The other machines? Radio silence.
+
+So I dug in. And found not one, not two, but **four bugs**:
+
+1. **File format mismatch.** The task was saved as `.md` instead of `.yaml`. The watcher only scanned for `*.yaml` files. The task was invisible. *The distributed system worked perfectly. The file extension was wrong.*
+
+2. **Ralph integration was written but never called.** The cross-machine check existed in `ralph-watch.ps1` as a code block — but the function was defined and never invoked. Classic.
+
+3. **Config aliases didn't match reality.** `config.json` listed machine aliases that didn't match `$env:COMPUTERNAME` on two of my machines. The target filter silently skipped tasks.
+
+4. **No `git pull` before scan.** The watcher read the local `.squad/cross-machine/tasks/` directory but never pulled first. New tasks pushed from other machines were invisible until the next manual pull.
+
+We built a distributed work queue with eventual consistency across three physical machines. The hardest bugs were: a file extension, a function that was never called, config values that didn't match reality, and forgetting to `git pull`. Classic software engineering problems — just applied to AI agent coordination.
+
+That debugging story IS the story. The distributed systems theory is easy. The boring infrastructure — file format mismatches, config defaults that don't match reality, integration code that was written but never wired up — that's where the real work is. Every senior engineer reading this is nodding right now.
+
 ## What's Next
 
-SubSquads solved multi-team coordination, but the experiment revealed deeper questions. A **meta-coordinator** — a coordinator of coordinators — could watch all SubSquads, detect cross-team dependencies like the types.ts conflict, and resolve them before they happen. Think Borg Queen, but helpful. And **cross-SubSquad dependency detection** could sequence issues correctly when one team's work blocks another's.
+SubSquads solved multi-team coordination. Cross-machine tasks solved multi-device coordination. But the experiment revealed questions that point much further ahead.
+
+**Squad Mesh — squads talking to squads.** My Squad lives in `tamresearch1`. My team at Microsoft has twelve repos. Other teams have their own Squads. What happens when those Squads need to collaborate? Imagine Picard's Squad detecting a Helm chart change in `dk8s-platform` that breaks an API contract `dk8s-operators` depends on. Today, Picard opens an issue and a human coordinates. Tomorrow? Picard's Squad talks to the other repo's Squad directly. Their lead decomposes the fix, assigns their specialists. Two Squads, two repos, zero humans in the handoff loop. The Borg had their subspace links. We'll have ours.
+
+**A meta-coordinator** — a coordinator of coordinators — could watch all SubSquads, detect cross-team dependencies like the `types.ts` conflict, and resolve them before they happen. Think Borg Queen, but helpful. Cross-SubSquad dependency detection could sequence issues correctly when one team's work blocks another's.
+
+**The Skills Marketplace.** In Part 1, agents develop skills — reusable patterns captured from real work. That's intra-squad knowledge transfer. The next step is *inter-squad* transfer. A marketplace where Squads publish proven patterns: "Here's how we handle FedRAMP compliance scanning" or "Here's our Kubernetes operator testing strategy." Other Squads subscribe. When a skill gets updated — say, a new CVE scanning approach — every subscribed Squad gets the update automatically. Skills don't just persist. They *propagate*.
+
+**Seven as a research institute.** Seven's role evolves from documentation agent to continuous environmental awareness. A daily tech news scanner monitoring HackerNews, Reddit, and X for relevant developments. But it goes further — Seven doesn't just report news, she evaluates it against your Squad's current capabilities. "New model released that's 3x faster at code review — here's a benchmark against our current setup." Or: "CVE published affecting a dependency in three of our repos — here's the impact analysis, already queued for Worf."
+
+**Enterprise scale.** Personal repo → team repo → Squad Mesh → enterprise. Squads at every layer. Product teams, platform teams, security teams, SRE teams — each with specialized agents. Connected through a mesh that shares relevant skills and coordinates cross-cutting work. The unit of AI adoption isn't the model. It isn't the prompt. It isn't even the agent. **It's the squad.**
+
+We started with one person and a watch script. We're heading toward organizational intelligence that compounds across every team, every repo, every sprint.
 
 The Borg Collective assimilated entire civilizations. Your Squad Collective can assimilate your backlog. The difference is, your developers get to keep their individuality.
 
