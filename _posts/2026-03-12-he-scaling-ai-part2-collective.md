@@ -15,7 +15,7 @@ comments: false
 > *"We are the Borg. We will add your technological distinctiveness to our own."*
 > — The Borg, Star Trek: The Next Generation
 
-ב[חלק 1](/blog/2026/03/11/scaling-ai-part1-first-team), הקמתי את ה-Squad הראשון שלי על פרויקט פנימי שנקרא provisioning wizard — עם צוות בנושא מטריקס: Morpheus, Trinity, Switch, Dozer (Star Trek כבר היה תפוס בריפו האישי שלי) — וצפיתי בהם טוחנים 52 משימות Planner במקביל. זה היה מדהים. ואז עשיתי מה שכל מהנדס נלהב עושה: הקמתי Squad על ריפו שני.
+ב[חלק 1](/he/2026/03/11/scaling-ai-part1/), הקמתי את ה-Squad הראשון שלי על פרויקט פנימי שנקרא provisioning wizard — עם צוות בנושא מטריקס: Morpheus, Trinity, Switch, Dozer (Star Trek כבר היה תפוס בריפו האישי שלי) — וצפיתי בהם טוחנים 52 משימות Planner במקביל. זה היה מדהים. ואז עשיתי מה שכל מהנדס נלהב עושה: הקמתי Squad על ריפו שני.
 
 והצוות השני לא ידע *שום דבר* שהצוות הראשון למד.
 
@@ -222,7 +222,7 @@ upstream inheritance פותר את בעיית הידע הארגוני. צוות�
 ---
 
 > 📚 **Series: Scaling AI-Native Software Engineering**
-> - **חלק 0**: [מאורגן על ידי AI — איך Squad שינה את שגרת העבודה היומית שלי](/blog/2026/03/10/organized-by-ai)
-> - **חלק 1**: [ההתנגדות חסרת תועלת — צוות הנדסת AI הראשון שלך בעבודה](/blog/2026/03/11/scaling-ai-part1-first-team)
+> - **חלק 0**: [מאורגן על ידי AI — איך Squad שינה את שגרת העבודה היומית שלי](/he/2026/03/10/organized-by-ai/)
+> - **חלק 1**: [ההתנגדות חסרת תועלת — צוות הנדסת AI הראשון שלך בעבודה](/he/2026/03/11/scaling-ai-part1/)
 > - **חלק 2**: הקולקטיב — ידע ארגוני לצוותי AI ← אתם כאן
 > - **חלק 3**: Unimatrix Zero — בקרוב
