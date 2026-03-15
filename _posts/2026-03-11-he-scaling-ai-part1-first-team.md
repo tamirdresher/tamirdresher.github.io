@@ -3,12 +3,11 @@ layout: post-he
 title: "ההתנגדות חסרת תועלת — צוות הנדסת AI הראשון שלך"
 date: 2026-03-11
 tags: [ai-agents, squad, github-copilot, scaling, star-trek, borg]
-series: "הרחבת הנדסת תוכנה מונעת-AI"
+series: "Scaling AI-Native Software Engineering"
 series_part: 1
 lang: he
 dir: rtl
 permalink: /he/2026/03/11/scaling-ai-part1/
-published: true
 sitemap: false
 comments: false
 ---
@@ -200,7 +199,7 @@ Ralph פועל בשלוש שכבות, וכל אחת מרחיבה את ההישג
 
 ---
 
-> 📚 **סדרה: הרחבת צוות הפיתוח עם AI**
+> 📚 **Series: Scaling AI-Native Software Engineering**
 > - **חלק 0**: [מאורגן על ידי AI — איך Squad שינה את שגרת העבודה היומית שלי](/blog/2026/03/10/organized-by-ai)
 > - **חלק 1**: ההתנגדות חסרת תועלת — צוות הנדסת AI הראשון שלך ← אתם כאן
 > - **חלק 2**: [מ-Repo אישי לצוות עבודה — הרחבת Squad לייצור](/2026/03/04/scaling-ai-part2-work-team.html)
