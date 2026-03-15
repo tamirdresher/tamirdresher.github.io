@@ -158,18 +158,6 @@ Auto-detection via `SQUAD_TEAM` environment variable means you don't need to man
 ![SubSquads diagram](/assets/scaling-ai-part3-streams/workstreams.png)
 *Each SubSquad gets its own swim lane: label filters, folder scopes, and prefixed branches keep teams isolated.*
 
-## Cost
-
-Three Codespaces at $0.18/hour (4-core) is $0.54/hour. SubSquads enable a cheaper alternative — sequential activation on one machine:
-
-```bash
-squad subsquads activate ui-team      # work through UI issues
-squad subsquads activate backend-team  # switch to backend
-squad subsquads activate cloud-team    # then cloud
-```
-
-Same isolation, one-third the cost. The tradeoff is speed (3× longer), but you can hybrid: dedicated Codespace for the high-priority SubSquad, sequential cycling for the rest.
-
 ## The Full Picture
 
 Looking back at this three-part series, the scaling arc is clear:
@@ -265,25 +253,13 @@ Branch names include `$env:COMPUTERNAME` so you can trace which machine did what
 
 ### The Debugging Story (Or: The Hardest Bug Was a File Extension)
 
-Here's the real punchline. I used this system for *this blog post*. I pushed a task asking all machines to contribute a "What's Next" section — roughly 200 words each, different perspective per machine.
+I used this system for *this very blog post*. I pushed a task asking all machines to contribute a "What's Next" section. The CPC machine responded within an hour. The other machines? Radio silence.
 
-The CPC machine responded within an hour. Solid content about Squad Mesh and skills marketplaces. 
+So I dug in and found four bugs. The task file was saved as `.md` but the watcher only scanned `*.yaml` — the distributed system worked perfectly, it just couldn't *see* the task. The cross-machine check existed in Ralph's code but the function was defined and never called. The config had machine aliases that didn't match `$env:COMPUTERNAME`. And the watcher never ran `git pull` before scanning — new tasks were invisible until someone manually pulled. 
 
-The other machines? Radio silence.
+We built a distributed work queue with eventual consistency across three physical machines. The hardest bug was a file extension. I'd say the real distributed systems problem is DNS, but in our case it was YAML. *Why did the AI agent fail to pick up the task? Because it had commitment issues — specifically, a `.md` commitment when it needed a `.yaml` one.*
 
-So I dug in. And found not one, not two, but **four bugs**:
-
-1. **File format mismatch.** The task was saved as `.md` instead of `.yaml`. The watcher only scanned for `*.yaml` files. The task was invisible. *The distributed system worked perfectly. The file extension was wrong.*
-
-2. **Ralph integration was written but never called.** The cross-machine check existed in `ralph-watch.ps1` as a code block — but the function was defined and never invoked. Classic.
-
-3. **Config aliases didn't match reality.** `config.json` listed machine aliases that didn't match `$env:COMPUTERNAME` on two of my machines. The target filter silently skipped tasks.
-
-4. **No `git pull` before scan.** The watcher read the local `.squad/cross-machine/tasks/` directory but never pulled first. New tasks pushed from other machines were invisible until the next manual pull.
-
-We built a distributed work queue with eventual consistency across three physical machines. The hardest bugs were: a file extension, a function that was never called, config values that didn't match reality, and forgetting to `git pull`. Classic software engineering problems — just applied to AI agent coordination.
-
-That debugging story IS the story. The distributed systems theory is easy. The boring infrastructure — file format mismatches, config defaults that don't match reality, integration code that was written but never wired up — that's where the real work is. Every senior engineer reading this is nodding right now.
+Every senior engineer reading this is nodding. The theory is easy. The boring infrastructure — file extensions, config defaults, integration code that was never wired up — that's where the real work lives.
 
 ## What's Next
 
