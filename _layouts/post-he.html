@@ -1,0 +1,118 @@
+---
+layout: compress
+# Hebrew RTL post layout
+# Based on Chirpy post layout with RTL support
+---
+
+{% if site.lang %}
+  {% assign lang = site.lang | split: "_" | first %}
+{% else %}
+  {% assign lang = 'en' %}
+{% endif %}
+
+{% if page.lang %}
+  {% assign lang = page.lang %}
+{% endif %}
+
+{% capture prefer_mode %}
+  {% if site.theme_mode != "dual" %}
+    mode="{{ site.theme_mode }}"
+  {% endif %}
+{% endcapture %}
+
+<!DOCTYPE html>
+<html lang="{{ lang }}" dir="rtl" {{ prefer_mode }}>
+
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Noindex: Hebrew posts are unlisted -->
+    <meta name="robots" content="noindex, nofollow">
+
+    <title>{{ page.title | append: " | " }}{{ site.title }}</title>
+
+    {% include favicons.html %}
+
+    <!-- Google Fonts - Hebrew -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
+      integrity="sha256-LA89z+k9fjgMKQ/kq4OO2Mrf8VltYml/VES+Rg0fh20=" crossorigin="anonymous">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.11.2/css/all.min.css"
+      integrity="sha256-+N4/V/SbAFiW1MPBCXnfnP9QSN3+Keu+NlB+0ev/YKQ="
+      crossorigin="anonymous">
+
+    {% include css-selector.html %}
+
+    <!-- Hebrew RTL Styles -->
+    <link rel="stylesheet" href="/assets/css/hebrew-rtl.css">
+
+    <!-- jQuery -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/combine/npm/popper.js@1.15.0,npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" async></script>
+
+    {% include js-selector.html %}
+  </head>
+
+  <body dir="rtl">
+
+    <div id="main-wrapper" class="he-standalone">
+      <div id="main">
+
+        <div class="container">
+          <div class="row justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8">
+
+              <article class="post he-post" dir="rtl" lang="he">
+
+                <header class="he-post-header">
+                  <a href="/" class="he-back-link">← Back to tamirdresher.com</a>
+                  <h1>{{ page.title }}</h1>
+                  <div class="he-post-meta">
+                    <time datetime="{{ page.date | date_to_xmlschema }}">
+                      {{ page.date | date: "%d/%m/%Y" }}
+                    </time>
+                    <span class="he-author">{{ site.author }}</span>
+                    {% if page.series %}
+                    <span class="he-series">{{ page.series }} — חלק {{ page.series_part }}</span>
+                    {% endif %}
+                  </div>
+                </header>
+
+                <div class="he-post-content">
+                  {{ content }}
+                </div>
+
+                <footer class="he-post-footer">
+                  {% if page.tags.size > 0 %}
+                  <div class="he-tags">
+                    {% for tag in page.tags %}
+                    <span class="he-tag">{{ tag }}</span>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
+                  <div class="he-copyright">
+                    © {{ 'now' | date: "%Y" }} {{ site.author }}
+                  </div>
+                </footer>
+
+              </article>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </body>
+</html>

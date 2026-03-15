@@ -24,7 +24,8 @@ layout: compress
   <icon>{{ site.baseurl }}/assets/img/favicons/favicon.ico</icon>
   <logo>{{ site.baseurl }}/assets/img/favicons/favicon-96x96.png</logo>
 
-{% for post in site.posts limit: 5 %}
+{% assign feed_posts = site.posts | where_exp: "item", "item.lang != 'he'" %}
+{% for post in feed_posts limit: 5 %}
   {% assign post_absolute_url = site.url | append: post.url %}
   <entry>
     <title>{{ post.title }}</title>

@@ -8,8 +8,9 @@ layout: page
 ---
 
 
-{% assign pinned = site.posts | where_exp: "item", "item.pin == true"  %}
-{% assign default = site.posts | where_exp: "item", "item.pin != true"  %}
+{% assign all_posts = site.posts | where_exp: "item", "item.lang != 'he'"  %}
+{% assign pinned = all_posts | where_exp: "item", "item.pin == true"  %}
+{% assign default = all_posts | where_exp: "item", "item.pin != true"  %}
 {% assign posts = "" | split: "" %}
 
 <!-- Get pinned posts -->

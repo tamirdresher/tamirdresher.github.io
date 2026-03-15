@@ -3,7 +3,8 @@ layout: compress
 ---
 
 [
-  {% for post in site.posts %}
+  {% assign search_posts = site.posts | where_exp: "item", "item.lang != 'he'" %}
+  {% for post in search_posts %}
   {
     "title": "{{ post.title | escape }}",
     "url": "{{ site.baseurl }}{{ post.url }}",
