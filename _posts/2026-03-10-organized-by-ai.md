@@ -31,7 +31,7 @@ Unlike a todo app that sits there passively waiting for me to remember it exists
 
 That last point is the breakthrough. I don't need to *maintain* the system. The system maintains itself.
 
-This is Part 0 of a series about scaling AI-native software engineering. The later parts dive into team composition (Part 1: The First AI Engineering Team — coming soon), knowledge sharing (Part 2: Organizational Knowledge for AI Teams — coming soon), and multi-team coordination (Part 3: Scaling Squad with Workstreams — coming soon). This post is the personal story — how I got here, what my daily workflow looks like, and why it works when nothing else did.
+This is Part 0 of a series about scaling AI-native software engineering. The later parts dive into team composition ([Part 1: The First AI Engineering Team](/blog/2026/03/11/scaling-ai-part1-first-team)), knowledge sharing ([Part 2: Organizational Knowledge for AI Teams](/blog/2026/03/12/scaling-ai-part2-collective)), and multi-team coordination ([Part 3: Scaling Squad with SubSquads](/blog/2026/03/15/scaling-ai-part3-streams)). This post is the personal story — how I got here, what my daily workflow looks like, and why it works when nothing else did.
 
 > 🔗 **The full setup is open source: [squad-personal-demo](https://github.com/tamirdresher/squad-personal-demo)** — ralph-watch loop, squad-monitor, Outlook COM automation, podcaster, and more.
 
@@ -373,10 +373,8 @@ I'm organized by AI now. And I never thought I'd say that. 🖖
 
 ---
 
-> 📚 **Series: Scaling Your AI Development Team**
-> - **Part 0**: [Organized by AI — How Squad Changed My Daily Workflow](/2026/03/10/organized-by-ai.html) ← You are here
-> - **Part 1**: Resistance is Futile — Your First AI Engineering Team (coming soon)
-> - **Part 2**: The Collective — Organizational Knowledge for AI Teams (coming soon)
-> - **Part 3**: Unimatrix Zero — Scaling Squad with Workstreams (coming soon)
->
-> *Parts 1-3 are being published soon. Follow this series to learn how to build and scale your AI engineering team.*
+> 📚 **Series: Scaling AI-Native Software Engineering**
+> - **Part 0**: [Organized by AI — How Squad Changed My Daily Workflow](/blog/2026/03/10/organized-by-ai) ← You are here
+> - **Part 1**: [Resistance is Futile — Your First AI Engineering Team](/blog/2026/03/11/scaling-ai-part1-first-team)
+> - **Part 2**: [The Collective — Organizational Knowledge for AI Teams](/blog/2026/03/12/scaling-ai-part2-collective)
+> - **Part 3**: [Unimatrix Zero — Many Teams, One Repo with SubSquads](/blog/2026/03/15/scaling-ai-part3-streams)

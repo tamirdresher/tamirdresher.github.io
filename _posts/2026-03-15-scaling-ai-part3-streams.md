@@ -10,7 +10,7 @@ series_part: 3
 > *"Unimatrix Zero: where individual drones regain their identity within the collective."*
 > — Star Trek: Voyager
 
-In [Part 2](/2026/03/12/scaling-ai-part2-collective.html), the Collective gave us upstream inheritance — one team's knowledge flowing across many repos. That solved the "many repos" problem. But it left the inverse unsolved:
+In [Part 2](/blog/2026/03/12/scaling-ai-part2-collective), the Collective gave us upstream inheritance — one team's knowledge flowing across many repos. That solved the "many repos" problem. But it left the inverse unsolved:
 
 *What happens when multiple AI teams need to work on the same repo, at the same time?*
 
@@ -162,9 +162,9 @@ Auto-detection via `SQUAD_TEAM` environment variable means you don't need to man
 
 Looking back at this three-part series, the scaling arc is clear:
 
-1. **One team, one repo** ([Part 1](/2026/03/11/scaling-ai-part1-first-team.html)) — Squad gives you a coordinated AI team working in parallel. Riker leads, agents specialize, Ralph monitors.
+1. **One team, one repo** ([Part 1](/blog/2026/03/11/scaling-ai-part1-first-team)) — Squad gives you a coordinated AI team working in parallel. Riker leads, agents specialize, Ralph monitors.
 
-2. **One team, many repos** ([Part 2](/2026/03/12/scaling-ai-part2-collective.html)) — Upstream inheritance connects isolated teams into a collective. Knowledge flows up, decisions flow down.
+2. **One team, many repos** ([Part 2](/blog/2026/03/12/scaling-ai-part2-collective)) — Upstream inheritance connects isolated teams into a collective. Knowledge flows up, decisions flow down.
 
 3. **Many teams, one repo** (this post) — SubSquads give each team a swim lane within a shared codebase. Label filtering, folder scoping, and branch-per-issue keep teams from stepping on each other.
 
@@ -288,6 +288,7 @@ Resistance is futile — but collaboration is optional. Choose wisely. 🟩⬛
 ---
 
 > 📚 **Series: Scaling AI-Native Software Engineering**
-> - **Part 1**: [Resistance is Futile — Your First AI Engineering Team](/2026/03/11/scaling-ai-part1-first-team.html)
-> - **Part 2**: [The Collective — Organizational Knowledge for AI Teams](/2026/03/12/scaling-ai-part2-collective.html)
-> - **Part 3**: [Unimatrix Zero — Many Teams, One Repo with SubSquads](/2026/03/13/scaling-ai-part3-streams.html) ← You are here
+> - **Part 0**: [Organized by AI — How Squad Changed My Daily Workflow](/blog/2026/03/10/organized-by-ai)
+> - **Part 1**: [Resistance is Futile — Your First AI Engineering Team](/blog/2026/03/11/scaling-ai-part1-first-team)
+> - **Part 2**: [The Collective — Organizational Knowledge for AI Teams](/blog/2026/03/12/scaling-ai-part2-collective)
+> - **Part 3**: [Unimatrix Zero — Many Teams, One Repo with SubSquads](/blog/2026/03/15/scaling-ai-part3-streams) ← You are here

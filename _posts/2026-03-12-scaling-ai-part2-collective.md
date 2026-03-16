@@ -212,13 +212,13 @@ But there's another scaling challenge I haven't addressed:
 
 Right now, one Squad per repo works. But what if you need a frontend workstream, a backend workstream, and an infrastructure workstream — all in the same codebase, all running in parallel? If you spin up three Squad sessions, will they step on each other's toes? Will merge conflicts bring everything crashing down?
 
-In [Part 3: "Unimatrix Zero"](/blog/2026/03/13/scaling-ai-part3-streams), I'll show you SubSquads — how to run multiple AI teams on one repo with isolated workstreams. What worked, what broke, and why it broke spectacularly before it worked beautifully. 🟩⬛
+In [Part 3: "Unimatrix Zero"](/blog/2026/03/15/scaling-ai-part3-streams), I'll show you SubSquads — how to run multiple AI teams on one repo with isolated workstreams. What worked, what broke, and why it broke spectacularly before it worked beautifully. 🟩⬛
 
 ---
 
-> 📚 **Series: Scaling Your AI Development Team**
+> 📚 **Series: Scaling AI-Native Software Engineering**
 > - **Part 0**: [Organized by AI — How Squad Changed My Daily Workflow](/blog/2026/03/10/organized-by-ai)
-> - **Part 1**: [From Personal Repo to Work Team — Scaling Squad to Production](/blog/2026/03/11/scaling-ai-part1-first-team)
-> - **Part 2**: The Collective — Organizational Knowledge for AI Teams ← You are here
-> - **Part 3**: Unimatrix Zero — coming soon
+> - **Part 1**: [Resistance is Futile — Your First AI Engineering Team](/blog/2026/03/11/scaling-ai-part1-first-team)
+> - **Part 2**: [The Collective — Organizational Knowledge for AI Teams](/blog/2026/03/12/scaling-ai-part2-collective) ← You are here
+> - **Part 3**: [Unimatrix Zero — Many Teams, One Repo with SubSquads](/blog/2026/03/15/scaling-ai-part3-streams)
 
