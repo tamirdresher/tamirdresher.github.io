@@ -38,7 +38,7 @@ I created 30 GitHub issues across three teams:
 | Backend Team | `team:backend` | 10 | WebSocket server, game state, matchmaking |
 | Cloud Team | `team:cloud` | 10 | Azure infra, CI/CD, monitoring |
 
-Then I spun up **three GitHub Codespaces**, each with its own devcontainer and a `SQUAD_TEAM` environment variable:
+Then I spun up **three GitHub Codespaces**, each with its own devcontainer and a `SQUAD_TEAM` environment variable ([see actual config](https://github.com/tamirdresher/squad-tetris/blob/main/.devcontainer/ui-squad/devcontainer.json)):
 
 ```json
 {
@@ -105,7 +105,7 @@ For AI teams, we need the same thing. That's what SubSquads are.
 
 After the experiment, I contributed to [a PR](https://github.com/bradygaster/squad/pull/189) that introduced **SubSquads** — Squad's answer to multi-team coordination in a single repo. (You may see the older name "workstreams" in some docs — it's a deprecated alias. The commands and concepts are the same.)
 
-A SubSquad is defined in `.squad/streams.json`:
+A SubSquad is defined in [`.squad/streams.json`](https://github.com/tamirdresher/squad-tetris/blob/main/.squad/streams.json):
 
 ```json
 {
@@ -185,7 +185,7 @@ We built a distributed task system. The transport layer? Git. The message format
 
 It's not Kafka. It's `git pull && scan && do && git push`. And honestly? For an AI team of agents across machines, it works surprisingly well.
 
-The structure lives in `.squad/cross-machine/`:
+The structure lives in [`.squad/cross-machine/`](https://github.com/tamirdresher/squad-tetris/tree/main/.squad/cross-machine):
 
 ```
 .squad/cross-machine/
@@ -213,7 +213,7 @@ payload:
 status: completed
 ```
 
-Each machine has a `config.json` that declares who it is:
+Each machine has a [`config.json`](https://github.com/tamirdresher/squad-tetris/blob/main/.squad/cross-machine/config.json) that declares who it is:
 
 ```json
 {
@@ -231,7 +231,7 @@ Each machine has a `config.json` that declares who it is:
 
 Yes, there's a command whitelist. Worf would insist. You don't let a YAML file from another machine run arbitrary code on yours.
 
-`scripts/cross-machine-watcher.ps1` is the engine. It polls every 5 minutes, pulls new tasks, checks if `target_machine` matches (or is `ANY`), validates the command against the whitelist, executes, and pushes the result back. Git pull before scan, git push after response. That's the whole protocol.
+[`scripts/cross-machine-watcher.ps1`](https://github.com/tamirdresher/squad-tetris/blob/main/scripts/cross-machine-watcher.ps1) is the engine. It polls every 5 minutes, pulls new tasks, checks if `target_machine` matches (or is `ANY`), validates the command against the whitelist, executes, and pushes the result back. Git pull before scan, git push after response. That's the whole protocol.
 
 ### Mutex and Ownership
 
