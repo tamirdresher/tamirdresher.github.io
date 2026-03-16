@@ -217,7 +217,7 @@ upstream inheritance פותר את בעיית הידע הארגוני. צוות�
 
 כרגע, Squad אחד לריפו עובד. אבל מה אם צריכים workstream של frontend, workstream של backend, ו-workstream של תשתיות — כולם באותו codebase, כולם רצים במקביל? אם מקימים שלושה סשנים של Squad, האם הם ידרכו אחד לשני על הרגליים? האם merge conflicts יגרמו לכל דבר לקרוס?
 
-ב[חלק 3: "Unimatrix Zero"](/blog/2026/03/13/scaling-ai-part3-streams), אראה לכם SubSquads — איך מריצים מספר צוותי AI על ריפו אחד עם workstreams מבודדים. מה עבד, מה נשבר, ולמה זה נשבר בצורה מרהיבה לפני שזה עבד יפה. 🟩⬛
+ב[חלק 3: "Unimatrix Zero"](/blog/2026/03/15/scaling-ai-part3-streams), אראה לכם SubSquads — איך מריצים מספר צוותי AI על ריפו אחד עם workstreams מבודדים. מה עבד, מה נשבר, ולמה זה נשבר בצורה מרהיבה לפני שזה עבד יפה. 🟩⬛
 
 ---
 
@@ -225,4 +225,4 @@ upstream inheritance פותר את בעיית הידע הארגוני. צוות�
 > - **חלק 0**: [מאורגן על ידי AI — איך Squad שינה את שגרת העבודה היומית שלי](/he/2026/03/10/organized-by-ai/)
 > - **חלק 1**: [ההתנגדות חסרת תועלת — צוות הנדסת AI הראשון שלך בעבודה](/he/2026/03/11/scaling-ai-part1/)
 > - **חלק 2**: הקולקטיב — ידע ארגוני לצוותי AI ← אתם כאן
-> - **חלק 3**: Unimatrix Zero — בקרוב
+> - **חלק 3**: [Unimatrix Zero — צוותים מרובים, ריפו אחד עם SubSquads](/blog/2026/03/15/scaling-ai-part3-streams)

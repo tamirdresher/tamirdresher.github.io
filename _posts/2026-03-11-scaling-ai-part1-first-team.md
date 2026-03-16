@@ -302,9 +302,9 @@ In [Part 2](/blog/2026/03/12/scaling-ai-part2-collective), I'll show how Squad's
 
 ---
 
-> 📚 **Series: Scaling Your AI Development Team**
+> 📚 **Series: Scaling AI-Native Software Engineering**
 > - **Part 0**: [Organized by AI — How Squad Changed My Daily Workflow](/blog/2026/03/10/organized-by-ai)
-> - **Part 1**: Resistance is Futile — Your First AI Engineering Team ← You are here
-> - **Part 2**: The Collective — coming soon
-> - **Part 3**: Unimatrix Zero — coming soon
+> - **Part 1**: [Resistance is Futile — Your First AI Engineering Team](/blog/2026/03/11/scaling-ai-part1-first-team) ← You are here
+> - **Part 2**: [The Collective — Organizational Knowledge for AI Teams](/blog/2026/03/12/scaling-ai-part2-collective)
+> - **Part 3**: [Unimatrix Zero — Many Teams, One Repo with SubSquads](/blog/2026/03/15/scaling-ai-part3-streams)
 
