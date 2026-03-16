@@ -27,7 +27,7 @@ This page is the single-source-of-truth for my tool recommendations. If it's not
 
 | Tool | What I Use It For | Cost | Link |
 |------|-------------------|------|------|
-| **JetBrains Rider** | Primary .NET IDE — debugging, profiling, decompiling | $149/yr | [AFFILIATE:jetbrains:Rider](https://www.jetbrains.com/rider/?JETBRAINS_AID) |
+| **JetBrains Rider** | .NET IDE — debugging, profiling, decompiling. Recommended especially for Mac users. | $149/yr | [AFFILIATE:jetbrains:Rider](https://www.jetbrains.com/rider/?JETBRAINS_AID) |
 | **JetBrains ReSharper** | Code analysis when in Visual Studio | $149/yr | [AFFILIATE:jetbrains:ReSharper](https://www.jetbrains.com/resharper/?JETBRAINS_AID) |
 | **Visual Studio Code** | Lightweight editing, markdown, extensions | Free | [VS Code](https://code.visualstudio.com/) |
 
@@ -69,6 +69,15 @@ This page is the single-source-of-truth for my tool recommendations. If it's not
 | **AI Engineering** | Chip Huyen | Production AI systems — the bridge from demo to deployment. | [AFFILIATE:amazon:AI Engineering](https://www.amazon.com/dp/1098166302?tag=AMAZON_TAG) |
 | **Hands-On Machine Learning** | Aurélien Géron | Most practical ML introduction available. Heavy on code, light on fluff. | [AFFILIATE:amazon:Hands-On ML](https://www.amazon.com/dp/1098125975?tag=AMAZON_TAG) |
 
+### Enterprise Architecture & Refactoring
+
+| Book | Author | Why I Recommend It | Link |
+|------|--------|-------------------|------|
+| **The Software Architect Elevator** | Gregor Hohpe | Connecting business strategy to technical implementation — essential for enterprise systems. | [AFFILIATE:amazon:Architect Elevator](https://www.amazon.com/dp/1492077542?tag=tamirdresher2-20) |
+| **Refactoring** | Martin Fowler | The definitive guide to improving code structure without breaking functionality. | [AFFILIATE:amazon:Refactoring](https://www.amazon.com/dp/0134757599?tag=tamirdresher2-20) |
+| **Patterns of Enterprise Application Architecture** | Martin Fowler | Core patterns for building scalable, maintainable enterprise systems. | [AFFILIATE:amazon:P of EAA](https://www.amazon.com/dp/0321127420?tag=tamirdresher2-20) |
+| **Enterprise Integration Patterns** | Gregor Hohpe & Bobby Woolf | Essential patterns for connecting distributed systems and services. | [AFFILIATE:amazon:EIP](https://www.amazon.com/dp/0321200683?tag=tamirdresher2-20) |
+
 ---
 
 ## 🎓 Learning Platforms
@@ -77,7 +86,6 @@ This page is the single-source-of-truth for my tool recommendations. If it's not
 |----------|-------------------|------|------|
 | **Pluralsight** | Structured .NET, Azure, and DevOps learning paths | $199-449/yr | [AFFILIATE:cj:Pluralsight](https://www.pluralsight.com/?clickid=CJ_AID) |
 | **Microsoft Learn** | Azure certifications, free hands-on labs | Free | [Microsoft Learn](https://learn.microsoft.com/) |
-| **YouTube** | Free tutorials (Nick Chapsas, Scott Hanselman, Fireship) | Free | — |
 
 ---
 
@@ -91,21 +99,6 @@ This page is the single-source-of-truth for my tool recommendations. If it's not
 | **PerfView** | Detailed .NET performance analysis | Free | [PerfView](https://github.com/microsoft/perfview) |
 | **Grafana** | Dashboard visualization for metrics | Free tier | [Grafana](https://grafana.com/) |
 | **Prometheus** | Metrics collection and alerting | Free | [Prometheus](https://prometheus.io/) |
-
----
-
-## ✍️ Writing & Content
-
-| Tool | What I Use It For | Cost | Link |
-|------|-------------------|------|------|
-| **Grammarly** | Grammar, tone, and clarity checking | $12/mo | [Grammarly](https://www.grammarly.com/) |
-| **edge-tts** | Text-to-speech for podcast generation | Free | [edge-tts](https://github.com/rany2/edge-tts) |
-
----
-
-## 📖 Coming Soon
-
-**"The Squad System: Scaling AI-Native Software Engineering"** — My upcoming book covering everything from first agent to distributed AI teams. Watch this blog for announcements.
 
 ---
 
