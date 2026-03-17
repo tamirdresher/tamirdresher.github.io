@@ -361,4 +361,10 @@ But first, I need to go fix a rate limiter.
 
 ---
 
-*This post is Part 4 of the "Scaling AI-Native Software Engineering" series. [Part 0: How I Got Organized by AI](/blog/2026/03/10/organized-by-ai) • [Part 1: Your First AI Engineering Team](/blog/2026/03/11/scaling-ai-part1-first-team) • [Part 2: When the Collective Meets Enterprise](/blog/2026/03/12/scaling-ai-part2-collective) • [Part 3: When Your AI Squad Becomes a Distributed System](/blog/2026/03/15/scaling-ai-part3-streams)*
+*This post is Part 4 of the "Scaling AI-Native Software Engineering" series.*
+
+> - **Part 0**: [Organized by AI — How Squad Changed My Daily Workflow](/blog/2026/03/10/organized-by-ai)
+> - **Part 1**: [Resistance is Futile — Your First AI Engineering Team](/blog/2026/03/11/scaling-ai-part1-first-team)
+> - **Part 2**: [The Collective — Organizational Knowledge for AI Teams](/blog/2026/03/12/scaling-ai-part2-collective)
+> - **Part 3**: [Unimatrix Zero — Many Teams, One Repo with SubSquads](/blog/2026/03/15/scaling-ai-part3-streams)
+> - **Part 4**: [When Eight Ralphs Fight Over One Login — Distributed Systems in AI Teams](/blog/2026/03/17/scaling-ai-part4-distributed) ← You are here
