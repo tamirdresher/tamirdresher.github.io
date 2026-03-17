@@ -37,7 +37,7 @@ Timestamp: 2026-03-16 13:17:12
 
 Fifteen rounds. Every five minutes, Ralph wakes up, tries to do work, fails, and goes back to sleep. Something is very wrong.
 
-I look at it, fix what I think is the problem (wrong `gh auth` account — Ralph was set to `tamirdresher` instead of `tamirdresher_microsoft`), and go back to my coffee. Twenty minutes later:
+I look at it, fix what I think is the problem (wrong `gh auth` account — Ralph was set to my personal account instead of my work account), and go back to my coffee. Twenty minutes later:
 
 ```
 ⚠️ Ralph Watch Alert — TAMIRDRESHER (tamresearch1)
@@ -56,7 +56,7 @@ The root cause? Not a bug in Ralph. Not a code error. Not a network issue. It wa
 
 Here's the problem. I have eight Ralph instances — one for each repo I manage. Every Ralph runs `ralph-watch.ps1` in a loop. And every Ralph needs to talk to GitHub via the `gh` CLI.
 
-The `gh` CLI has a **global** auth state. One file. `~/.config/gh/hosts.yml`. When Ralph for repo A calls `gh auth switch --user tamirdresher`, it changes the auth state for **every** process on the machine. Ralph for repo B — which needs `tamirdresher_microsoft` — picks up the wrong credentials and fails. Repo C's Ralph switches back. Repo A fails. And so on.
+The `gh` CLI has a **global** auth state. One file. `~/.config/gh/hosts.yml`. When Ralph for repo A calls `gh auth switch --user personal-account`, it changes the auth state for **every** process on the machine. Ralph for repo B — which needs `work-account` — picks up the wrong credentials and fails. Repo C's Ralph switches back. Repo A fails. And so on.
 
 Eight processes. One shared resource. No coordination. This is the **shared-state partition problem** — multiple independent processes treating a single global resource as if it were local. It's the same thing that happens when microservices share a database without tenant isolation.
 
@@ -81,11 +81,11 @@ Here's what the failure pattern looks like when you have 8 Ralphs fighting over 
 ```
 
 ```
-Ralph-A: gh auth switch --user tamirdresher       ✅ (writes to global state)
-Ralph-B: gh auth switch --user tamirdresher_microsoft  ✅ (overwrites A's auth)
-Ralph-A: gh api repos/tamirdresher/...            ❌ (now using B's credentials!)
-Ralph-C: gh auth switch --user tamirdresher       ✅ (overwrites B's auth)
-Ralph-B: gh api repos/tamirdresher_microsoft/...  ❌ (now using C's credentials!)
+Ralph-A: gh auth switch --user personal-acct       ✅ (writes to global state)
+Ralph-B: gh auth switch --user work-acct            ✅ (overwrites A's auth)
+Ralph-A: gh api repos/personal-acct/...             ❌ (now using B's credentials!)
+Ralph-C: gh auth switch --user personal-acct        ✅ (overwrites B's auth)
+Ralph-B: gh api repos/work-acct/...                 ❌ (now using C's credentials!)
 ...cascading failures...
 ```
 
@@ -97,9 +97,9 @@ This is line 576–592 of `ralph-watch.ps1` today:
 # Step -1: Self-healing — set GH_TOKEN for this process based on repo remote
 # This avoids fighting over global gh auth state with other repo Ralphs
 $remoteUrl = & git remote get-url origin 2>&1 | Out-String
-$requiredAccount = if ($remoteUrl -match "tamirdresher_microsoft") {
-    "tamirdresher_microsoft"
-} else { "tamirdresher" }
+$requiredAccount = if ($remoteUrl -match "work-org") {
+    "work-account"
+} else { "personal-account" }
 $token = & gh auth token --user $requiredAccount 2>&1 | Out-String
 if ($token -and $token.StartsWith("gho_")) {
     $env:GH_TOKEN = $token  # Process-local. No global mutation.
@@ -108,7 +108,7 @@ if ($token -and $token.StartsWith("gho_")) {
 
 In distributed systems terms, I replaced a **global lock** (shared config file) with **partition-local state** (per-process env var). Each process carries its own identity. No coordination needed.
 
-But [Jon Gallant](https://blog.jongallant.com/) solved it more elegantly. His [`gh-public-gh-emu-setup`](https://github.com/jongio/gh-public-gh-emu-setup) approach uses `GH_CONFIG_DIR` — each process points to a completely **isolated gh config directory** per account. Not just the token, but host settings, preferences, API cache — everything partitioned. No cross-talk possible. I've since [migrated Ralph to this model](https://github.com/tamirdresher_microsoft/tamresearch1/issues/781) and the auth race is gone for good.
+But [Jon Gallant](https://blog.jongallant.com/) solved it more elegantly. His [`gh-public-gh-emu-setup`](https://github.com/jongio/gh-public-gh-emu-setup) approach uses `GH_CONFIG_DIR` — each process points to a completely **isolated gh config directory** per account. Not just the token, but host settings, preferences, API cache — everything partitioned. No cross-talk possible. I've since migrated Ralph to this model and the auth race is gone for good.
 
 ```
 ┌─────────┐    ┌─────────┐    ┌─────────┐
@@ -255,7 +255,7 @@ No conflicts possible — each file has a unique name. Then Scribe (the document
 
 ## The Prompt That Became a Command Name
 
-Issue #704 was one of those bugs that makes you question your understanding of how computers work.
+One of those bugs that makes you question your understanding of how computers work.
 
 Five of my eight Ralphs were failing every single round. Same error. Same pattern. The `ralph-watch.ps1` script uses `Start-Process` to launch the Copilot CLI session. And the prompt — a 7KB multiline string with instructions like "MAXIMIZE PARALLELISM" and "MULTI-MACHINE COORDINATION" — was being passed as an argument.
 
@@ -325,7 +325,7 @@ I hit it. Multiple times. Ralph finishes a productive round, and the next round 
 
 Now imagine scaling this to 100+ parallel clients — a real scenario if you're running Squad for an enterprise app modernization program. Each client has its own Ralphs, its own repos. If each client has 8 Ralphs doing 30 API calls per round at 12 rounds per hour — that's **288,000 API calls per hour**. GitHub's rate limit laughs at you.
 
-The solutions in distributed systems are well-known: **token bucket rate limiting**, **exponential backoff**, **request coalescing** (batch multiple API calls into one), **read-through caching** (cache issue/PR state locally, only fetch deltas). I've started on some of these — the email system now has retry/backoff after hitting send rate limits (#720). But the broader API rate limit problem at 100+ scale? Still open.
+The solutions in distributed systems are well-known: **token bucket rate limiting**, **exponential backoff**, **request coalescing** (batch multiple API calls into one), **read-through caching** (cache issue/PR state locally, only fetch deltas). I've started on some of these — the email system now has retry/backoff after hitting send rate limits. But the broader API rate limit problem at 100+ scale? Still open.
 
 **The distributed systems pattern:** This is [**resource exhaustion in a shared-nothing architecture**](https://www.geeksforgeeks.org/system-design/rate-limiting-algorithms-system-design/). Each Ralph is independent, but they share one scarce resource — the API rate limit. Without a **global rate limiter** (a [token bucket](https://codezup.com/implementing-rate-limiting-distributed-systems-best-practices/) shared across processes) or **request deduplication** (caching), each process optimizes locally and they collectively exceed the global limit. The [Tragedy of the Commons](https://en.wikipedia.org/wiki/Tragedy_of_the_commons), but for API calls.
 
@@ -362,5 +362,3 @@ But first, I need to go fix a rate limiter.
 ---
 
 *This post is Part 4 of the "Scaling AI-Native Software Engineering" series. [Part 0: How I Got Organized by AI](/blog/2026/03/10/organized-by-ai) • [Part 1: Your First AI Engineering Team](/blog/2026/03/11/scaling-ai-part1-first-team) • [Part 2: When the Collective Meets Enterprise](/blog/2026/03/12/scaling-ai-part2-collective) • [Part 3: When Your AI Squad Becomes a Distributed System](/blog/2026/03/15/scaling-ai-part3-streams)*
-
-*All code, commit hashes, issue numbers, and error messages in this post are real. The repository is [tamirdresher_microsoft/tamresearch1](https://github.com/tamirdresher_microsoft/tamresearch1). The 37 consecutive failures happened on March 16, 2026. I'm still mad about it.*
