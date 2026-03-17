@@ -312,3 +312,4 @@ notifications:
 > - **חלק 1**: ההתנגדות חסרת תועלת — צוות הנדסת AI הראשון שלך בעבודה ← אתם כאן
 > - **חלק 2**: [הקולקטיב — ידע ארגוני לצוותי AI](/he/2026/03/12/scaling-ai-part2-collective/)
 > - **חלק 3**: [Unimatrix Zero — צוותים מרובים, ריפו אחד עם SubSquads](/blog/2026/03/15/scaling-ai-part3-streams)
+> - **חלק 4**: [כששמונה ראלפים נלחמים על לוגין אחד — מערכות מבוזרות בצוותי AI](/blog/2026/03/17/scaling-ai-part4-distributed)
