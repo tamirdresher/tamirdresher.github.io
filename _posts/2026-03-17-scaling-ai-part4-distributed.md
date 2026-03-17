@@ -190,6 +190,27 @@ Here's a scenario that kept biting me: I tell the team to triage a batch of issu
 
 Two agents finish at the same time. Both try to commit. **Merge conflict.**
 
+```
+  Agent A (B'Elanna)              Agent B (Worf)
+        │                              │
+        ▼                              ▼
+  decisions.md                   decisions.md
+  + "Use NAP for pods"           + "Block port 8443"
+        │                              │
+        └──────── git merge ───────────┘
+                     │
+                  CONFLICT 💥
+                     │
+           ┌─────────┴──────────┐
+           │  merge=union       │  ← keeps BOTH lines
+           │  (G-Set CRDT)      │
+           └─────────┬──────────┘
+                     │
+              decisions.md
+              + "Use NAP for pods"
+              + "Block port 8443"  ✅
+```
+
 This is the **concurrent write problem** — the same reason you can't have two microservices writing to the same database row without a coordination protocol. The solutions in distributed systems are well-known: optimistic concurrency (version vectors, CAS operations), or CRDTs (conflict-free replicated data types) that merge automatically.
 
 I solved it two ways.
@@ -228,7 +249,7 @@ Each agent writes their decision to their own file in `.squad/decisions/inbox/`:
 
 No conflicts possible — each file has a unique name. Then Scribe (the documentation agent) periodically sweeps the inbox, merges the individual decisions into the canonical `decisions.md`, and deletes the inbox files. This is **eventual consistency** with a merge agent. The same pattern as event sourcing with a projection — individual events are immutable, the aggregate view is materialized asynchronously.
 
-**The distributed systems pattern:** `merge=union` is a G-Set CRDT. The drop-box pattern is event sourcing with ordered projection. Both solve the same underlying problem: **how do concurrent writers avoid coordination without losing data?**
+**The distributed systems pattern:** `merge=union` is a [G-Set CRDT](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type) (grow-only set — see the [CRDT primer on crdt.tech](https://crdt.tech/papers.html)). The drop-box pattern is [event sourcing](https://learn.microsoft.com/en-us/azure/architecture/patterns/event-sourcing) with ordered projection — closely related to the [Transactional Outbox pattern](https://event-driven.io/en/outbox_inbox_patterns_and_delivery_guarantees_explained/) used in microservices (see also [Martin Fowler's distributed systems patterns catalog](https://martinfowler.com/articles/patterns-of-distributed-systems/index.html)). Both solve the same underlying problem: **how do concurrent writers avoid coordination without losing data?**
 
 ---
 
@@ -242,6 +263,31 @@ Here's what PowerShell did with that: it treated the **entire 7KB prompt as the 
 
 This is a **serialization/marshalling problem**. When you pass structured data (a multiline prompt) through a transport layer that doesn't preserve structure (command-line argument parsing), the data gets corrupted. Same thing happens when you pass JSON through a shell pipeline, or when you serialize a protobuf through a REST boundary that expects plain text.
 
+```
+  ❌ BEFORE (direct pass):
+  ┌─────────────────────────────┐
+  │ Start-Process               │
+  │   -ArgumentList $prompt     │  ← 7KB multiline string
+  └─────────────┬───────────────┘
+                │
+      Windows interprets as:
+      Command: "Ralph, Go! MAXIMIZE..."
+      Args:    (nothing)
+      Result:  "Command not found" 💥
+
+  ✅ AFTER (indirection):
+  ┌─────────────────────────────┐
+  │ $prompt → temp.txt          │  ← write to file
+  │ Start-Process               │
+  │   --prompt-file temp.txt    │  ← pass reference
+  └─────────────┬───────────────┘
+                │
+      Windows interprets as:
+      Command: agency
+      Args:    --prompt-file C:\tmp\abc.txt
+      Result:  ✅ works
+```
+
 The fix: write the prompt to a temp file, pass the file path as the argument. Classic indirection — when you can't pass the data directly, pass a reference to the data.
 
 ```powershell
@@ -250,7 +296,7 @@ $prompt | Out-File -FilePath $promptFile -Encoding utf8
 agency copilot --yolo --prompt-file $promptFile
 ```
 
-**The distributed systems pattern:** This is **message serialization**. The same problem gRPC solves with protocol buffers, the same problem Kafka solves with schema registry. When your transport layer can't handle your message format, you need an intermediate representation.
+**The distributed systems pattern:** This is [**message serialization**](https://protobuf.dev/) — the indirection pattern. The same problem [gRPC solves with protocol buffers](https://www.geeksforgeeks.org/system-design/protocol-buffer-protobuf-in-system-design/), the same problem Kafka solves with schema registry. When your transport layer can't handle your message format, you need an intermediate representation.
 
 ---
 
@@ -264,11 +310,24 @@ That's potentially **thousands of API calls per hour** against GitHub's rate lim
 
 I hit it. Multiple times. Ralph finishes a productive round, and the next round fails because I've burned through the hourly budget. The error is silent — `gh api` just returns a 403 with a `retry-after` header that nobody reads.
 
+```
+         GitHub API Rate Limit: 5,000/hour
+  ╔═══════════════════════════════════════════╗
+  ║ ████████████████████████████████████░░░░░ ║  ← 4,200 used
+  ╚═══════════════════════════════════════════╝
+       ↑         ↑        ↑        ↑
+   Ralph-A   Ralph-B  Ralph-C  Ralph-D ...
+    ~600       ~500     ~400     ~700
+                                            × 8 repos
+                                            × 12 rounds/hr
+                                            = 💀
+```
+
 Now imagine scaling this to 100+ parallel clients — a real scenario if you're running Squad for an enterprise app modernization program. Each client has its own Ralphs, its own repos. If each client has 8 Ralphs doing 30 API calls per round at 12 rounds per hour — that's **288,000 API calls per hour**. GitHub's rate limit laughs at you.
 
 The solutions in distributed systems are well-known: **token bucket rate limiting**, **exponential backoff**, **request coalescing** (batch multiple API calls into one), **read-through caching** (cache issue/PR state locally, only fetch deltas). I've started on some of these — the email system now has retry/backoff after hitting send rate limits (#720). But the broader API rate limit problem at 100+ scale? Still open.
 
-**The distributed systems pattern:** This is **resource exhaustion in a shared-nothing architecture**. Each Ralph is independent, but they share one scarce resource — the API rate limit. Without a **global rate limiter** (a token bucket shared across processes) or **request deduplication** (caching), each process optimizes locally and they collectively exceed the global limit. The Tragedy of the Commons, but for API calls.
+**The distributed systems pattern:** This is [**resource exhaustion in a shared-nothing architecture**](https://www.geeksforgeeks.org/system-design/rate-limiting-algorithms-system-design/). Each Ralph is independent, but they share one scarce resource — the API rate limit. Without a **global rate limiter** (a [token bucket](https://codezup.com/implementing-rate-limiting-distributed-systems-best-practices/) shared across processes) or **request deduplication** (caching), each process optimizes locally and they collectively exceed the global limit. The [Tragedy of the Commons](https://en.wikipedia.org/wiki/Tragedy_of_the_commons), but for API calls.
 
 ---
 
