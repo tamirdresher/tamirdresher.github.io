@@ -10,6 +10,8 @@ series_part: 4
 > *"We have engaged the Borg."*
 > — Captain Picard, Star Trek: First Contact
 
+![Eight Ralphs fighting over one login](/assets/scaling-ai-part4-distributed/eight-ralphs-fight.png)
+
 In [Part 3](/blog/2026/03/18/scaling-ai-part3-distributed), I showed you how Squad became a distributed system — multiple machines, git-based task queues, heartbeat-driven failure detection. It sounded clean. Architecturally elegant. Like I had things under control.
 
 I did not have things under control.
