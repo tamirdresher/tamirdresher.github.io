@@ -73,30 +73,6 @@ Everything I've built, written, and published. From books to games to digital pr
 
 ---
 
-## 📦 Digital Products
-
-Browse my full catalog of digital products, templates, and resources on Gumroad.
-
-<p>
-  <a href="https://tamirdresher.gumroad.com" target="_blank" class="btn btn-primary">
-    🛒 Visit My Gumroad Store
-  </a>
-</p>
-
----
-
-## 🎮 Games
-
-I build games under the **JellyBolt** label. Check them out on Itch.io!
-
-<p>
-  <a href="https://jellyboltgames.itch.io/" target="_blank" class="btn btn-primary">
-    🕹️ Browse Games on Itch.io
-  </a>
-</p>
-
----
-
 ## 📚 Books & Publications
 
 ### Rx.NET in Action
