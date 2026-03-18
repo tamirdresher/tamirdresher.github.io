@@ -1,9 +1,71 @@
 ---
 title: Products & Resources
+description: "Books, games, and digital products by Tamir Dresher — .NET, reactive programming, AI, and indie games."
 
 # The Products page
 # https://github.com/cotes2020/jekyll-theme-chirpy
 ---
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "Products & Resources — Tamir Dresher",
+  "description": "Books, games, and digital products by Tamir Dresher",
+  "url": "https://tamirdresher.github.io/tabs/products/",
+  "author": {
+    "@type": "Person",
+    "name": "Tamir Dresher",
+    "url": "https://tamirdresher.github.io"
+  },
+  "hasPart": [
+    {
+      "@type": "Book",
+      "name": "Rx.NET in Action",
+      "author": { "@type": "Person", "name": "Tamir Dresher" },
+      "publisher": { "@type": "Organization", "name": "Manning Publications" },
+      "url": "https://www.manning.com/books/rx-dot-net-in-action",
+      "isbn": "9781617293061",
+      "offers": {
+        "@type": "Offer",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.manning.com/books/rx-dot-net-in-action?a_aid=8ec75026&a_bid=8ec75026"
+      }
+    },
+    {
+      "@type": "Book",
+      "name": "Hands-On Full-Stack Web Development with ASP.NET Core",
+      "author": { "@type": "Person", "name": "Tamir Dresher" },
+      "publisher": { "@type": "Organization", "name": "Packt Publishing" },
+      "url": "https://www.packtpub.com/product/hands-on-full-stack-web-development-with-asp-net-core/9781788622882",
+      "isbn": "9781788622882",
+      "offers": {
+        "@type": "Offer",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.amazon.com/Hands-Full-Stack-Development-ASP-NET-Core/dp/178862288X"
+      }
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "BrainRot Quiz Battle",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Web Browser",
+      "author": { "@type": "Organization", "name": "JellyBolt Games" },
+      "url": "https://jellyboltgames.itch.io/brainrot-quiz-battle",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "Code Conquest",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Web Browser",
+      "author": { "@type": "Organization", "name": "JellyBolt Games" },
+      "url": "https://jellyboltgames.itch.io/code-conquest",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    }
+  ]
+}
+</script>
 
 # Products & Resources
 
@@ -28,7 +90,7 @@ Browse my full catalog of digital products, templates, and resources on Gumroad.
 I build games under the **JellyBolt** label. Check them out on Itch.io!
 
 <p>
-  <a href="https://jellybolt.itch.io/" target="_blank" class="btn btn-primary">
+  <a href="https://jellyboltgames.itch.io/" target="_blank" class="btn btn-primary">
     🕹️ Browse Games on Itch.io
   </a>
 </p>
