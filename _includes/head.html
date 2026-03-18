@@ -13,6 +13,36 @@
   <!-- Google Search Console verification -->
   <meta name="google-site-verification" content="_q92njJYMpd0KV2a4mSDTwlwseKv42iowtcW5iZLH20" />
 
+  <!-- Site-level Person + WebSite schema.org structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Person",
+        "@id": "https://tamirdresher.github.io/#author",
+        "name": "Tamir Dresher",
+        "url": "https://tamirdresher.github.io",
+        "sameAs": [
+          "https://twitter.com/tamir_dresher",
+          "https://github.com/tamirdresher",
+          "https://www.linkedin.com/in/tamirdresher"
+        ],
+        "jobTitle": "Principal Engineer",
+        "knowsAbout": [".NET", "Reactive Programming", "Distributed Systems", "AI"]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://tamirdresher.github.io/#website",
+        "url": "https://tamirdresher.github.io",
+        "name": "IBlogger — Tamir Dresher",
+        "description": "Tamir Dresher's blog about .NET, reactive programming, distributed systems, AI, and software architecture.",
+        "author": { "@id": "https://tamirdresher.github.io/#author" }
+      }
+    ]
+  }
+  </script>
+
   <title>
   {%- unless page.layout == "home" -%}
     {{ page.title | append: " | "}}
