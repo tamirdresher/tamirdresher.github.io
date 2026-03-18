@@ -13,10 +13,10 @@ name: Tamir Dresher, IBlogger
 tagline: Tamir Dresher | Blog.  # it will display as the sub-title
 
 description: >-                        # used by seo meta and the atom feed
-  Tamir Dresher | Blog
+  Tamir Dresher's blog about .NET, reactive programming, distributed systems, AI, and software architecture. Tips, tools, and insights from a Principal Engineer.
 
 # Replace with the website url, e.g. 'https://username.github.io'
-url: 'http://www.tamirdresher.com'
+url: 'https://tamirdresher.github.io'
 
 author: Tamir Dresher                  # change to your full name
 
@@ -34,7 +34,7 @@ social:
   links:
     # The first element serves as the copyright owner's link
     - https://twitter.com/tamir_dresher      # change to your twitter homepage
-    - https://github.com/username       # change to your github homepage
+    - https://github.com/tamirdresher       # change to your github homepage
     # Uncomment below to add more social links
     # - https://www.facebook.com/username
     - https://www.linkedin.com/in/tamirdresher

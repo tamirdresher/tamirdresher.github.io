@@ -23,6 +23,16 @@
   path: tabs
   url: resources
 -
+  name: "Products"
+  icon: "fas fa-store"
+  path: tabs
+  url: products
+-
+  name: "Tools"
+  icon: "fas fa-tools"
+  path: tabs
+  url: tools
+-
   name: "About"
   icon: "fas fa-info"
   path: tabs
