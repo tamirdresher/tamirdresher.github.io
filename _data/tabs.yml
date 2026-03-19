@@ -18,6 +18,16 @@
   externalurl: "https://www.youtube.com/channel/UCJjIx4kJC-tEuFDO5wwN5kg"
   icon: "fas fa-archive"
 -
+  name: "Products"
+  icon: "fas fa-shopping-cart"
+  path: tabs
+  url: products
+-
+  name: "Tools"
+  icon: "fas fa-tools"
+  path: tabs
+  url: tools
+-
   name: "About"
   icon: "fas fa-info"
   path: tabs
