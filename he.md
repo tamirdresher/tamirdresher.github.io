@@ -21,4 +21,10 @@ dir: rtl
 
 ---
 
+## 🎓 Squad לילדים
+
+- [Squad לילדים — צוות AI שעובד בשבילך (+ מדריך Copilot בחינם)](/he/squad-for-kids/)
+
+---
+
 ← [Back to tamirdresher.com](/)
