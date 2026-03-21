@@ -50,9 +50,9 @@ But the other 731 files? All `.squad/` state:
 - `.squad/ceremonies/daily-sync/2026-03-19.md` — sync notes
 - ... 725 more files ...
 
-The PR was 95% squad memory, 5% actual work. And here's the thing about Microsoft repos — you can't push to main. Period. Every PR requires at least one other person to approve it. Not a bot, not yourself — another human. Which means Data's memory needed to be approved by a colleague before the squad could remember what it learned.
+The PR was 95% squad memory, 5% actual work. And here's the thing about Microsoft repos — you can't push to main. Period. Every PR requires at least one other person to approve it. Not a bot, not yourself — another human. So my teammate Meir opened the PR, saw hundreds of files, and started reading through them — trying to figure out what actually changed. But those `.squad/` files had nothing to do with the 2-3 files of actual code that were modified. The cognitive load was insane. He was reviewing the squad's internal diary instead of the auth fix.
 
-**The squad couldn't remember things without asking permission.**
+**The squad couldn't remember things without asking permission. And the humans who gave permission couldn't find the actual work buried under the squad's memory.**
 
 ---
 
