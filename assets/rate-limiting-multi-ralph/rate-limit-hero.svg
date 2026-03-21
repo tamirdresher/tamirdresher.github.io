@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="400" fill="url(#bg)"/>
+  <!-- API Gateway -->
+  <rect x="320" y="140" width="160" height="120" rx="10" fill="#e94560" opacity="0.9"/>
+  <text x="400" y="190" text-anchor="middle" fill="white" font-family="Arial" font-size="16" font-weight="bold">API</text>
+  <text x="400" y="210" text-anchor="middle" fill="white" font-family="Arial" font-size="16" font-weight="bold">QUOTA</text>
+  <text x="400" y="240" text-anchor="middle" fill="#ffcc00" font-family="Arial" font-size="14">4,987 / 5,000</text>
+  <!-- Agent 1 -->
+  <circle cx="150" cy="120" r="35" fill="#0f3460"/>
+  <text x="150" y="125" text-anchor="middle" fill="#e94560" font-family="Arial" font-size="24">🤖</text>
+  <line x1="185" y1="130" x2="320" y2="180" stroke="#533483" stroke-width="2" stroke-dasharray="5,5"/>
+  <!-- Agent 2 -->
+  <circle cx="100" cy="250" r="35" fill="#0f3460"/>
+  <text x="100" y="255" text-anchor="middle" fill="#e94560" font-family="Arial" font-size="24">🤖</text>
+  <line x1="135" y1="240" x2="320" y2="210" stroke="#533483" stroke-width="2" stroke-dasharray="5,5"/>
+  <!-- Agent 3 -->
+  <circle cx="200" cy="340" r="35" fill="#0f3460"/>
+  <text x="200" y="345" text-anchor="middle" fill="#e94560" font-family="Arial" font-size="24">🤖</text>
+  <line x1="225" y1="320" x2="330" y2="250" stroke="#533483" stroke-width="2" stroke-dasharray="5,5"/>
+  <!-- Agent 4 -->
+  <circle cx="650" cy="100" r="35" fill="#0f3460"/>
+  <text x="650" y="105" text-anchor="middle" fill="#e94560" font-family="Arial" font-size="24">🤖</text>
+  <line x1="615" y1="110" x2="480" y2="170" stroke="#533483" stroke-width="2" stroke-dasharray="5,5"/>
+  <!-- Agent 5 -->
+  <circle cx="700" cy="250" r="35" fill="#0f3460"/>
+  <text x="700" y="255" text-anchor="middle" fill="#e94560" font-family="Arial" font-size="24">🤖</text>
+  <line x1="665" y1="240" x2="480" y2="210" stroke="#533483" stroke-width="2" stroke-dasharray="5,5"/>
+  <!-- Agent 6 -->
+  <circle cx="600" cy="340" r="35" fill="#0f3460"/>
+  <text x="600" y="345" text-anchor="middle" fill="#e94560" font-family="Arial" font-size="24">🤖</text>
+  <line x1="575" y1="320" x2="470" y2="250" stroke="#533483" stroke-width="2" stroke-dasharray="5,5"/>
+  <!-- Title -->
+  <text x="400" y="40" text-anchor="middle" fill="white" font-family="Arial" font-size="20" font-weight="bold">9 AI Agents, One API Quota</text>
+  <text x="400" y="380" text-anchor="middle" fill="#888" font-family="Arial" font-size="12">Rate Limiting in Multi-Agent Systems</text>
+</svg>
