@@ -12,9 +12,9 @@ series_part: 7
 > *"Simplicity is the ultimate sophistication."*
 > — Leonardo da Vinci (probably didn't mean git worktrees, but still)
 
-When Brady and I were designing Squad, we kept coming back to one principle: **simplicity is key**. Don't add components unless you really need them. Don't stand up a database if you can avoid it. Don't introduce a message broker if GitHub Issues can do the job.
+When Brady Gaster created Squad, he built it around a principle I really liked: **simplicity is key**. Don't add components unless you really need them. Don't stand up a database if you can avoid it. Don't introduce a message broker if GitHub Issues can do the job.
 
-So we made a choice: Git is the database. Issues are the message queue. GitHub Actions are the automation layer. Everything lives in one place. Versioned. Auditable. Free. It's *elegant*.
+When I joined and started using Squad seriously, one of the things we discussed was this design philosophy and how far you can take it. We made Git the database. Issues are the message queue. GitHub Actions are the automation layer. Everything lives in one place. Versioned. Auditable. Free. It's *elegant*.
 
 But there's a problem with this approach that everyone running Squad in an enterprise eventually hits. And honestly? I should have seen it coming.
 
@@ -52,7 +52,7 @@ But the other 731 files? All `.squad/` state:
 - `.squad/ceremonies/daily-sync/2026-03-19.md` — sync notes
 - ... 725 more files ...
 
-The PR was 95% squad memory, 5% actual work. And in our enterprise repo, every PR needs human approval. Which means Data's memory needed to be approved by a human before the squad could remember what it learned.
+The PR was 95% squad memory, 5% actual work. And here's the thing about Microsoft repos — you can't push to main. Period. Every PR requires at least one other person to approve it. Not a bot, not yourself — another human. Which means Data's memory needed to be approved by a colleague before the squad could remember what it learned.
 
 **The squad couldn't remember things without asking permission.**
 
