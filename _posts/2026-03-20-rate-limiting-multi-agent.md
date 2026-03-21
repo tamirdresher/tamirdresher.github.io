@@ -11,9 +11,9 @@ series: "Scaling AI-Native Software Engineering"
 
 I've been running [Squad](https://github.com/tamirdresher/squad) — a multi-agent AI framework — for a couple of weeks now. It orchestrates a team of AI agents that handle code review, architecture decisions, infrastructure, docs, and more. A reconciliation loop runs every 5 minutes, picking up work and dispatching agents. Most of the time it works great.
 
-As I started planning to run Squad at scale — thinking about platforms like AKS, Azure VMs, or similar — I realized rate limiting with multiple agents is fundamentally different from single-service rate limiting. I [posted about this on r/GithubCopilot](https://www.reddit.com/r/GithubCopilot/s/N5DH2B8YA0) and realized other people are hitting the same wall. So I went and did some research and reading, stress-tested the system, and designed 6 patterns to handle it.
+As I started planning to run Squad at scale — thinking about platforms like AKS, Azure VMs, or similar — I realized rate limiting with multiple agents is fundamentally different from single-service rate limiting. I found [this thread on r/GithubCopilot](https://www.reddit.com/r/GithubCopilot/s/N5DH2B8YA0) where other people were describing the exact same problem I was hitting. So I went and did some research and reading, stress-tested the system, and designed 6 patterns to handle it.
 
-Here's what triggered the deep dive. I ran a V10 stress test — spinning up the full agent roster at once.
+Here's what triggered the deep dive. As I added more machines and Ralph processes, things started breaking.
 
 Nine agents launched simultaneously. In 22 minutes they opened **10 pull requests**. Impressive — until minute 8, when GitHub started returning `429 Too Many Requests`.
 
@@ -31,11 +31,11 @@ Every tool I evaluated — Azure API Management, Resilience4j, LangGraph — tre
 
 ## The Three Failure Modes
 
-Before designing anything, I had to understand *why* standard retry logic breaks down. I identified three patterns from my logs and stress tests:
+Before designing anything, I had to understand *why* standard retry logic breaks down. I identified three patterns from my logs as the system scaled:
 
 ### 1. Thundering Herd
 
-After a 429, all agents wait the same `Retry-After` duration and retry simultaneously. They collide again, triggering another 429. In my stress test, `ralph-self-heal.log` showed **60+ chained failures** in a single incident. Classic distributed systems problem — except the "services" are AI agents that don't know about each other.
+After a 429, all agents wait the same `Retry-After` duration and retry simultaneously. They collide again, triggering another 429. In my logs, `ralph-self-heal.log` showed **60+ chained failures** in a single incident. Classic distributed systems problem — except the "services" are AI agents that don't know about each other.
 
 ### 2. Priority Inversion
 
@@ -49,7 +49,7 @@ A single GitHub secondary-rate-limit hit caused multiple agents to queue their p
 
 ## 6 Patterns I Designed
 
-Based on the research and my stress testing, I designed a **Rate Governor** — a coordination layer that all agents consult before making API calls. Here are the six patterns inside it, each one a direct response to a failure mode I observed or anticipated as the system scales.
+Based on the research and what I observed, I designed a **Rate Governor** — a coordination layer that all agents consult before making API calls. Here are the six patterns inside it, each one a direct response to a failure mode I observed or anticipated as the system scales.
 
 ![Rate Governor Architecture — 6 components feeding into the Rate State Store](/assets/rate-limiting-multi-ralph/rate-governor-architecture.svg)
 
@@ -455,18 +455,18 @@ Right now, I'm running Squad on a single machine. The file-based approach works 
 
 ## Real Numbers
 
-Here's what I observed during stress testing *before* designing the Rate Governor:
+Here's what I observed as I scaled up *before* designing the Rate Governor:
 
 | Metric | Value |
 |--------|-------|
-| Agents running concurrently | 9 (V10 stress test) |
+| Agents running concurrently | 9 (across multiple machines) |
 | PRs created in one burst | **10 in 22 minutes** |
 | GitHub API calls/hour | 4,800+ (dangerously close to 5,000 limit) |
 | 429 errors per incident | **60+ chained failures** |
 | Cascade chain depth | Up to 5 agents (full workflow blocked) |
 | Recovery time (no governor) | Up to **60 minutes** (full hour lockout) |
 | GitHub Copilot budget | 80 completions/hour, 5,000 GitHub REST API calls/hour |
-| Agent crashes | Several during stress test |
+| Agent crashes | Several as load increased |
 
 And here's what the patterns address:
 
