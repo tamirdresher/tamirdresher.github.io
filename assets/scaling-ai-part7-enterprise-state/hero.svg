@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450">
+  <defs>
+    <style>
+      .title { font: bold 24px sans-serif; fill: #2c3e50; }
+      .label { font: 14px sans-serif; fill: #34495e; }
+      .small { font: 12px monospace; fill: #7f8c8d; }
+      .code-file { fill: #3498db; stroke: #2980b9; stroke-width: 2; }
+      .squad-file { fill: #e74c3c; stroke: #c0392b; stroke-width: 2; }
+      .warning { fill: #f39c12; stroke: #d68910; stroke-width: 2; }
+      .arrow { stroke: #7f8c8d; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#7f8c8d" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="400" y="35" text-anchor="middle" class="title">The Enterprise State Problem</text>
+  <text x="400" y="60" text-anchor="middle" class="small">Squad config files mixed with code in every PR</text>
+
+  <!-- PR Container -->
+  <rect x="50" y="90" width="700" height="300" fill="#ecf0f1" stroke="#95a5a6" stroke-width="2" rx="8"/>
+  <text x="60" y="115" class="label" font-weight="bold">Pull Request #342 — "Add authentication middleware"</text>
+
+  <!-- Code Files (left side) -->
+  <g id="code-files">
+    <rect x="70" y="140" width="200" height="35" class="code-file" rx="4"/>
+    <text x="80" y="163" class="small">+ src/auth/middleware.go</text>
+    
+    <rect x="70" y="185" width="200" height="35" class="code-file" rx="4"/>
+    <text x="80" y="208" class="small">+ src/auth/tokens.go</text>
+    
+    <rect x="70" y="230" width="200" height="35" class="code-file" rx="4"/>
+    <text x="80" y="253" class="small">~ tests/auth_test.go</text>
+  </g>
+
+  <!-- Squad Files (right side) - THE PROBLEM -->
+  <g id="squad-files">
+    <rect x="320" y="140" width="240" height="35" class="squad-file" rx="4"/>
+    <text x="330" y="163" class="small" fill="white">+ .squad/decisions/auth-strategy.md</text>
+    
+    <rect x="320" y="185" width="240" height="35" class="squad-file" rx="4"/>
+    <text x="330" y="208" class="small" fill="white">+ .squad/schedule-state.json</text>
+    
+    <rect x="320" y="230" width="240" height="35" class="squad-file" rx="4"/>
+    <text x="330" y="253" class="small" fill="white">~ .squad/agents/worf/history.md</text>
+    
+    <rect x="320" y="275" width="240" height="35" class="squad-file" rx="4"/>
+    <text x="330" y="298" class="small" fill="white">~ .squad/decisions.md</text>
+    
+    <rect x="320" y="320" width="240" height="35" class="squad-file" rx="4"/>
+    <text x="330" y="343" class="small" fill="white">~ .squad/ralph/work-log.json</text>
+  </g>
+
+  <!-- Warning Badge -->
+  <g id="warning">
+    <rect x="590" y="150" width="140" height="180" class="warning" rx="4"/>
+    <text x="660" y="175" text-anchor="middle" font-weight="bold" font-size="16" fill="white">⚠️ CONFLICTS</text>
+    <text x="660" y="200" text-anchor="middle" class="small" fill="white">700+ .squad/</text>
+    <text x="660" y="220" text-anchor="middle" class="small" fill="white">files changed</text>
+    <text x="660" y="250" text-anchor="middle" class="small" fill="white">Reviewer sees:</text>
+    <text x="660" y="270" text-anchor="middle" class="small" fill="white">5% code</text>
+    <text x="660" y="290" text-anchor="middle" class="small" fill="white">95% state</text>
+    <text x="660" y="315" text-anchor="middle" class="small" fill="white">Needs approval</text>
+  </g>
+
+  <!-- Annotation -->
+  <text x="400" y="420" text-anchor="middle" class="label" fill="#e74c3c" font-weight="bold">
+    Agent's memory files require human approval to merge
+  </text>
+</svg>
