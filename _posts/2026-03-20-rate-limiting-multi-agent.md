@@ -453,34 +453,6 @@ Right now, I'm running Squad on a single machine. The file-based approach works 
 
 ---
 
-## Real Numbers
-
-Here's what I observed as I scaled up *before* designing the Rate Governor:
-
-| Metric | Value |
-|--------|-------|
-| Agents running concurrently | 9 (across multiple machines) |
-| PRs created in one burst | **10 in 22 minutes** |
-| GitHub API calls/hour | 4,800+ (dangerously close to 5,000 limit) |
-| 429 errors per incident | **60+ chained failures** |
-| Cascade chain depth | Up to 5 agents (full workflow blocked) |
-| Recovery time (no governor) | Up to **60 minutes** (full hour lockout) |
-| GitHub Copilot budget | 80 completions/hour, 5,000 GitHub REST API calls/hour |
-| Agent crashes | Several as load increased |
-
-And here's what the patterns address:
-
-| Pattern | What it fixes | Expected improvement |
-|--------------|---------------|---------------------|
-| Traffic Light Throttling | Hitting 429s reactively | 25–40% fewer 429 errors |
-| Shared Token Pool | Agents starving each other | Better token utilization across all agents |
-| Predictive Circuit Breaker | Full lockouts after quota exhaustion | Graceful degradation instead of 10-min outages |
-| Cascade Detector | One 429 taking down the whole workflow | 60–80% fewer cascade chains |
-| Lease-Based Cleanup | Ghost allocations from crashed agents | Prevents phantom token starvation |
-| Priority Retry Windows | Ralph retrying before Picard | >95% elimination of priority inversion |
-
----
-
 ## 5 Things to Do Today
 
 If you're running multiple AI agents against shared API quotas, here's the practical checklist:
@@ -507,9 +479,20 @@ Which agents depend on which other agents' output? I wrote it down. When one age
 
 ---
 
-*These patterns came out of a couple of weeks of running Squad in production and a deep dive into what breaks when I scale multi-agent systems. The full research report — including detailed algorithms, formal proofs, and implementation guidance — is available in the [project repository](https://github.com/tamirdresher/squad).*
+## References & Further Reading
 
-*Squad manages 8–12 autonomous AI agents performing code review, architecture decisions, infrastructure deployment, research, and communication — all against shared API quotas that weren't designed for this kind of concurrent access.*
+These patterns didn't come from nowhere — they're adaptations of well-established distributed systems concepts applied to the multi-agent AI context:
+
+- **Circuit Breaker Pattern** — Michael Nygard, [*Release It!*](https://pragprog.com/titles/mnee2/release-it-second-edition/) (2007/2018). The original formulation. Also implemented in [Resilience4j](https://github.com/resilience4j/resilience4j) (Java) and [Polly](https://github.com/App-vNext/Polly) (.NET).
+- **Token Bucket / Leaky Bucket** — classic rate limiting algorithms. See [Stripe's rate limiter blog post](https://stripe.com/blog/rate-limiters) for a great practical introduction.
+- **Thundering Herd** — well-documented in distributed systems literature. AWS's [exponential backoff and jitter](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/) article is the standard reference.
+- **Priority Inversion** — originally a real-time OS concept (see the [Mars Pathfinder bug](https://www.cs.cornell.edu/courses/cs614/1999sp/papers/pathfinder.html)). I adapted it to API quota scheduling.
+- **Backpressure** — reactive systems concept from the [Reactive Manifesto](https://www.reactivemanifesto.org/). Also central to [Reactive Extensions (Rx)](http://reactivex.io/) which I wrote about in [*Rx.NET in Action*](https://www.manning.com/books/rx-dot-net-in-action).
+- **Lease-Based Resource Management** — inspired by [Chubby](https://research.google/pubs/pub27897/) (Google's distributed lock service) and etcd lease mechanics.
+- **GitHub API Rate Limiting** — [GitHub REST API rate limits docs](https://docs.github.com/en/rest/rate-limit). The `x-ratelimit-remaining` headers are documented there.
+- **Reddit discussion** — [r/GithubCopilot thread](https://www.reddit.com/r/GithubCopilot/s/N5DH2B8YA0) where others reported similar multi-agent rate limit issues.
+
+*I'm currently experimenting with these patterns across multiple DevBoxes and AKS clusters. Squad manages 8–12 autonomous AI agents performing code review, architecture decisions, infrastructure deployment, research, and communication — the patterns described here are what I'm building toward as the system scales.*
 
 ---
 
