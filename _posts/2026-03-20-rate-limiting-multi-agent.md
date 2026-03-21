@@ -6,7 +6,7 @@ tags: [ai-agents, squad, rate-limiting, distributed-systems, multi-agent, github
 series: "Scaling AI-Native Software Engineering"
 ---
 
-![Rate limiting hero — AI agents competing for API access](/assets/rate-limiting-multi-ralph/rate-limit-hero.png)
+![Rate limiting hero — AI agents competing for API access](/assets/rate-limiting-multi-ralph/rate-limit-hero.svg)
 ## The Story
 
 I've been running [Squad](https://github.com/tamirdresher/squad) — a multi-agent AI framework — for a couple of weeks now. It orchestrates a team of AI agents that handle code review, architecture decisions, infrastructure, docs, and more. A reconciliation loop runs every 5 minutes, picking up work and dispatching agents. Most of the time it works great.
@@ -51,7 +51,7 @@ A single GitHub secondary-rate-limit hit caused multiple agents to queue their p
 
 Based on the research and our stress testing, we designed a **Rate Governor** — a coordination layer that all agents consult before making API calls. Here are the six patterns inside it, each one a direct response to a failure mode we observed or anticipated as the system scales.
 
-![Rate Governor Architecture — 6 components feeding into the Rate State Store](/assets/rate-limiting-multi-ralph/rate-governor-architecture.png)
+![Rate Governor Architecture — 6 components feeding into the Rate State Store](/assets/rate-limiting-multi-ralph/rate-governor-architecture.svg)
 
 ```mermaid
 graph TD
@@ -165,7 +165,7 @@ There's no circular wait — an agent either gets tokens immediately or yields a
 
 We added a `PRE-EMPTIVE_OPEN` state to the circuit breaker:
 
-![PCB State Machine — CLOSED to PRE-EMPTIVE_OPEN to HALF-OPEN](/assets/rate-limiting-multi-ralph/pcb-state-machine.png)
+![PCB State Machine — CLOSED to PRE-EMPTIVE_OPEN to HALF-OPEN](/assets/rate-limiting-multi-ralph/pcb-state-machine.svg)
 
 ```mermaid
 stateDiagram-v2
@@ -276,7 +276,7 @@ This hooks directly into Squad's existing `ralph-heartbeat.ps1` — the heartbea
 
 **What we learned:** Give each priority tier its own non-overlapping retry window. P0 retries first. P1 retries after P0 is done. P2 goes last.
 
-![PWJG Priority Retry Windows — P0, P1, P2 in non-overlapping time bands](/assets/rate-limiting-multi-ralph/pwjg-priority-windows.png)
+![PWJG Priority Retry Windows — P0, P1, P2 in non-overlapping time bands](/assets/rate-limiting-multi-ralph/pwjg-priority-windows.svg)
 
 ```mermaid
 gantt
