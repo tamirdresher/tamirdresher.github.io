@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600">
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#666" />
+    </marker>
+    <linearGradient id="aspireGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#512BD4;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#512BD4;stop-opacity:0.3" />
+    </linearGradient>
+    <linearGradient id="squadGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0078D4;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#0078D4;stop-opacity:0.3" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Title -->
+  <text x="450" y="30" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#333" text-anchor="middle">
+    How Aspire and Squad Connect
+  </text>
+  
+  <!-- Aspire Section -->
+  <g transform="translate(50, 80)">
+    <rect x="0" y="0" width="350" height="180" rx="8" fill="url(#aspireGradient)" stroke="#512BD4" stroke-width="2"/>
+    <text x="175" y="25" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#512BD4" text-anchor="middle">
+      .NET Aspire Runtime
+    </text>
+    
+    <!-- Aspire Dashboard -->
+    <rect x="20" y="45" width="310" height="50" rx="4" fill="#FFF" stroke="#512BD4" stroke-width="1"/>
+    <text x="175" y="65" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#333" text-anchor="middle">
+      Aspire Dashboard
+    </text>
+    <text x="175" y="82" font-family="Arial, sans-serif" font-size="11" fill="#666" text-anchor="middle">
+      Services • Logs • Traces • Health Checks
+    </text>
+    
+    <!-- MCP Server -->
+    <rect x="20" y="110" width="310" height="50" rx="4" fill="#FFF" stroke="#512BD4" stroke-width="1"/>
+    <text x="175" y="130" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#333" text-anchor="middle">
+      Aspire MCP Server
+    </text>
+    <text x="175" y="147" font-family="Arial, sans-serif" font-size="11" fill="#666" text-anchor="middle">
+      AI-queryable API for app state
+    </text>
+  </g>
+  
+  <!-- Squad Section -->
+  <g transform="translate(500, 80)">
+    <rect x="0" y="0" width="350" height="420" rx="8" fill="url(#squadGradient)" stroke="#0078D4" stroke-width="2"/>
+    <text x="175" y="25" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#0078D4" text-anchor="middle">
+      Squad AI Team
+    </text>
+    
+    <!-- Ralph (Monitor) -->
+    <rect x="20" y="45" width="310" height="50" rx="4" fill="#FFF" stroke="#0078D4" stroke-width="1"/>
+    <text x="30" y="65" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#333" text-anchor="start">
+      Ralph (Monitor)
+    </text>
+    <text x="30" y="82" font-family="Arial, sans-serif" font-size="11" fill="#666" text-anchor="start">
+      Queries Aspire MCP • Triages issues • Routes work
+    </text>
+    
+    <!-- Data (Code) -->
+    <rect x="20" y="110" width="310" height="50" rx="4" fill="#FFF" stroke="#0078D4" stroke-width="1"/>
+    <text x="30" y="130" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#333" text-anchor="start">
+      Data (Code Expert)
+    </text>
+    <text x="30" y="147" font-family="Arial, sans-serif" font-size="11" fill="#666" text-anchor="start">
+      Investigates failures • Writes fixes • Opens PRs
+    </text>
+    
+    <!-- Worf (Security) -->
+    <rect x="20" y="175" width="310" height="50" rx="4" fill="#FFF" stroke="#0078D4" stroke-width="1"/>
+    <text x="30" y="195" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#333" text-anchor="start">
+      Worf (Security)
+    </text>
+    <text x="30" y="212" font-family="Arial, sans-serif" font-size="11" fill="#666" text-anchor="start">
+      Monitors container versions • Checks CVEs
+    </text>
+    
+    <!-- B'Elanna (Infra) -->
+    <rect x="20" y="240" width="310" height="50" rx="4" fill="#FFF" stroke="#0078D4" stroke-width="1"/>
+    <text x="30" y="260" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#333" text-anchor="start">
+      B'Elanna (Infrastructure)
+    </text>
+    <text x="30" y="277" font-family="Arial, sans-serif" font-size="11" fill="#666" text-anchor="start">
+      Handles deployments • Monitors resources
+    </text>
+    
+    <!-- Seven (Docs) -->
+    <rect x="20" y="305" width="310" height="50" rx="4" fill="#FFF" stroke="#0078D4" stroke-width="1"/>
+    <text x="30" y="325" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#333" text-anchor="start">
+      Seven (Research &amp; Docs)
+    </text>
+    <text x="30" y="342" font-family="Arial, sans-serif" font-size="11" fill="#666" text-anchor="start">
+      Syncs docs with config • Builds runbooks
+    </text>
+    
+    <!-- GitHub Issues -->
+    <rect x="20" y="370" width="310" height="40" rx="4" fill="#FFF" stroke="#0078D4" stroke-width="1"/>
+    <text x="175" y="395" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#333" text-anchor="middle">
+      GitHub Issues (Work Queue)
+    </text>
+  </g>
+  
+  <!-- Connection: Aspire → Squad -->
+  <g>
+    <line x1="400" y1="215" x2="500" y2="215" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <text x="450" y="210" font-family="Arial, sans-serif" font-size="12" fill="#333" text-anchor="middle" font-weight="600">
+      MCP Protocol
+    </text>
+  </g>
+  
+  <!-- Connection: Squad → Code Changes -->
+  <g>
+    <path d="M 500 290 L 450 290 L 450 540 L 225 540" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+    <text x="470" y="540" font-family="Arial, sans-serif" font-size="12" fill="#333" text-anchor="start" font-weight="600">
+      Code Changes (PRs)
+    </text>
+  </g>
+  
+  <!-- Code Repo / Aspire Redeploy -->
+  <g transform="translate(50, 320)">
+    <rect x="0" y="0" width="350" height="100" rx="8" fill="#FFF" stroke="#999" stroke-width="2"/>
+    <text x="175" y="30" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333" text-anchor="middle">
+      Code Repository
+    </text>
+    <text x="175" y="50" font-family="Arial, sans-serif" font-size="11" fill="#666" text-anchor="middle">
+      Squad commits fixes → PR merged
+    </text>
+    <text x="175" y="80" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#512BD4" text-anchor="middle">
+      Aspire Redeploys (dotnet run)
+    </text>
+  </g>
+  
+  <!-- Feedback Loop Arrow -->
+  <g>
+    <path d="M 225 320 L 225 260" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)" fill="none" stroke-dasharray="5,5"/>
+    <text x="240" y="295" font-family="Arial, sans-serif" font-size="12" fill="#333" text-anchor="start" font-weight="600">
+      Redeploy
+    </text>
+  </g>
+  
+  <!-- Bottom Label -->
+  <text x="450" y="580" font-family="Arial, sans-serif" font-size="12" fill="#999" text-anchor="middle">
+    The squad reads Aspire state, diagnoses issues, writes code, and Aspire redeploys. The loop is closed.
+  </text>
+</svg>
