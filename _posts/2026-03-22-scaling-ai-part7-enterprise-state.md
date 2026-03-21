@@ -231,36 +231,6 @@ I'm actively evaluating. The right answer probably depends on your team size and
 
 ---
 
-## What Others Are Doing
-
-I posted about this on [Reddit](https://www.reddit.com/r/GithubCopilot/s/N5DH2B8YA0) a couple weeks ago. The thread got... surprisingly active. Turns out I'm not the only one hitting this.
-
-Some teams are using **submodules** (which I didn't cover here because submodules have their own complexity tax). Some are using **separate repos** and just accepting the split context. A few brave souls are running **orphan branches** and reporting it works great once you get past the learning curve.
-
-One comment that stuck with me: *"We tried the auto-merge bot. It works until you have 8 agents running in parallel and they all try to merge at once. Then it's just race condition whack-a-mole."*
-
-Yeah. That tracks.
-
----
-
-## The Comparison
-
-Here's how I think about the tradeoffs:
-
-| Criteria | Orphan Branch | Separate Repo | Auto-Merge Bot |
-|----------|---------------|---------------|----------------|
-| **Setup complexity** | Medium (worktree) | Low | Low |
-| **Runtime complexity** | Low | Low | Medium (races) |
-| **Code PR cleanliness** | ✅ Perfect | ✅ Perfect | ❌ Noisy |
-| **State update speed** | ✅ Instant | ✅ Instant | ⚠️ 10-30s |
-| **Concurrent updates** | ✅ No conflicts | ✅ No conflicts | ❌ Race conditions |
-| **Audit trail** | ✅ Single repo | ⚠️ Split | ✅ Single repo |
-| **Team education** | ⚠️ High | Low | Low |
-| **Compliance approval** | None needed | None needed | ⚠️ May need approval |
-| **Scales to 10+ agents?** | ✅ Yes | ✅ Yes | ❌ No |
-
----
-
 ## Honest Reflection
 
 I wanted the "Git as database" philosophy to just... work. No external dependencies. No coordination layer. Just files and commits.
@@ -268,10 +238,6 @@ I wanted the "Git as database" philosophy to just... work. No external dependenc
 And it *does* work — for the code. But squad state has different characteristics. Higher update frequency. Lower review requirements. Different conflict patterns. Treating it like code creates friction.
 
 The solutions exist. None are perfect. All require some tradeoff — either complexity (worktree), split context (separate repo), or race conditions (auto-merge).
-
-Right now I'm betting on the orphan branch approach for teams that can handle the setup cost. The runtime behavior is clean. No PRs. No delays. No noise. Once you grok worktrees, it's actually kind of beautiful.
-
-But I'd love to hear what others are doing. If you're running Squad (or any multi-agent system) in an enterprise repo, how are you handling state? What works? What breaks? Hit me up on [Reddit](https://www.reddit.com/r/GithubCopilot/s/N5DH2B8YA0) or [GitHub Discussions](https://github.com/tamirdresher/squad/discussions).
 
 This is one of those problems where the "right" answer depends entirely on your team's tolerance for git complexity vs. operational overhead. And I'm still figuring out which side of that line my team falls on.
 
