@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "9 AI Agents, One API Quota — The Rate Limiting Problem Nobody Talks About"
-date: 2026-03-21
+date: 2026-03-21 16:00:00 +0000
 tags: [ai-agents, squad, rate-limiting, distributed-systems, multi-agent, github-copilot, api-design]
 series: "Scaling AI-Native Software Engineering"
 ---
@@ -52,30 +52,6 @@ A single GitHub secondary-rate-limit hit caused multiple agents to queue their p
 Based on the research and what I observed, I designed a **Rate Governor** — a coordination layer that all agents consult before making API calls. Here are the six patterns inside it, each one a direct response to a failure mode I observed or anticipated as the system scales.
 
 ![Rate Governor Architecture — 6 components feeding into the Rate State Store](/assets/rate-limiting-multi-ralph/rate-governor-architecture.svg)
-
-```mermaid
-graph TD
-    subgraph "Rate Governor"
-        TL["Traffic Light<br/>Throttling"]
-        TP["Shared<br/>Token Pool"]
-        CB["Predictive<br/>Circuit Breaker"]
-        CD["Cascade<br/>Detector"]
-        LB["Lease-Based<br/>Cleanup"]
-        PW["Priority Retry<br/>Windows"]
-
-        RSS["Rate State Store<br/>rate-pool.json · rate-state.json"]
-    end
-
-    TL --> RSS
-    TP --> RSS
-    LB --> RSS
-    CB --> RSS
-    RSS --> CD
-    RSS --> PW
-
-    RSS --> API1["GitHub REST/GraphQL"]
-    RSS --> API2["Azure OpenAI"]
-```
 
 ---
 
@@ -166,16 +142,7 @@ I added a `PRE-EMPTIVE_OPEN` state to the circuit breaker:
 
 ![PCB State Machine — CLOSED to PRE-EMPTIVE_OPEN to HALF-OPEN](/assets/rate-limiting-multi-ralph/pcb-state-machine.svg)
 
-```mermaid
-stateDiagram-v2
-    [*] --> CLOSED
-    CLOSED --> PRE_EMPTIVE_OPEN: predicted exhaustion within 30s
-    CLOSED --> REACTIVE_OPEN: received 429
-    PRE_EMPTIVE_OPEN --> HALF_OPEN: quota resets or remaining recovers
-    REACTIVE_OPEN --> HALF_OPEN: cooldown elapsed
-    HALF_OPEN --> CLOSED: 3 consecutive successes
-    HALF_OPEN --> REACTIVE_OPEN: probe fails
-```
+
 
 Before switching models entirely, the circuit breaker first tries **reducing load on the same model** — cutting `max_tokens`, compressing prompts. Only if that doesn't help does it walk down the fallback chain:
 
@@ -193,28 +160,7 @@ claude-sonnet-4.6 → gpt-5.4-mini → gpt-5-mini → gpt-4.1
 
 **What I learned:** You need a dependency graph. When one agent gets rate-limited, every downstream agent should know *before* it attempts its next call.
 
-```mermaid
-graph LR
-    RL[/"429 on GitHub API"/]
-    R["Ralph<br/>(P2: Triage)"]
-    P["Picard<br/>(P0: Architecture)"]
-    D["Data<br/>(P1: Code)"]
-    B["Belanna<br/>(P1: Deploy)"]
-    N["Neelix<br/>(P2: Announce)"]
 
-    RL -->|"triggers"| R
-    R -->|"backpressure"| P
-    P -->|"backpressure"| D
-    D -->|"backpressure"| B
-    B -->|"backpressure"| N
-
-    style RL fill:#e74c3c,color:#fff
-    style R fill:#f39c12,color:#fff
-    style P fill:#e67e22,color:#fff
-    style D fill:#e67e22,color:#fff
-    style B fill:#e67e22,color:#fff
-    style N fill:#e67e22,color:#fff
-```
 
 When 3+ agents get rate-limited within a 30-second window, the cascade detector switches to **sequential mode** — agents take an ordered lock and go one at a time instead of all at once. This kills the thundering herd instantly.
 
@@ -277,21 +223,7 @@ This hooks directly into Squad's existing `ralph-heartbeat.ps1` — the heartbea
 
 ![PWJG Priority Retry Windows — P0, P1, P2 in non-overlapping time bands](/assets/rate-limiting-multi-ralph/pwjg-priority-windows.svg)
 
-```mermaid
-gantt
-    title Retry Windows After 429 (non-overlapping)
-    dateFormat X
-    axisFormat %s
 
-    section P0 (Critical)
-    Picard, Worf : 0, 500ms
-
-    section P1 (Standard)
-    Data, Seven, Belanna, Troi, Neelix : 500ms, 3500ms
-
-    section P2 (Background)
-    Ralph, Scribe : 3500ms, 9500ms
-```
 
 | Priority | Agents | Retry Window |
 |----------|--------|-------------|
