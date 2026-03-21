@@ -186,7 +186,7 @@ It's not perfect. Ralph sometimes over-files issues (I've had mornings with 12 n
 
 **Observability Meets Autonomy:** Aspire gives you unprecedented visibility into your distributed app via the Dashboard and MCP. Squad gives you autonomous agents that can act on what they see. The MCP bridge turns logs and metrics into actionable intelligence.
 
-**Multi-Language by Design:** Aspire 13+ supports JavaScript, Python, Go, and .NET as first-class citizens (I wrote about [using private npm feeds with Aspire](/2025/11/15/seamless-private-npm-feeds-in-dotnet-aspire.html)). Squad handles all those languages too. Whether you're running a TypeScript API or a Go microservice, both frameworks work seamlessly.
+**Multi-Language by Design — The Real Enabler:** This is the insight that changed everything for me. Aspire 13+ supports JavaScript, Python, Go, and C# as first-class citizens (I wrote about [using private npm feeds with Aspire](/2025/11/15/seamless-private-npm-feeds-in-dotnet-aspire.html)). Squad agents work across all those languages too. Before Aspire, an agent could only test one component at a time — the Python AI service OR the C# backend OR the TypeScript frontend. With Aspire orchestrating the whole polyglot stack from one place, agents can test the ENTIRE distributed system. That's the enabler. That's why full AI teams working autonomously becomes possible.
 
 **Local-First, Production-Ready:** Aspire excels at local development (F5 experience) but deploys to production (Kubernetes, Azure Container Apps). Squad runs on your laptop but scales to distributed work queues. Both are designed to grow with you.
 
