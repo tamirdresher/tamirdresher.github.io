@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "9 AI Agents, One API Quota — The Rate Limiting Problem Nobody Talks About"
-date: 2026-03-20
+date: 2026-03-21
 tags: [ai-agents, squad, rate-limiting, distributed-systems, multi-agent, github-copilot, api-design]
 series: "Scaling AI-Native Software Engineering"
 ---
