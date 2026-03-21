@@ -11,7 +11,7 @@ series: "Scaling AI-Native Software Engineering"
 
 I've been running [Squad](https://github.com/tamirdresher/squad) — a multi-agent AI framework — for a couple of weeks now. It orchestrates a team of AI agents that handle code review, architecture decisions, infrastructure, docs, and more. A reconciliation loop runs every 5 minutes, picking up work and dispatching agents. Most of the time it works great.
 
-As I started planning to run Squad at scale — thinking about platforms like Kubernetes, cloud VMs, or similar — I realized rate limiting with multiple agents is fundamentally different from single-service rate limiting. So I went and did some research and reading, stress-tested the system, and designed 6 patterns to handle it.
+As I started planning to run Squad at scale — thinking about platforms like AKS, Azure VMs, or similar — I realized rate limiting with multiple agents is fundamentally different from single-service rate limiting. I [posted about this on r/GithubCopilot](https://www.reddit.com/r/GithubCopilot/s/N5DH2B8YA0) and realized other people are hitting the same wall. So I went and did some research and reading, stress-tested the system, and designed 6 patterns to handle it.
 
 Here's what triggered the deep dive. I ran a V10 stress test — spinning up the full agent roster at once.
 
@@ -19,13 +19,13 @@ Nine agents launched simultaneously. In 22 minutes they opened **10 pull request
 
 Every agent retried at the same time. The retry wave triggered a *second* 429 wave. That triggered a third. Within 90 seconds I'd burned through GitHub's 5,000 requests/hour limit and was locked out entirely. Meanwhile, Picard — my lead agent making critical architecture decisions — was stuck behind Ralph, a background polling agent that had eaten the remaining Copilot completions doing low-priority issue triage.
 
-Even in just a couple of weeks of running the system, I'd already hit memory issues, resource contention, and agent crashes. But rate limiting with multiple agents sharing the same quotas? That was a different problem entirely — and one that gets worse the more you scale.
+Even in just a couple of weeks of running the system, I'd already hit memory issues, resource contention, and agent crashes. But rate limiting with multiple agents sharing the same quotas? That was a different problem entirely — and one that gets worse the more I scale.
 
 The core lesson:
 
 > **Rate limiting in multi-agent systems is a coordination problem, not a retry problem.**
 
-Every tool I evaluated — AWS API Gateway, Azure API Management, Resilience4j, LangGraph — treats rate limiting as something each caller handles independently. But when 9 agents share the same API quotas, independent retry logic doesn't just fail. It actively makes things worse.
+Every tool I evaluated — Azure API Management, Resilience4j, LangGraph — treats rate limiting as something each caller handles independently. But when 9 agents share the same API quotas, independent retry logic doesn't just fail. It actively makes things worse.
 
 ---
 
@@ -35,7 +35,7 @@ Before designing anything, I had to understand *why* standard retry logic breaks
 
 ### 1. Thundering Herd
 
-After a 429, all agents wait the same `Retry-After` duration and retry simultaneously. They collide again, triggering another 429. In my stress test, the `ralph-self-heal.log` showed **60+ chained failures** in a single incident. Classic distributed systems problem — except the "services" are AI agents that don't know about each other.
+After a 429, all agents wait the same `Retry-After` duration and retry simultaneously. They collide again, triggering another 429. In my stress test, `ralph-self-heal.log` showed **60+ chained failures** in a single incident. Classic distributed systems problem — except the "services" are AI agents that don't know about each other.
 
 ### 2. Priority Inversion
 
@@ -73,9 +73,8 @@ graph TD
     RSS --> CD
     RSS --> PW
 
-    RSS --> API1["GitHub Copilot API"]
-    RSS --> API2["GitHub REST/GraphQL"]
-    RSS --> API3["Azure OpenAI"]
+    RSS --> API1["GitHub REST/GraphQL"]
+    RSS --> API2["Azure OpenAI"]
 ```
 
 ---
@@ -84,7 +83,7 @@ graph TD
 
 **What broke:** Agents only reacted *after* hitting a 429. By then, the entire quota window was gone. Recovery meant waiting up to 60 seconds while every agent sat idle.
 
-**What I learned:** Every API response already includes `x-ratelimit-remaining` and `x-ratelimit-reset` headers. Nobody was reading them.
+**What I learned:** When making direct API calls (e.g., via `gh api` or REST clients), every response includes `x-ratelimit-remaining` and `x-ratelimit-reset` headers. Nobody was reading them. (Note: these headers aren't directly exposed when using Copilot CLI with `-p` — this pattern applies when you're consuming APIs directly.)
 
 I added a traffic-light system that reads remaining quota after every API call and adjusts behavior *before* hitting the wall:
 
@@ -124,14 +123,14 @@ if ($ratio -ge 0.40) {
 
 ### Pattern 2: Shared Token Pool
 
-**What broke:** All agents share a GitHub Copilot quota (80 completions/hour) and a GitHub REST API quota (5,000 requests/hour) but tracked consumption independently. When Ralph was idle, Picard couldn't borrow his unused allocation. When Ralph was busy triaging, he starved Data's code generation.
+**What broke:** All agents share API quotas (80 completions/hour on Copilot, 5,000 requests/hour on GitHub REST) but tracked consumption independently. When Ralph was idle, Picard couldn't borrow his unused allocation. When Ralph was busy triaging, he starved Data's code generation.
 
 **What I learned:** Agents need a shared ledger. I created `rate-pool.json` — a single file (with file-locking) that tracks the shared quota, per-agent soft reservations, and a donation register where idle agents release unused capacity.
 
 ```jsonc
 // rate-pool.json
 {
-  "copilot": {
+  "github": {
     "window_completions_total": 80,
     "window_completions_remaining": 48,
     "agent_allocations": {
@@ -254,10 +253,10 @@ foreach ($hb in $heartbeatFiles) {
     if ($staleness.TotalMinutes -gt 2) {
         # Agent is dead — reclaim its tokens
         $pool = Get-Content "rate-pool.json" | ConvertFrom-Json
-        $unused = $pool.copilot.agent_allocations.$agent.reserved -
-                  $pool.copilot.agent_allocations.$agent.used
-        $pool.copilot.donation_pool += [Math]::Max(0, $unused)
-        $pool.copilot.agent_allocations.$agent.reserved = 0
+        $unused = $pool.github.agent_allocations.$agent.reserved -
+                  $pool.github.agent_allocations.$agent.used
+        $pool.github.donation_pool += [Math]::Max(0, $unused)
+        $pool.github.agent_allocations.$agent.reserved = 0
         $pool | ConvertTo-Json -Depth 5 | Set-Content "rate-pool.json"
         Write-Host "♻️ Reclaimed $unused tokens from crashed agent: $agent"
     }
@@ -335,6 +334,8 @@ function Get-RetryDelay {
 
 All six patterns feed into a shared **Rate State Store** — a pair of JSON files (`rate-pool.json` and `rate-state.json`) with file locking. Every agent reads state before calling an API and writes state after receiving a response. No central server needed — it's cooperative coordination through the filesystem.
 
+**Important caveat:** This file-based approach works on a single machine (or a shared filesystem with strong POSIX semantics). For the multi-node case, see Pattern 7 below.
+
 ```
 ┌─────────────────────────────────────────────────┐
 │              Squad Rate Governor                │
@@ -363,6 +364,92 @@ All six patterns feed into a shared **Rate State Store** — a pair of JSON file
          ▼          ▼          ▼
     GitHub API   GitHub Copilot  Azure OpenAI
 ```
+
+---
+
+## Pattern 7: When You Outgrow One Machine
+
+Here's where I need to be honest: **The file-based Rate State Store I described above only works on a single node.** If you're running Squad on your dev machine or a single Azure VM, you're fine. But the moment you scale to multiple AKS pods or separate VMs, the whole design breaks.
+
+### Why File Locking Doesn't Work Across Nodes
+
+The patterns I designed above rely on three things:
+
+1. **POSIX file locks** that guarantee mutual exclusion when accessing `rate-pool.json`
+2. **Heartbeat files** that let me detect when an agent crashes and reclaim its tokens
+3. **Immediate consistency** — when agent A writes to the pool, agent B reads the updated state instantly
+
+On a single machine, all three work. On multiple machines? None of them do.
+
+- **File locks don't propagate across networked filesystems.** NFS has `lockd` and `statd`, but lock semantics are unreliable across network partitions. Azure Files supports SMB locking, but it's eventual consistency — not atomic.
+- **Heartbeat files are local.** Each pod writes to its own filesystem. There's no shared view of "which agents are still alive" without a coordination service.
+- **No fencing tokens.** If a pod gets network-partitioned, it might still think it owns tokens and keep writing to the shared state — corrupting the pool with stale data.
+- **Eventual consistency on networked FS means stale reads.** Agent A writes that it consumed 10 tokens. Agent B reads 2 seconds later and sees the old value. Both agents think they have quota. Both call the API. 429.
+
+### What I'd Use for Multi-Node Squad
+
+If I needed to run Squad across multiple AKS pods (which I don't yet — I'm still on a single machine), here's what I'd reach for:
+
+#### Option 1: Redis as the Rate State Store
+
+**Why it works:**
+- Atomic operations (`INCR`, `DECR`, `GETSET`) guarantee no race conditions
+- TTL on keys gives me automatic lease expiry (no manual heartbeat cleanup)
+- Pub/sub channels let me propagate backpressure signals instantly
+- Already battle-tested for distributed rate limiting (see Stripe, GitHub, Shopify implementations)
+
+**What changes:**
+- Replace `rate-pool.json` with Redis hashes: `HSET rate:pool github:remaining 48`
+- Replace file locks with Redis transactions (`MULTI`/`EXEC`)
+- Heartbeats become Redis keys with TTL: `SET heartbeat:picard alive EX 30`
+- Cascade detection uses Redis pub/sub: `PUBLISH backpressure:github "429 detected"`
+
+**Code sketch:**
+```powershell
+# Reserve tokens atomically
+redis-cli --eval reserve-tokens.lua github picard 10
+# Lua script ensures INCR + HSET happen as one atomic operation
+```
+
+I'd probably use **Valkey** (Redis fork) on Azure since it's OSS and well-supported.
+
+#### Option 2: etcd for Distributed Locking
+
+**Why it works:**
+- Already running in AKS clusters (it's what powers Kubernetes itself)
+- Strong consistency guarantees (Raft consensus)
+- Lease-based locking with automatic expiry
+- Watch API for propagating state changes
+
+**What changes:**
+- Replace `rate-pool.json` with etcd key-value store
+- Use etcd's lease mechanism for heartbeats and token reservations
+- Watch for changes to `/rate-pool/github/remaining` to detect quota exhaustion
+- Use etcd transactions for atomic compare-and-swap on token allocation
+
+**Trade-off:** etcd is heavier than Redis and optimized for configuration, not high-throughput counters. But if I'm already on AKS, it's *there* and I don't need another service.
+
+#### Option 3: Sidecar / DaemonSet Pattern
+
+**Why it works:**
+- Run one "rate governor" per AKS node as a DaemonSet
+- All agents on that node talk to their local governor (fast, no network)
+- Governors coordinate centrally (Redis or etcd) but aggregate locally
+- Reduces coordination overhead — only N governors talking, not N×M agents
+
+**What changes:**
+- Each agent calls `http://localhost:8080/reserve-tokens` (local sidecar)
+- Sidecar maintains a local soft reservation (e.g., 20 tokens/node)
+- When local pool is low, sidecar requests more from the central Redis pool
+- Heartbeat = sidecar process liveness (Kubernetes handles this)
+
+**Trade-off:** More complexity (another service to deploy), but much better performance at scale. This is how large-scale API gateways work (Envoy, Istio).
+
+### What I'm Actually Doing
+
+Right now, I'm running Squad on a single machine. The file-based approach works perfectly and is **way simpler** than running Redis or etcd just for rate coordination. When I hit the point where I need multi-node Squad (probably when I start running multiple customer instances or large-scale load testing), I'll migrate to **Option 1 (Valkey on Azure)** — it's the most natural fit for high-frequency counter updates and already has proven multi-tenant rate limiting patterns from GitHub and Stripe.
+
+**The lesson:** Start simple. Ship the file-based version. When you outgrow one machine, migrate to distributed state. Don't build distributed infrastructure before you need it.
 
 ---
 
@@ -400,29 +487,29 @@ If you're running multiple AI agents against shared API quotas, here's the pract
 
 ### 1. Read the rate-limit headers
 
-Every response from GitHub Copilot, OpenAI, and GitHub REST API includes `x-ratelimit-remaining`. Parse it. Log it. React to it *before* hitting a 429. This is free and takes 20 minutes to implement.
+Every response from GitHub REST API and Azure OpenAI includes `x-ratelimit-remaining`. Parse it. Log it. React to it *before* hitting a 429. This is free and takes 20 minutes to implement. (Note: this applies when making direct API calls — not when using Copilot CLI with `-p`, where headers aren't directly exposed.)
 
-### 2. Assign priority tiers to your agents
+### 2. Assign priority tiers to my agents
 
-Not all agents are equal. Your architecture decision-maker should not compete with your background poller. Define P0 (critical), P1 (standard), P2 (background) tiers and stagger your retry windows accordingly.
+Not all agents are equal. My architecture decision-maker should not compete with my background poller. I defined P0 (critical), P1 (standard), P2 (background) tiers and staggered retry windows accordingly.
 
 ### 3. Share quota state across agents
 
-If your agents track consumption independently, they will over-consume. A shared JSON file with file-locking is good enough to start. You don't need Redis or a coordinator service on day one.
+If agents track consumption independently, they will over-consume. A shared JSON file with file-locking is good enough to start. I didn't need Redis or a coordinator service on day one.
 
 ### 4. Add lease expiry to allocations
 
 If agents can crash (and they will), every token reservation needs a TTL. Dead agents shouldn't hold quota hostage. Tie it to a heartbeat file — if the heartbeat stops, reclaim the tokens.
 
-### 5. Map your agent dependency chain
+### 5. Map the agent dependency chain
 
-Which agents depend on which other agents' output? Write it down. When one agent gets rate-limited, propagate a backpressure signal to everything downstream before they waste their own API calls.
+Which agents depend on which other agents' output? I wrote it down. When one agent gets rate-limited, I propagate a backpressure signal to everything downstream before they waste their own API calls.
 
 ---
 
-*These patterns came out of a couple of weeks of running Squad in production and a deep dive into what breaks when you scale multi-agent systems. The full research report — including detailed algorithms, formal proofs, and implementation guidance — is available in the [project repository](https://github.com/tamirdresher/squad).*
+*These patterns came out of a couple of weeks of running Squad in production and a deep dive into what breaks when I scale multi-agent systems. The full research report — including detailed algorithms, formal proofs, and implementation guidance — is available in the [project repository](https://github.com/tamirdresher/squad).*
 
-*Squad manages 8–12 autonomous AI agents performing code review, architecture decisions, infrastructure deployment, research, and communication — all against shared API quotas that were never designed for this kind of concurrent access.*
+*Squad manages 8–12 autonomous AI agents performing code review, architecture decisions, infrastructure deployment, research, and communication — all against shared API quotas that weren't designed for this kind of concurrent access.*
 
 ---
 
