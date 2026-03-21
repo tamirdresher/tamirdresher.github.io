@@ -26,11 +26,9 @@ Specifically: your agents need permission to remember things.
 
 ## The Moment I Realized We Had a Problem
 
-It was Tuesday morning. Data had been working on an authentication bug overnight. By the time I checked my notifications, he'd analyzed the issue, identified three potential solutions, written a detailed decision document explaining why Option 2 was best, implemented it, added tests, and opened a pull request.
+A couple of days after I started working with Squad, the agents were doing their thing — picking up issues, writing code, opening PRs. It was working great. Data picked up an authentication bug, did his analysis, wrote a decision doc, fixed the code, added tests, and opened a pull request. All autonomously, while I was sleeping.
 
-Classic Data. Thorough. Well-reasoned. Ready to merge.
-
-Except when I looked at the PR diff, I saw this:
+I woke up, checked the PR, and saw this:
 
 ```
 Files changed: 734
