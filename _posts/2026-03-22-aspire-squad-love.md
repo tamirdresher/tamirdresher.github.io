@@ -10,7 +10,7 @@ tags: [dotnet-aspire, squad, ai-agents, github-copilot, mcp, developer-experienc
 > *"Aspire makes AI agents' lives simpler, not just human devs' lives."*
 > — me, after watching my squad spawn entire distributed systems with a single Program.cs
 
-I've been teaching .NET Aspire for over a year now. I've got eight Aspire repos on GitHub, a full workshop syllabus, and two blog posts about how Aspire simplifies distributed development. I'm a believer.
+I've been teaching Aspire for over a year now. I've got eight Aspire repos on GitHub, a full workshop syllabus, and two blog posts about how Aspire simplifies distributed development. I'm a believer.
 
 But here's the thing nobody talks about: **Aspire doesn't just make developers' lives easier. It gives AI agents superpowers**.
 
@@ -212,7 +212,7 @@ This isn't production-ready "set it and forget it" automation. Ralph makes mista
 
 But the direction is right. Aspire gives me the observability I need to understand what's happening. Squad gives me the autonomy to act on what I see. And the MCP bridge connects them.
 
-If you're running .NET Aspire and you're curious about AI-assisted development, or if you're running Squad and want better visibility into your app's runtime state, this is the combo I'd recommend trying.
+If you're running Aspire and you're curious about AI-assisted development, or if you're running Squad and want better visibility into your app's runtime state, this is the combo I'd recommend trying.
 
 Two orchestrators. One codebase. Zero conflicts.
 
@@ -220,14 +220,14 @@ Two orchestrators. One codebase. Zero conflicts.
 
 ## Links and Resources
 
-- [.NET Aspire Docs](https://learn.microsoft.com/dotnet/aspire/) — official docs, getting started, samples
+- [Aspire Docs](https://learn.microsoft.com/dotnet/aspire/) — official docs, getting started, samples
 - [Aspire MCP Server](https://aspire.dev/dashboard/mcp-server/) — how AI agents query Aspire programmatically
 - [My Aspire Workshop](https://github.com/tamirdresher/aspire-workshop) — 3-day hands-on course for distributed apps with Aspire
 - [Squad Framework](https://github.com/microsoft/squad) — open-source autonomous AI team framework
 - [My Squad Setup](https://github.com/tamirdresher/tamresearch1) — my personal repo with `.squad/` fully configured
 - [Part 1: Your First AI Engineering Team](/blog/2026/03/11/scaling-ai-part1-first-team) — how I set up Squad from scratch
 - [Scaling AI Agents with Aspire: The Missing Isolation Layer](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html) — my previous Aspire + AI agents post (the foundation for this one)
-- [Seamless Private NPM Feeds in .NET Aspire](/2025/11/15/seamless-private-npm-feeds-in-dotnet-aspire.html) — handling private packages in Aspire
+- [Seamless Private NPM Feeds in Aspire](/2025/11/15/seamless-private-npm-feeds-in-dotnet-aspire.html) — handling private packages in Aspire
 
 If you're experimenting with Aspire + Squad, I'd love to hear what you find. Tag me on [Twitter/X](https://twitter.com/TamirDresher) or open a discussion in the Squad repo.
 
