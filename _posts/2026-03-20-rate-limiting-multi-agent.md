@@ -491,6 +491,10 @@ These patterns didn't come from nowhere — they're adaptations of well-establis
 - **Lease-Based Resource Management** — inspired by [Chubby](https://research.google/pubs/pub27897/) (Google's distributed lock service) and etcd lease mechanics.
 - **GitHub API Rate Limiting** — [GitHub REST API rate limits docs](https://docs.github.com/en/rest/rate-limit). The `x-ratelimit-remaining` headers are documented there.
 - **Reddit discussion** — [r/GithubCopilot thread](https://www.reddit.com/r/GithubCopilot/s/N5DH2B8YA0) where others reported similar multi-agent rate limit issues.
+- **Adaptive Rate Limiting with Deep RL** — [arXiv 2511.03279](https://arxiv.org/abs/2511.03279) — research on multi-objective adaptive rate limiting in microservices using deep reinforcement learning. Shows 15–30% throughput improvements over static algorithms.
+- **Lamport, L.** (1978) — "Time, Clocks, and the Ordering of Events in a Distributed System." *Communications of the ACM*. The foundational paper — multi-agent coordination is fundamentally the same problem with LLM-shaped nodes.
+- **Resilient Microservices: A Systematic Review of Recovery Patterns** — [arXiv 2512.16959](https://arxiv.org/html/2512.16959v1) — comprehensive survey of recovery patterns in distributed systems.
+- **Patterns of Distributed Systems** — [Martin Fowler's catalog](https://martinfowler.com/articles/patterns-of-distributed-systems/) and Unmesh Joshi's [book](https://www.oreilly.com/library/view/patterns-of-distributed/9780138222246/) (Addison-Wesley, 2024).
 
 *I'm currently experimenting with these patterns across multiple DevBoxes and AKS clusters. Squad manages 8–12 autonomous AI agents performing code review, architecture decisions, infrastructure deployment, research, and communication — the patterns described here are what I'm building toward as the system scales.*
 
