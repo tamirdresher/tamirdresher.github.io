@@ -128,7 +128,7 @@ Which means an agent can:
 
 Before Aspire, an agent could test ONE component. With Aspire orchestrating the whole polyglot stack from one place, agents test the ENTIRE distributed system.
 
-That's why [I wrote](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html) that Aspire gives agents "the missing isolation layer." It's not just isolation — it's **system-wide observability across multiple languages and services**.
+That's why [I wrote](/blog/2025/12/16/scaling-ai-agents-with-aspire-isolation)  that Aspire gives agents "the missing isolation layer." It's not just isolation — it's **system-wide observability across multiple languages and services**.
 
 ---
 
