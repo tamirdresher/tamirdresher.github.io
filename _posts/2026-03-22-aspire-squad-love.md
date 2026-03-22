@@ -195,7 +195,7 @@ When Seven updates the docs, she queries `aspire-search_docs` to check if Aspire
 
 ## What's Next: Ralph as an Aspire Resource
 
-Here's where it gets really interesting. I'm working on making **Ralph itself an Aspire resource** (tracked in issue #1037).
+Here's where it gets really interesting. I'm exploring making **Ralph itself an Aspire resource**.
 
 Imagine this: when you run the Aspire AppHost, Ralph shows up in the Aspire Dashboard as a resource with a health endpoint. The dashboard displays:
 - Ralph's last run timestamp
