@@ -2,7 +2,7 @@
 layout: post
 title: "Assimilating the Cloud — Running Your AI Squad on Kubernetes"
 date: 2026-03-25
-tags: [ai-agents, squad, github-copilot, kubernetes, helm, docker, devops, star-trek, borg]
+tags: [ai-agents, squad, github-copilot, kubernetes, aks, keda, helm, docker, devops, star-trek, borg]
 series: "Scaling AI-Native Software Engineering"
 series_part: 6
 ---
@@ -93,18 +93,34 @@ That's worth the migration price by itself.
 
 ---
 
+## The Architecture Decision: One Pod Per Agent
+
+Before writing the Dockerfile, we had a genuine design argument. Two options:
+
+**Option A: Sidecar model.** Ralph runs as the main container. When Ralph decides to dispatch Seven or B'Elanna, it spawns them as sidecar containers in the same pod. Single pod, shared filesystem, easy communication.
+
+**Option B: Pod-per-agent.** Each agent gets its own pod. Ralph runs as a CronJob. When Ralph dispatches Seven, it creates a new pod (or KEDA scales one up). Separate lifecycle, separate resources, separate failure domains.
+
+We chose Option B. The reasoning is documented in [ADR-002](https://github.com/tamirdresher/tamresearch1/issues/994) and it boils down to this: the sidecar model is the "distributed monolith" trap. When Seven OOMs on a large document, she takes Ralph down with her. When B'Elanna's Terraform apply hangs for 20 minutes, Ralph can't process anything else. The whole point of moving to K8s was to get independent failure domains. Sharing a pod defeats that.
+
+Pod-per-agent also means each agent gets its own resource limits, its own scheduling constraints, and its own node affinity. Ralph needs 256Mi and a burstable CPU. Seven processing a 200-page research corpus needs 4Gi and real compute. Putting them in the same pod means one of them is over-provisioned and the other is under-provisioned. There's no good middle ground.
+
+The tradeoff: inter-agent communication is now network calls instead of filesystem reads. We accepted that. MCP over localhost is fast enough for agent coordination that happens at human timescales.
+
+---
+
 ## The Dockerfile
 
 The Squad container needs four things: Node.js (to run the GitHub Copilot CLI), PowerShell 7+ (to run `ralph-watch.ps1`), `git` (to interact with the repo), and `gh` (to authenticate and create PRs).
 
-Here's the Dockerfile we landed on after a few iterations:
+Here's the Dockerfile we landed on after a few iterations. The first attempt used `mcr.microsoft.com/dotnet/aspnet:8.0` as the base and came in at **2.1 GB** — we didn't need the .NET runtime at all. This is the final version, based on `ubuntu:22.04`:
 
 ```dockerfile
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM ubuntu:22.04
 
 # Install PowerShell 7
 RUN apt-get update && apt-get install -y wget apt-transport-https software-properties-common \
-    && wget -q "https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb" \
+    && wget -q "https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb" \
     && dpkg -i packages-microsoft-prod.deb \
     && apt-get update \
     && apt-get install -y powershell git curl jq
@@ -137,7 +153,7 @@ USER ralphuser
 CMD ["pwsh", "-NoProfile", "-File", "/squad/ralph-watch.ps1"]
 ```
 
-The first build came in at **2.1 GB**. That's not a typo. PowerShell + Node.js + .NET base image is a heavy stack. We later switched to `ubuntu:22.04` as the base (dropping the .NET layer we didn't need) and got it down to **890 MB** — still large, but acceptable for something that runs as a long-lived workload and isn't in the hot path of an API request.
+The image comes in at **890 MB** — still large, but acceptable for something that runs as a long-lived workload and isn't in the hot path of an API request.
 
 A fully stripped Alpine-based build is theoretically possible, but PowerShell on Alpine is... a journey I'm not ready to take yet. The TODO is in a comment. It has company.
 
@@ -145,7 +161,7 @@ A fully stripped Alpine-based build is theoretically possible, but PowerShell on
 
 ## The Helm Chart
 
-We package the whole Squad deployment as a Helm chart. Here's the `values.yaml` with annotations explaining the intent behind each value:
+We package the whole Squad deployment as a Helm chart (living at `infrastructure/helm/squad-agents/` in the repo). Here's the `values.yaml` with annotations explaining the intent behind each value:
 
 ```yaml
 # values.yaml — Squad Agent Helm Chart
@@ -181,12 +197,16 @@ config:
   # Path to decisions.md in the container
   decisionsPath: /squad/config/decisions.md
 
-# Secrets (referenced by name — never put values here)
+# Secrets — mounted via Azure Key Vault CSI driver
+# Never put values in values.yaml; these are references only
 secrets:
   # GitHub PAT with repo + issues + PRs scope
   githubTokenSecret: squad-github-token
   # GitHub Copilot CLI auth token
   copilotTokenSecret: squad-copilot-token
+  # Key Vault CSI provider syncs secrets from Azure Key Vault
+  # into K8s Secrets automatically — no manual rotation needed
+  keyVaultName: squad-keyvault
 
 # Resource limits — Ralph is chatty but not compute-heavy
 resources:
@@ -271,7 +291,7 @@ I stared at that line for a while.
 
 ### Auth Was Not What I Expected
 
-The first deployment failed immediately. Ralph couldn't authenticate to GitHub. The error was cryptic: `gh auth token: error getting credentials`.
+The first deployment failed immediately. Ralph couldn't authenticate to GitHub. The error was cryptic: `gh auth token: error getting credentials`. The full debugging saga is in [#998](https://github.com/tamirdresher/tamresearch1/issues/998).
 
 The problem: `gh` stores credentials in the OS keyring or in `~/.config/gh/`. In a container, neither exists by default. Our `GH_CONFIG_DIR` env var pointing to `%APPDATA%\GitHub CLI` — totally sensible on Windows — means nothing in a Linux container.
 
@@ -339,15 +359,108 @@ Ralph's heartbeat is now stable. The squad doesn't sleep.
 
 ---
 
+## Scaling to the Backlog: KEDA and the Rate Limit Problem
+
+The CronJob gets Ralph running reliably. But it doesn't solve the *throughput* problem. When Neelix's tech news scan dumps 15 new issues into the queue, or when Picard decomposes a feature into 8 tasks, one Ralph processing one issue every five minutes creates a backlog that takes over an hour to clear.
+
+The answer is [KEDA](https://keda.sh) — the Kubernetes Event-Driven Autoscaler. KEDA scales workloads based on external event sources. GitHub issues are an external event source. The connection is direct ([#1134](https://github.com/tamirdresher/tamresearch1/issues/1134)):
+
+```yaml
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: ralph-scaler
+  namespace: squad-agents
+spec:
+  scaleTargetRef:
+    name: ralph
+  triggers:
+    - type: github-runner
+      metadata:
+        owner: tamirdresher
+        repo: tamresearch1
+    - type: metrics-api
+      metadata:
+        targetValue: "5"
+        url: "http://squad-metrics.squad-agents:8080/pending-issues"
+  minReplicaCount: 1       # Ralph is never fully scaled to zero
+  maxReplicaCount: 5
+  pollingInterval: 60
+  cooldownPeriod: 300
+```
+
+When there's one issue in the queue, one Ralph handles it. When there are twenty, KEDA spins up more. When the queue is empty, everything scales back to one. The issue backlog *is* the demand signal.
+
+But here's where it gets interesting — and where we ended up building something novel.
+
+### The Copilot-Aware Scaler
+
+Traditional autoscalers scale *up* when demand increases. Our scaler needs to scale *down* when we're rate-limited. If five Ralph pods are all hammering the GitHub Copilot API and we hit the rate limit, adding a sixth pod makes things worse, not better. What we need is the reverse: detect rate limiting, reduce concurrency, wait for the budget to refill.
+
+This led to [#1156](https://github.com/tamirdresher/tamresearch1/issues/1156) — a KEDA external scaler that's aware of Copilot's rate limit status. We're calling it `keda-github-copilot-scaler`, and as far as we can tell, it's the first Copilot-aware autoscaler in existence.
+
+The scaling policy uses KEDA's `behavior` block to enforce rate-aware decisions:
+
+```yaml
+behavior:
+  scaleUp:
+    stabilizationWindowSeconds: 120   # Wait 2 min before scaling up again
+    policies:
+      - type: Pods
+        value: 2                      # Add at most 2 pods per scale event
+        periodSeconds: 60
+  scaleDown:
+    stabilizationWindowSeconds: 300   # Wait 5 min before scaling down
+    policies:
+      - type: Percent
+        value: 50                     # Remove at most 50% per scale event
+        periodSeconds: 120
+```
+
+This gives the rate limiter time to breathe between scale events. No flapping — a burst of 10 new issues doesn't cause 10 pods to spawn simultaneously, burn through the rate limit, and then all fail together. That lesson was painfully learned in [Part 4](/blog/2026/03/17/scaling-ai-part4-distributed).
+
+---
+
+## Capability Routing: The Right Node for the Right Agent
+
+On my laptop, when Ralph sees an issue labeled `needs:gpu`, it checks a local JSON file to see if the machine has a GPU. This works for one machine. It gets awkward across three machines, where each has different capabilities and Ralph instances race to claim issues before checking compatibility.
+
+In Kubernetes, machine capabilities are node labels. We built a DaemonSet ([#999](https://github.com/tamirdresher/tamresearch1/issues/999)) that runs on every node, probes local capabilities, and writes the results as labels via the Kubernetes API:
+
+| Issue `needs:*` Label | K8s Node Label | How It's Set |
+|---|---|---|
+| `needs:gpu` | `nvidia.com/gpu: "true"` | NVIDIA device plugin (automatic) |
+| `needs:browser` | `squad.io/capability-browser: "true"` | Capability DaemonSet |
+| `needs:teams-mcp` | `squad.io/capability-teams-mcp: "true"` | Capability DaemonSet |
+| `needs:azure-speech` | `squad.io/capability-azure-speech: "true"` | Capability DaemonSet |
+
+When the Squad operator creates an agent pod to handle an issue labeled `needs:gpu`, it injects scheduling constraints automatically. The K8s scheduler finds the right node. No manual capability checking in PowerShell. No race conditions between Ralphs on different machines.
+
+The capability routing framework is in active development — PRs [#1286](https://github.com/tamirdresher/tamresearch1/pull/1286) and [#1290](https://github.com/tamirdresher/tamresearch1/pull/1290) implement the DaemonSet and routing logic respectively.
+
+---
+
 ## Where This Goes
 
 K8s as a Squad runtime opens up things that were genuinely impossible before.
+
+**AKS Automatic for production**: We evaluated AKS tier options in [#1136](https://github.com/tamirdresher/tamresearch1/issues/1136) and landed on a clear recommendation. For dev/test, AKS Standard Free tier runs Squad comfortably at ~$55–80/month in compute — cheaper than the electricity for the always-on laptop. For production, AKS Automatic is the play: KEDA is built in (no separate install), node autoprovisioning handles GPU nodes on demand, and the managed control plane cuts operational overhead by roughly 50%. The cost is higher (~$150–200/month), but you're trading ops time for Azure's SLA.
 
 **Multiple squads**: We're planning to run a Squad instance per team, each in its own namespace. Team A's Ralph doesn't share state with Team B's Ralph. But they share the same cluster, same monitoring, same alerting pipeline. The operational cost of "one more squad" approaches zero.
 
 **Cross-squad MCP calls over the network**: Right now, when Picard wants to consult Worf, they're in the same process. On K8s, they can be in different pods — potentially different namespaces — with MCP calls over the cluster network. This unlocks actual agent-to-agent communication across team boundaries. Your Picard can ask my Worf for a security review. In a controlled, auditable, revocable way.
 
 **Proper observability**: The platform my infrastructure team at Microsoft runs gives us Prometheus, Grafana, and distributed tracing out of the box. Ralph's run metrics — duration, exit code, consecutive failures, items processed — feed directly into dashboards that existed before Squad arrived. We didn't have to build any of it.
+
+### What's In Flight
+
+The K8s migration is live, but there's active work happening across several PRs:
+
+- [#1285](https://github.com/tamirdresher/tamresearch1/pull/1285) — KEDA autoscaling implementation
+- [#1284](https://github.com/tamirdresher/tamresearch1/pull/1284) — KEDA Copilot metrics collection
+- [#1288](https://github.com/tamirdresher/tamresearch1/pull/1288) — Copilot auth infrastructure for K8s
+- [#1286](https://github.com/tamirdresher/tamresearch1/pull/1286) — Capability routing framework
+- [#1290](https://github.com/tamirdresher/tamresearch1/pull/1290) — Capability discoverer DaemonSet
 
 The Borg metaphor has never felt more apt. We took an organic, duct-tape thing that lived on a laptop and gave it infrastructure. We gave it health checks and scheduling and persistence and secrets management. We gave it a home that doesn't sleep, doesn't crash on Windows Update, and doesn't require a mouse-wiggling script to stay alive.
 
