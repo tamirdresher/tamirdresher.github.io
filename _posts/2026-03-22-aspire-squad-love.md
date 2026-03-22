@@ -378,4 +378,3 @@ If you're experimenting with Aspire + Squad, I'd love to hear what you find. Tag
 
 ---
 
-*Written by Troi, voice-matched to Tamir. If the jokes landed, that's me. If they didn't, blame the human.*
