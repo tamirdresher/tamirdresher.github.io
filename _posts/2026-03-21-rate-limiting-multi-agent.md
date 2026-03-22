@@ -9,9 +9,11 @@ series: "Scaling AI-Native Software Engineering"
 ![Rate limiting hero — AI agents competing for API access](/assets/rate-limiting-multi-ralph/rate-limit-hero.svg)
 ## The Story
 
-I've been running [Squad](https://github.com/tamirdresher/squad) — a multi-agent AI framework — for a couple of weeks now. It orchestrates a team of AI agents that handle code review, architecture decisions, infrastructure, docs, and more. A reconciliation loop runs every 5 minutes, picking up work and dispatching agents. Most of the time it works great.
+I've been running [Squad](https://github.com/tamirdresher/squad) — a GitHub Copilot extension that orchestrates multiple AI agents — for a couple of weeks now. It sets up a team of AI agents that handle code review, architecture decisions, infrastructure, docs, and more. A reconciliation loop runs every 5 minutes, picking up work and dispatching agents. Most of the time it works great.
 
-As I started planning to run Squad at scale — thinking about platforms like AKS, Azure VMs, or similar — I realized rate limiting with multiple agents is fundamentally different from single-service rate limiting. I found [this thread on r/GithubCopilot](https://www.reddit.com/r/GithubCopilot/s/N5DH2B8YA0) where other people were describing the exact same problem I was hitting. So I went and did some research and reading, stress-tested the system, and designed 6 patterns to handle it.
+Rate limiting wasn't on my radar at first. It only became a real problem in the past week, as I pushed the system harder and added more agents running concurrently. I found [this thread on r/GithubCopilot](https://www.reddit.com/r/GithubCopilot/s/N5DH2B8YA0) where other developers described the exact same problem I was hitting — multiple agents sharing the same Copilot quota, burning through it faster than any single user would. That thread is what prompted me to go deep: research, stress-test, and design a set of patterns to handle it properly.
+
+As I started thinking about running Squad at scale — platforms like AKS or Azure VMs — I realized rate limiting with multiple agents is fundamentally different from single-service rate limiting.
 
 Here's what triggered the deep dive. As I added more machines and Ralph processes, things started breaking.
 
@@ -19,7 +21,7 @@ Nine agents launched simultaneously. In 22 minutes they opened **10 pull request
 
 Every agent retried at the same time. The retry wave triggered a *second* 429 wave. That triggered a third. Within 90 seconds I'd burned through GitHub's 5,000 requests/hour limit and was locked out entirely. Meanwhile, Picard — my lead agent making critical architecture decisions — was stuck behind Ralph, a background polling agent that had eaten the remaining Copilot completions doing low-priority issue triage.
 
-Even in just a couple of weeks of running the system, I'd already hit memory issues, resource contention, and agent crashes. But rate limiting with multiple agents sharing the same quotas? That was a different problem entirely — and one that gets worse the more I scale.
+Even in just a couple of weeks of running the system, I'd already hit memory issues, resource contention, and agent crashes. But rate limiting with multiple agents sharing the same quotas? That only started happening in the last week — and it was a different problem entirely, one that gets worse the more I scale.
 
 The core lesson:
 
@@ -147,7 +149,7 @@ I added a `PRE-EMPTIVE_OPEN` state to the circuit breaker:
 Before switching models entirely, the circuit breaker first tries **reducing load on the same model** — cutting `max_tokens`, compressing prompts. Only if that doesn't help does it walk down the fallback chain:
 
 ```
-claude-sonnet-4.6 → gpt-5.4-mini → gpt-5-mini → gpt-4.1
+gpt-5.4 → gpt-5.4-mini → gpt-4.1
 ```
 
 > **Key insight:** The difference between "locked out for 10 minutes" and "gracefully downgraded for 30 seconds" is prediction. If you can see the wall coming, you can brake instead of crashing.
@@ -217,7 +219,7 @@ This hooks directly into Squad's existing `ralph-heartbeat.ps1` — the heartbea
 
 ### Pattern 6: Priority Retry Windows
 
-**What broke:** The standard AWS exponential-backoff-with-jitter formula treats every caller equally. When Picard (critical architecture decisions) and Ralph (background polling) both get a 429 at the same time, they both retry in the same random window. Ralph can get lucky and grab the quota before Picard. That's priority inversion.
+**What broke:** The standard exponential-backoff-with-jitter formula treats every caller equally. When Picard (critical architecture decisions) and Ralph (background polling) both get a 429 at the same time, they both retry in the same random window. Ralph can get lucky and grab the quota before Picard. That's priority inversion.
 
 **What I learned:** Give each priority tier its own non-overlapping retry window. P0 retries first. P1 retries after P0 is done. P2 goes last.
 
@@ -417,7 +419,7 @@ These patterns didn't come from nowhere — they're adaptations of well-establis
 
 - **Circuit Breaker Pattern** — Michael Nygard, [*Release It!*](https://pragprog.com/titles/mnee2/release-it-second-edition/) (2007/2018). The original formulation. Also implemented in [Resilience4j](https://github.com/resilience4j/resilience4j) (Java) and [Polly](https://github.com/App-vNext/Polly) (.NET).
 - **Token Bucket / Leaky Bucket** — classic rate limiting algorithms. See [Stripe's rate limiter blog post](https://stripe.com/blog/rate-limiters) for a great practical introduction.
-- **Thundering Herd** — well-documented in distributed systems literature. AWS's [exponential backoff and jitter](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/) article is the standard reference.
+- **Thundering Herd** — well-documented in distributed systems literature. The [exponential backoff and jitter](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/) article is the standard reference for this algorithm.
 - **Priority Inversion** — originally a real-time OS concept (see the [Mars Pathfinder bug](https://www.cs.cornell.edu/courses/cs614/1999sp/papers/pathfinder.html)). I adapted it to API quota scheduling.
 - **Backpressure** — reactive systems concept from the [Reactive Manifesto](https://www.reactivemanifesto.org/). Also central to [Reactive Extensions (Rx)](http://reactivex.io/) which I wrote about in [*Rx.NET in Action*](https://www.manning.com/books/rx-dot-net-in-action).
 - **Lease-Based Resource Management** — inspired by [Chubby](https://research.google/pubs/pub27897/) (Google's distributed lock service) and etcd lease mechanics.
@@ -428,7 +430,7 @@ These patterns didn't come from nowhere — they're adaptations of well-establis
 - **Resilient Microservices: A Systematic Review of Recovery Patterns** — [arXiv 2512.16959](https://arxiv.org/html/2512.16959v1) — comprehensive survey of recovery patterns in distributed systems.
 - **Patterns of Distributed Systems** — [Martin Fowler's catalog](https://martinfowler.com/articles/patterns-of-distributed-systems/) and Unmesh Joshi's [book](https://www.oreilly.com/library/view/patterns-of-distributed/9780138222246/) (Addison-Wesley, 2024).
 
-*I'm currently experimenting with these patterns across multiple DevBoxes and AKS clusters. Squad manages 8–12 autonomous AI agents performing code review, architecture decisions, infrastructure deployment, research, and communication — the patterns described here are what I'm building toward as the system scales.*
+*I'm running these patterns today on a single machine — the file-based approach described here is live. The multi-node options (Pattern 7) are what I'd reach for when scaling to AKS. Squad manages 8–12 autonomous AI agents powered by GitHub Copilot, performing code review, architecture decisions, infrastructure deployment, research, and communication — the patterns described here are what I'm building toward as the system scales.*
 
 ---
 
