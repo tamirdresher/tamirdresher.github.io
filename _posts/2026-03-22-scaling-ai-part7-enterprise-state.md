@@ -7,7 +7,7 @@ series: "Scaling AI-Native Software Engineering"
 series_part: 7
 ---
 
-![When Git is Your Database](/assets/scaling-ai-part7-enterprise-state/hero.svg)
+![When Git is Your Database](/assets/scaling-ai-part7-enterprise-state/hero.png)
 
 > *"Simplicity is the ultimate sophistication."*
 > — Leonardo da Vinci (probably didn't mean git worktrees, but still)
