@@ -188,6 +188,167 @@ sed -i "s/Lifecycle: \`pending-merge\`\(.*branch:${BRANCH_NAME}\)/Lifecycle: \`w
 
 It's `sed`. Not a database migration, not a state machine library, not a Kubernetes operator. Just `sed`. Because the ledger is a Markdown file, and text manipulation tools that have been stable since 1974 are exactly the right level of complexity for this job.
 
+That was the plan, anyway. And it worked. For about two weeks.
+
+---
+
+## Plot Twist: Git Already Solved This
+
+I want you to appreciate the irony of what I'm about to tell you.
+
+I spent two weeks designing the lifecycle system above. I built the state machine. I wrote the `sed` commands. I coded the GitHub Actions workflow with its three triggers and its drift detection. I even made a table with five lifecycle states and felt *clever* about it.
+
+And then, while reading a Gerrit code review architecture document at 1 AM (as one does), I stumbled across a feature that's been in Git since 2010.
+
+**Git Notes.**
+
+I'd been building a lifecycle management system from scratch when Git literally has a built-in mechanism for attaching metadata to commits without modifying history. It's called `git notes`. Gerrit uses it for code review metadata. Jenkins uses it for CI results. It's been sitting there in the Git manual for fifteen years, and I — a person who wrote an O'Reilly book about reactive programming and has been using Git professionally for over a decade — had never heard of it.
+
+Let me show you why I almost threw my keyboard across the room.
+
+### What Git Notes Actually Are
+
+Git Notes are per-commit annotations stored in `refs/notes/*`. Think of them as sticky notes you can attach to any commit after it's been created. The commit hash doesn't change. The history doesn't change. But the metadata is there — reachable via the commit, queryable via `git log`, pushable and fetchable just like branches.
+
+```bash
+# Attach a note to a commit
+git notes --ref=squad/decisions add -m 'Use JWT for auth middleware' HEAD
+
+# Read notes on a commit
+git log --show-notes=squad/decisions -1
+
+# Notes are stored in refs/notes/squad/decisions
+git log refs/notes/squad/decisions
+```
+
+That's it. Three commands. No lifecycle engine. No `sed`. No state machine.
+
+### How Notes Solve the Branch-State Problem (For Free)
+
+Remember my three scenarios from earlier? The rejected feature, the universal truth, the valuable failure? Here's how Git Notes handles all three without a single line of lifecycle code:
+
+**Agent makes a decision on `feature/auth`** → attaches a note to the current commit on that branch.
+
+**PR merges** → the commit lands in `main` → the note is reachable from `main` → the decision is *effectively permanent*. No promotion step. No lifecycle transition. It just... works. Because Git's commit graph IS the lifecycle.
+
+**PR rejected** → the branch is deleted → the commit becomes unreachable → the note becomes unreachable → the decision is *effectively withdrawn*. No `sed` command. No `pending-merge` → `withdrawn` transition. Git's garbage collection handles it. The same mechanism that cleans up unreachable objects cleans up your rejected decisions.
+
+**Universal truth committed alongside a feature?** The agent attaches it to the ledger's orphan branch instead of the feature branch. Permanent by location, not by metadata.
+
+Let me say that again because I'm still a little angry I didn't see it sooner: **Git's own reachability model IS the lifecycle engine.** Commits that land in `main` are reachable. Commits on rejected branches are not. Notes follow commits. Therefore, decisions follow the branches they were made on — automatically, with zero application code.
+
+All those lifecycle states I designed? `pending-merge`, `merged`, `withdrawn`, `superseded`? They were a hand-built reimplementation, in fragile `sed` and Markdown regex, of what Git's commit graph already provides for free.
+
+I felt the way you feel when you discover the standard library has a function for the thing you just spent a weekend implementing. Except worse, because this function has existed since before I started using Git.
+
+### The Two-Tier Architecture
+
+This realization split the design cleanly into two tiers, each using Git the way it was designed to be used:
+
+```
+THE TWO-TIER SQUAD STATE ARCHITECTURE
+
+Tier 1: The Ledger (orphan branch: squad/state)
+├── team.md               ← who's on the squad           (always permanent)
+├── routing.md            ← how work gets routed          (always permanent)
+├── decisions.md          ← universal team decisions      (always permanent)
+├── knowledge/            ← accumulated research          (always permanent)
+└── agents/
+    ├── picard/history.md ← agent learning                (always permanent)
+    ├── data/history.md
+    ├── worf/history.md
+    └── seven/history.md
+
+Tier 2: Git Notes (refs/notes/squad/*)
+├── squad/decisions       ← branch-scoped decisions       (follow commit lifecycle)
+├── squad/context         ← research context per feature  (follow commit lifecycle)
+└── squad/reviews         ← security reviews per commit   (follow commit lifecycle)
+```
+
+**Tier 1** is the stuff that's always true regardless of any feature branch. Team composition, routing rules, agent histories, universal decisions. This lives on the `squad/state` orphan branch, same as before. Agents still write to `.squad/` in the code repo and it syncs to the ledger. Nothing changes here — the original architecture still handles this tier perfectly.
+
+**Tier 2** is the stuff that's scoped to a specific piece of work. "Use JWT for this feature." "Security review passed for this commit." "Here's the research context for this bug fix." These are Git Notes, attached to specific commits. They live and die with the commits they're attached to. If the commit makes it to `main`, the note lives. If the branch gets rejected, the note fades away with the commit it was attached to.
+
+No lifecycle metadata. No `sed` commands parsing Markdown. No five-state transition table. Two tiers, each with exactly the right persistence model for its contents.
+
+### The Commands (Copy These)
+
+Here's what it actually looks like when an agent uses Git Notes in practice:
+
+```bash
+# Data makes a branch-scoped decision while working on feature/auth
+git notes --ref=squad/decisions add -m '{
+  "agent": "data",
+  "decision": "Use JWT with RS256 for auth middleware",
+  "reason": "Stateless verification across microservices",
+  "date": "2026-03-22"
+}' HEAD
+git push origin refs/notes/squad/decisions
+
+# Seven attaches research context to a commit
+git notes --ref=squad/context add -m '{
+  "agent": "seven",
+  "topic": "JWT vs session tokens",
+  "findings": "RS256 better for distributed verification, HS256 simpler..."
+}' HEAD
+git push origin refs/notes/squad/context
+
+# Worf records a security review result
+git notes --ref=squad/reviews add -m '{
+  "agent": "worf",
+  "result": "pass",
+  "notes": "No session hijacking vectors, token expiry handled correctly"
+}' HEAD
+git push origin refs/notes/squad/reviews
+
+# Any agent reads all squad decisions (across all branches)
+git fetch origin "refs/notes/squad/*:refs/notes/squad/*"
+git log --all --show-notes=squad/decisions
+```
+
+Compare that to the `sed`-based lifecycle transitions from earlier. Go ahead. I'll wait.
+
+### The Complexity Comparison
+
+Just so we're all on the same page about what this simplification looks like:
+
+**Before (the lifecycle machine I was so proud of):**
+- Five lifecycle states with a transition table
+- GitHub Actions workflow with three event triggers
+- `sed` commands parsing Markdown for lifecycle transitions
+- Branch name extraction and regex matching
+- Rollback logic for failed transitions
+- Drift detection to catch missed transitions
+- A system that breaks silently if someone forgets backticks in a Markdown field
+
+**After (Git Notes):**
+- `git notes add` to create a decision
+- `git push` to share it
+- `git fetch` to read it
+- Walk away. Git handles the rest.
+
+Two weeks of lifecycle engineering replaced by a feature that's been in Git since I was still writing WPF applications. But that's the nature of engineering — sometimes the best solution is the one you didn't know existed, and the hardest part is being honest about the fact that you overcomplicated it.
+
+### Why Nobody Uses This (Yet)
+
+If Git Notes are so great, why isn't everyone using them? Fair question. A few reasons:
+
+1. **GitHub's UI doesn't show notes.** You won't see them in the PR diff, the commit view, or anywhere in the web interface. They're invisible to humans browsing GitHub. But for AI agents that read everything via CLI? Doesn't matter at all. They `git fetch` and `git log` just fine.
+
+2. **Notes aren't fetched by default.** You have to configure your clone:
+   ```bash
+   git config --add remote.origin.fetch "+refs/notes/squad/*:refs/notes/squad/*"
+   ```
+   One line in your git config. But if you don't know to add it, you'll spend an hour wondering why your notes vanished after a clone.
+
+3. **Almost nobody knows about them.** I've been using Git for over a decade. I've written books about software engineering. I talk at conferences about distributed systems. I didn't know about `git notes`. The feature has approximately zero marketing budget.
+
+But here's the thing: Gerrit — Google's code review system that handles the Android Open Source Project, Chromium, and the Go standard library — has been using Git Notes for review metadata at massive scale since 2012. This is not experimental technology. It's not fragile. It's battle-tested infrastructure that happens to be obscure.
+
+And for concurrent access? `git notes merge` exists. Multiple agents writing notes to the same ref will create conflicts, and `git notes merge` resolves them with configurable strategies. Is it perfect? No. But it's significantly better than two GitHub Actions workflows racing to `sed` the same Markdown file at the same time.
+
+I could have rewritten this entire post to use Git Notes from the start and pretended I was brilliant all along. But that would be dishonest, and frankly, the journey from "five-state lifecycle machine" to "wait, `git notes add` does all of that?" is a better story. It's also a more *useful* story — because if you're building AI agent memory systems and you didn't know about Git Notes either, now you do. You're welcome.
+
 ---
 
 ## Agent Learning vs. Agent Decisions
@@ -344,7 +505,9 @@ This is the state storage repo. It has a `squad/state` branch with the `.squad/`
 **The consumer:** [tamirdresher/squad-upstream-example](https://github.com/tamirdresher/squad-upstream-example)
 This is a minimal code repo that demonstrates the pattern. It has the `ledger.json` pointer, the sync workflow, and a sample `.squad/` directory.
 
-Three commands to set it up in your own project:
+### Tier 1: Set Up the Ledger
+
+Three commands to create your permanent state store:
 
 ```bash
 # 1. Create your ledger repo (do this once)
@@ -373,23 +536,52 @@ curl -o .github/workflows/squad-ledger-sync.yml \
 
 You'll need one secret: `SQUAD_LEDGER_PAT` — a fine-grained personal access token with Contents read/write scoped to your ledger repo. Set it in your code repo's Settings → Secrets → Actions.
 
-That's it. Next time you merge a PR that touches `.squad/`, the sync fires automatically. Decisions get promoted or withdrawn based on PR outcomes. Ralph checks for drift every six hours.
+### Tier 2: Set Up Git Notes
+
+This is the part that makes branch-scoped decisions automatic:
+
+```bash
+# 1. Configure your clone to fetch squad notes (do this once per clone)
+git config --add remote.origin.fetch "+refs/notes/squad/*:refs/notes/squad/*"
+
+# 2. Try it — attach a decision to your current commit
+git notes --ref=squad/decisions add -m '{
+  "agent": "you",
+  "decision": "Testing Git Notes for squad state",
+  "date": "'$(date -Iseconds)'"
+}' HEAD
+
+# 3. Push the note
+git push origin refs/notes/squad/decisions
+
+# 4. Verify — see it in your log
+git log --show-notes=squad/decisions -1
+
+# 5. Fetch notes from other branches/clones
+git fetch origin "refs/notes/squad/*:refs/notes/squad/*"
+```
+
+That's both tiers. Tier 1 syncs permanent state via GitHub Actions when PRs merge. Tier 2 uses Git Notes for branch-scoped decisions that automatically follow commit lifecycle — no promotion, no withdrawal, no `sed`. Merge the PR and the decision lives. Reject it and the decision fades with the branch.
 
 ---
 
 ## The Honest Version
 
-Here's what's still rough. I'm not going to pretend this is production-hardened at scale.
+Here's what's still rough. I'm not going to pretend this is production-hardened at scale — though the Git Notes revelation did sand off a lot of the sharp edges.
 
-**The sed-based lifecycle transitions are fragile.** If a decision entry doesn't exactly match the expected format — extra whitespace, different quoting, a typo in the scope line — the `sed` command silently does nothing. I've already had one case where a decision stayed as `pending-merge` after its branch merged because Data wrote `Scope: branch:feature/auth` (no backticks) instead of ``Scope: `branch:feature/auth` ``. The fix is a more robust parser, but right now it's regex-on-markdown, and we all know how that movie ends.
+**The biggest simplification: lifecycle management is gone.** The original `sed`-based lifecycle transitions — `pending-merge` → `merged`, `pending-merge` → `withdrawn` — were the most fragile part of the system. They broke if you forgot backticks, they raced on concurrent merges, they silently skipped malformed entries. Git Notes eliminated all of that. Branch-scoped decisions now follow commit reachability, which is handled by Git itself. I deleted the lifecycle state machine and nothing broke. Things actually got *better*.
 
-**Concurrent branch merges can race.** If two PRs merge within seconds of each other, both sync workflows try to clone the ledger, modify it, and push. One will fail with a non-fast-forward error. The GitHub Action doesn't retry. This is the same "git push as consensus" pattern from [Part 8](/blog/2026/04/01/scaling-ai-part8-vinculum) — except here, the loser's state changes just... don't sync until the next push-to-main event or the drift check catches it. It's eventually consistent, which is fine for decisions but annoying for people who want immediate confirmation.
+**But GitHub's UI is blind to notes.** This is the trade-off. Your code reviewers won't see squad notes in the PR diff or the commit view. For AI agents that consume everything via `git log --show-notes`, this is a non-issue. For humans who want to browse decisions in the GitHub web UI? They'll need to use the CLI or wait for GitHub to add notes rendering. (GitHub, if you're reading this — please.)
 
-**The `merge=union` strategy isn't bulletproof.** It works great for decisions — self-contained blocks separated by `---` dividers. It works terribly for JSON, which is why we exclude JSON state files from the ledger sync entirely. But even for Markdown, if two agents add decisions with the exact same heading on the same line number, union merge can produce duplicates. In practice this is rare. In theory it's a bug waiting to happen.
+**Notes aren't fetched by default.** Every new clone needs `git config --add remote.origin.fetch "+refs/notes/squad/*:refs/notes/squad/*"`. If an agent forgets this config, it silently doesn't see any branch-scoped decisions. The fix is to add it to your squad bootstrap script, but it's one more thing to remember.
 
-**Agent compliance is voluntary.** The Golden Rules say agents should always add scope and lifecycle metadata. But agents are LLMs. They sometimes forget. They sometimes format it differently. There's no schema enforcement — it's Markdown conventions all the way down. A validation step in the sync workflow would catch malformed entries, but I haven't built it yet.
+**The `merge=union` strategy for Tier 1 isn't bulletproof.** For the ledger's Markdown files — decisions, routing rules, agent histories — union merge works great because they're self-contained blocks separated by `---` dividers. It works terribly for JSON, which is why we exclude JSON state files from the ledger sync. But even for Markdown, if two agents add entries with the same heading at the same line, union merge can produce duplicates. In practice this is rare. In theory it's a bug waiting to happen.
 
-**If I were starting over**, I'd probably use a structured format (YAML frontmatter for decisions instead of inline Markdown fields). The human-readability of pure Markdown is nice, but the parseability cost is real. `sed` on Markdown is writing poetry with a chainsaw — it can be done, but it's not what either tool was designed for.
+**Concurrent notes can conflict.** If two agents push notes to the same `refs/notes/squad/decisions` ref at the same time, one push will fail with a non-fast-forward error. `git notes merge` exists and handles this, but agents need to be taught to fetch-merge-push instead of just push. Gerrit solves this at Google scale, so it's a solved problem — it's just not something Git does automatically.
+
+**Agent compliance is still voluntary.** The two-tier split made it clearer *where* to write (permanent → Tier 1, branch-scoped → Tier 2 notes), but agents are LLMs. They sometimes write a branch-scoped decision to `decisions.md` instead of as a note, or vice versa. There's no schema enforcement — it's conventions and good prompting all the way down.
+
+**If I were starting over** — which, honestly, the Git Notes discovery basically forced me to do — I'd start with the two-tier model from day one. Tier 1 for permanent state on the orphan branch, Tier 2 for branch-scoped state via Git Notes. No lifecycle states, no `sed`, no transition workflows. The five-state model wasn't wrong, exactly — it correctly identified the problem. It just solved it at the wrong layer. Git's commit graph was already the state machine I needed.
 
 ---
 
@@ -397,19 +589,20 @@ Here's what's still rough. I'm not going to pretend this is production-hardened 
 
 Let me circle back to the problems from [Part 7](/blog/2026/03/22/scaling-ai-part7-enterprise-state):
 
-| Problem | Before | After |
+| Problem | Before | After (Ledger + Git Notes) |
 |---------|--------|-------|
-| PRs cluttered with squad state | 40+ `.squad/` files in every PR | Zero — state syncs independently |
-| Agent decisions lost on PR rejection | Decisions either persisted incorrectly or were deleted entirely | Withdrawn decisions stay visible but inactive |
-| Parallel agents with stale state | Each branch had its own copy, no cross-branch visibility | Shared ledger with scoped metadata |
-| JSON merge corruption | Git line-merge on JSON = broken state | JSON excluded from sync, Markdown with `merge=union` |
+| PRs cluttered with squad state | 40+ `.squad/` files in every PR | Zero — state syncs independently via Tier 1 |
+| Agent decisions lost on PR rejection | Decisions either persisted incorrectly or were deleted entirely | Git Notes follow commit reachability — merged commits keep their notes, rejected branches don't |
+| Lifecycle management complexity | `sed`-based state machine with five states and three workflow triggers | No lifecycle code — Git's commit graph IS the lifecycle |
+| Parallel agents with stale state | Each branch had its own copy, no cross-branch visibility | Tier 1 (shared ledger) + Tier 2 (Git Notes) — each with the right persistence model |
+| JSON merge corruption | Git line-merge on JSON = broken state | JSON excluded from sync, Markdown with `merge=union` for Tier 1 |
 | Reviewer cognitive overload | "Why is there 700 lines of orchestration log in my auth PR?" | Code PRs only contain code |
 
-Is it perfect? No. Is it significantly better than what I had? Absolutely. The code reviewers on my team no longer have to wade through agent diaries to find the actual feature changes. The agents can remember things without asking permission first. And when a feature gets rejected, the team's collective knowledge doesn't get thrown out with the bathwater.
+Is it perfect? No. Is it significantly better than what I had? Absurdly so. The code reviewers on my team no longer have to wade through agent diaries to find the actual feature changes. The agents can remember things without asking permission first. And when a feature gets rejected, the team's collective knowledge doesn't get thrown out with the bathwater — branch-scoped decisions just naturally fade with the commits they were attached to, while the permanent stuff stays on the ledger forever.
 
-The ledger pattern turned out to be one of those solutions that feels obvious in retrospect — of course you should separate things with different update frequencies and different lifecycle semantics. That's just database normalization applied to files. But it took running a squad in an enterprise context for a couple of months to make the problem painful enough to solve properly.
+The two-tier pattern turned out to be one of those solutions that feels obvious in retrospect — of course you should match your persistence model to your data's lifecycle. Permanent state goes on a permanent branch. Branch-scoped state goes on branch-scoped commits. That's just database normalization applied to git refs. But it took running a squad in an enterprise context for a couple of months, building an entire lifecycle state machine, and then discovering `git notes` at 1 AM to make the solution click.
 
-Sometimes the best engineering is just accounting with better tooling.
+Sometimes the best engineering is realizing that someone already solved your problem fifteen years ago and you just didn't know to look.
 
 ---
 
@@ -425,4 +618,4 @@ Sometimes the best engineering is just accounting with better tooling.
 > - **Part 8**: [The Vinculum — Eight Distributed Systems Lessons](/blog/2026/04/01/scaling-ai-part8-vinculum)
 > - **Part 9**: The Squad Ledger — Giving Your AI Team a Memory That Survives Rejected PRs ← You are here
 
-*The [ledger repo](https://github.com/tamirdresher/squad-state-upstream) and [example consumer](https://github.com/tamirdresher/squad-upstream-example) are both public. The design document that drove this solution is in my working repo. The `sed` commands are real, the edge cases are real, and the three corrupted JSON files I mentioned in Part 7 were definitely real. Follow me on [Twitter/X @tamir_dresher](https://twitter.com/tamir_dresher) for updates on the series.*
+*The [ledger repo](https://github.com/tamirdresher/squad-state-upstream) and [example consumer](https://github.com/tamirdresher/squad-upstream-example) are both public. The design document that drove this solution is in my working repo. The `sed` commands were real, the Git Notes discovery was real, and the three corrupted JSON files I mentioned in Part 7 were definitely real. Try `git notes --ref=squad/test add -m 'hello' HEAD` in any repo — you might have the same "wait, this has been here the whole time?" moment I did. Follow me on [Twitter/X @tamir_dresher](https://twitter.com/tamir_dresher) for updates on the series.*
