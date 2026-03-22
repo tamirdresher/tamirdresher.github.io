@@ -213,57 +213,78 @@ That's the vision.
 
 ---
 
-## What's Coming in Aspire 13.2: The Tooling Meets Squad Halfway
+## What's Coming in Aspire 13.2: CLI Over MCP
 
-I've been playing with the daily Aspire builds ahead of the 13.2 release (yes, I'm brave enough to run daily builds), and there are changes coming that make the Squad integration even more interesting.
+I've been playing with the daily Aspire builds ahead of the 13.2 release (yes, I'm brave enough to run daily builds), and there's a shift coming that makes the Squad integration even simpler.
 
-### `aspire mcp` Becomes `aspire agent`
+**The big change: the recommendation is now to use the Aspire CLI instead of the MCP server.**
 
-The Aspire CLI command was renamed from `aspire mcp` to `aspire agent` in 13.2. This isn't just a naming change — it's a philosophical shift. The tooling is literally called "agent" now, as if Aspire is meeting Squad halfway.
+The CLI has full parity with the MCP tools — and for AI agents, this is actually better because you don't need to set up MCP at all. Agents just shell out to `aspire logs myservice` or `aspire resources`. No proxy scripts, no port configuration, no MCP endpoint discovery.
+
+### The New CLI Commands
+
+| What Agents Need | Aspire CLI Command |
+|---|---|
+| See all running services and health | `aspire resources [<resource>]` |
+| Read console output | `aspire logs [<resource>]` |
+| Query structured logs | `aspire telemetry logs [<resource>]` |
+| Start/stop resources | `aspire start <resource>` / `aspire stop <resource>` |
+| Run resource commands | `aspire command <resource> <command>` |
+| Browse docs | `aspire docs list` |
+| Search docs | `aspire docs search <query>` |
+| Get specific doc | `aspire docs get <slug>` |
+
+**What this looks like for Squad agents:**
+
+Data needs to check backend logs:
+```bash
+aspire logs backend
+# Streams console output, no MCP setup required
+```
+
+Ralph wants to see all resource health status:
+```bash
+aspire resources
+# Lists all services with health (Healthy, Degraded, Unhealthy)
+```
+
+Seven needs to query structured logs for errors:
+```bash
+aspire telemetry logs backend --level Error
+# Filters structured logs by severity
+```
+
+B'Elanna wants to restart a crashed service:
+```bash
+aspire start myservice
+# Restarts the resource directly
+```
+
+That's it. No MCP proxy. No port allocation. No settings.json files. Just CLI commands that work anywhere the Aspire CLI is installed.
+
+### Why This is Better for Agents
+
+The MCP approach (what I described earlier in this post) works, but it requires setup: proxy scripts, port coordination, configuration files. If you're working with [worktrees](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html), you need the proxy to handle dynamic port allocation.
+
+The CLI approach is simpler: agents just run shell commands. Works in CI/CD environments. Works on teammate machines. Works on DevBoxes. No per-environment MCP configuration.
+
+The MCP server still exists and still works — if you're building custom integrations or need programmatic access from non-CLI tools, it's there. But for most Squad workflows, **the CLI is now the simpler path**.
+
+### One More Thing: `aspire mcp` is Now `aspire agent`
+
+The Aspire CLI command was renamed from `aspire mcp` to `aspire agent` in 13.2 ([tracked here](https://github.com/dotnet/aspire/issues/14619)). This isn't just a naming change — it's a philosophical shift. The tooling is literally called "agent" now.
 
 When you run `aspire agent`, you're not just exposing an MCP server. You're explicitly positioning the Aspire Dashboard as something AI agents interact with. The naming makes the intent clear: **Aspire is built for agents, not just humans**.
 
-This matters for Squad because it signals that the Aspire team is thinking about AI-first workflows. The renaming (tracked in [aspire.dev#410](https://github.com/microsoft/aspire.dev/issues/410)) is a declaration: agents are first-class citizens in the Aspire ecosystem.
+### Honest Limitation: Log Filtering
 
-### `aspire do`: Autonomous Build/Test Pipelines
+One caveat: `aspire logs` currently filters by level but not by category or message content. So if you need to search logs for a specific error string, you're piping to `grep`:
 
-New in 13.2: `aspire do` is a dependency-tracked, parallelizable pipeline for build/test/deploy. Developers can define custom steps, visualize deployment pipelines, and Aspire handles the orchestration.
+```bash
+aspire logs backend --level Error | grep "connection timeout"
+```
 
-Here's why this matters for Squad: **agents can now drive the entire build/test cycle autonomously**.
-
-Imagine this workflow:
-1. Data makes a code change
-2. Data runs `aspire do build` to build the service
-3. Aspire automatically runs dependent steps (restore packages, compile, containerize)
-4. Data then runs `aspire do test` to validate
-5. Aspire runs integration tests against the full AppHost
-6. If tests pass, Data runs `aspire do deploy-dev` to push to the development environment
-
-All of this is dependency-tracked — if the build hasn't changed, `aspire do test` skips re-building. Agents get a declarative pipeline they can invoke without understanding the full build graph.
-
-This is the missing piece. Before `aspire do`, agents could query the running system (via MCP), but they couldn't easily drive the build/test/deploy cycle. Now they can.
-
-### Dashboard Agent Hooks: One-Click Integration
-
-The Aspire Dashboard in 13.2 has direct integration for the agent/MCP, making it possible for AI tools to connect with one click. No more manually configuring MCP proxy scripts or hunting for port numbers — the dashboard exposes the agent endpoint prominently, and tools like Squad can auto-discover it.
-
-This lowers the barrier for agents to connect to Aspire. Instead of requiring developers to read the port isolation post and set up the proxy, Squad can detect the Aspire Dashboard, connect to the agent endpoint, and start querying immediately.
-
-### Even Deeper Polyglot Support
-
-Aspire 13 brought polyglot support (JavaScript, Python, Go as first-class citizens). Aspire 13.2 goes further:
-- **Native debugging** for Python and JavaScript projects
-- **Containerization out of the box** for all languages
-- **Uvicorn for FastAPI** (Python), **Vite for JS frameworks** — framework-specific optimizations
-- **Multi-language distributed tracing** that just works
-
-This strengthens the Squad integration because agents working across languages now get even better observability. A Python FastAPI service, a C# backend, and a TypeScript frontend all show up in the same distributed trace — and agents can query the entire flow via `aspire-list_traces`.
-
-### What This Means for the Future
-
-Aspire 13.2 isn't just an incremental update — it's a signal that the Aspire team is thinking about AI agents as core users. The `mcp` → `agent` rename, the `aspire do` pipeline, the dashboard agent hooks — these aren't features added for humans. They're features added because **agents need them**.
-
-And Squad benefits directly. The gap between "agents can query the system" and "agents can build, test, deploy, and monitor the system" is closing fast.
+There's room for improvement here. But it's still simpler than configuring an MCP endpoint.
 
 ---
 
