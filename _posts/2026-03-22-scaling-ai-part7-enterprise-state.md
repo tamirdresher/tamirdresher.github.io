@@ -38,6 +38,11 @@ Files changed: 97
 
 Ninety-seven files. Forty of them were squad state. For a feature that touched maybe a dozen actual source files.
 
+<figure style="text-align:center; margin: 1.5rem 0;">
+  <img src="https://i.imgflip.com/wxica.jpg" alt="This is fine dog sitting in burning room" style="max-width: 400px; border-radius: 8px;">
+  <figcaption style="font-style: italic; font-size: 0.85rem; color: #666; margin-top: 0.5rem;">↑ Me, watching the PR diff load</figcaption>
+</figure>
+
 I scrolled through the diff. The actual C# changes were reasonable — service configuration, some new classes, updated tests. Maybe 15 minutes to review properly.
 
 But the other 731 files? All `.squad/` state:
@@ -76,6 +81,27 @@ Data doesn't know about Seven's decision to standardize on a new doc format. Sev
 And when both PRs finally merge? Git tries to auto-merge `.squad/schedule-state.json` — a JSON file — using a line-based merge strategy. JSON doesn't merge line-by-line. It corrupts. I've fixed three corrupted JSON files in the past month alone.
 
 The rate of change is completely different. Code changes once a day. Squad state changes **fifty times a day**. It's like storing your brain's short-term memory in the same filing cabinet as your tax returns. Different update frequency. Different access pattern. Different lifecycle.
+
+<div class="mermaid">
+sequenceDiagram
+    participant A as Agent
+    participant C as Code Repo
+    participant S as Squad State
+    participant R as Reviewer
+
+    Note over A,R: ❌ The problem — everything in one repo
+    A->>C: commit code + .squad/ changes
+    A->>C: open PR (97 files 😬)
+    R->>C: review PR — code or squad diary?
+    Note over R: 40 min reading squad's memory
+
+    Note over A,R: ✅ The solution — separated state
+    A->>C: commit code only → PR (12 files)
+    A->>S: push squad state directly (no PR)
+    R->>C: clean diff, done in 5 min
+</div>
+
+*One of these workflows makes your teammates happy. The other one explains why Meir called me that morning.*
 
 I later realized this pattern is almost identical to how ADRs (Architecture Decision Records) work — something I'd read about years ago but never fully connected to what Squad does. ADRs track decisions through states: *Proposed → Accepted → Superseded/Deprecated*. Squad's `decisions.md` does the same thing. The parallel is exact, down to the lifecycle — agents propose a decision, the team accepts it (or overwrites it), and old decisions get marked superseded rather than deleted. If you're already using ADRs on your team, Squad's decisions layer will feel immediately familiar. If you're not, this might be a good reason to start. [Michael Nygard's original ADR post](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions) is the classic reference.
 
@@ -232,9 +258,14 @@ This works for small teams with low PR volume. At scale, the race conditions and
 
 > **Tip**: If you're already running Ralph in watch mode (`ralph-watch.ps1` or `npx @bradygaster/squad-cli watch`), you might not need the GitHub Action at all. Ralph already monitors open PRs — you can extend its logic to detect squad-only PRs and merge them directly using `gh pr merge`. The advantage: no GitHub Actions configuration, no security review, and the auto-merge happens on Ralph's clock rather than GitHub's webhook latency. This is probably the lowest-friction path for teams that already have Ralph running.
 
+<figure style="text-align:center; margin: 1.5rem 0;">
+  <img src="https://i.imgflip.com/4bp78.jpg" alt="Drake approving and disapproving meme" style="max-width: 400px; border-radius: 8px;">
+  <figcaption style="font-style: italic; font-size: 0.85rem; color: #666; margin-top: 0.5rem;">No: writing a GitHub Action to auto-merge squad PRs. Yes: Ralph already does this for free.</figcaption>
+</figure>
+
 ---
 
-### Approach 4: Self-Bootstrapping Worktree(the clever way)
+### Approach 4: Self-Bootstrapping Worktree (the clever way)
 
 Here's a thought I had while writing this post: what if we could combine the elegance of the orphan branch with the simplicity of "just clone and go"?
 
@@ -451,6 +482,11 @@ I wanted the "Git as database" philosophy to just... work. No external dependenc
 And it *does* work — for the code. But squad state has different characteristics. Higher update frequency. Lower review requirements. Different conflict patterns. Treating it like code creates friction.
 
 The solutions exist. None are perfect. All require some tradeoff — either complexity (worktree), split context (separate repo), or race conditions (auto-merge).
+
+<figure style="text-align:center; margin: 1.5rem 0;">
+  <img src="https://i.imgflip.com/1bhk.jpg" alt="Sweating guy pressing two buttons meme" style="max-width: 400px; border-radius: 8px;">
+  <figcaption style="font-style: italic; font-size: 0.85rem; color: #666; margin-top: 0.5rem;">Me choosing between worktree complexity, split context, and race conditions</figcaption>
+</figure>
 
 This is one of those problems where the "right" answer depends entirely on your team's tolerance for git complexity vs. operational overhead. And I'm still figuring out which side of that line my team falls on.
 
