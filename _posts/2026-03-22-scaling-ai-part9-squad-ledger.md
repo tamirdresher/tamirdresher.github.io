@@ -48,6 +48,8 @@ Financial ledgers have worked this way for five hundred years. Turns out the sam
 
 Here's the shape of it. Two repos. One sync mechanism. One pointer file.
 
+![Full Architecture — Code Repo, Ledger, and Git Notes](/assets/scaling-ai-part9-squad-ledger/full-architecture.svg)
+
 ```
 CODE REPO (your-project)              LEDGER REPO (squad-ledger)
 ┌──────────────────────────┐          ┌──────────────────────────────┐
@@ -241,6 +243,8 @@ All those lifecycle states I designed? `pending-merge`, `merged`, `withdrawn`, `
 
 I felt the way you feel when you discover the standard library has a function for the thing you just spent a weekend implementing. Except worse, because this function has existed since before I started using Git.
 
+![Git Notes Lifecycle — how branch-state solves itself](/assets/scaling-ai-part9-squad-ledger/git-notes-lifecycle.svg)
+
 ### The Two-Tier Architecture
 
 This realization split the design cleanly into two tiers, each using Git the way it was designed to be used:
@@ -270,6 +274,8 @@ Tier 2: Git Notes (refs/notes/squad/*)
 **Tier 2** is the stuff that's scoped to a specific piece of work. "Use JWT for this feature." "Security review passed for this commit." "Here's the research context for this bug fix." These are Git Notes, attached to specific commits. They live and die with the commits they're attached to. If the commit makes it to `main`, the note lives. If the branch gets rejected, the note fades away with the commit it was attached to.
 
 No lifecycle metadata. No `sed` commands parsing Markdown. No five-state transition table. Two tiers, each with exactly the right persistence model for its contents.
+
+![Two-Tier Architecture — permanent ledger and branch-scoped Git Notes](/assets/scaling-ai-part9-squad-ledger/two-tier-architecture.svg)
 
 ### The Commands (Copy These)
 
