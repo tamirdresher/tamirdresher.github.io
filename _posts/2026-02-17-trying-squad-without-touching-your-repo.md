@@ -5,6 +5,8 @@ date: 2026-02-17
 tags: [ai-agents, squad, github-copilot, git, symlinks, development-workflow, productivity, parallel-development,]
 ---
 
+> **📝 Update (March 2026):** Since this post was published, Squad has been updated significantly. See the notes at the bottom for updated commands and the latest symlink setup. Also check out [Part 7 of the Scaling AI series](/blog/2026/03/22/scaling-ai-part7-enterprise-state) where I explore the enterprise state problem more deeply.
+
 I've been running multiple AI agents in parallel using [Git worktrees](/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html) for a while now, and it's been a productivity multiplier. But recently I stumbled upon [Squad](https://github.com/bradygaster/squad)—a framework by Brady Gaster that lets you define an entire AI team with specialized roles, all orchestrated through GitHub Copilot. Think of it as going from managing individual AI agents to having a full team with a tech lead, developers, testers, and a documentation writer, all coordinated automatically.
 
 The catch? Squad works by adding configuration files directly into your repository—`.ai-team/` for team state, `.ai-team-templates/` for role definitions, and `.github/agents/squad.agent.md` for the main agent. For a personal project, that's fine. But I wanted to try it on a work repo where I can't just commit experimental AI framework files. My teammates didn't sign up for 38 new files appearing in their next pull.
@@ -231,6 +233,53 @@ The nice thing is that since SquadUI reads from `.ai-team/`, it works perfectly 
 Squad is an interesting approach to AI-assisted development, and the symlink + git exclude pattern lets you try it on any repo without asking anyone's permission. The whole setup takes about 5 minutes, and if you decide Squad isn't for you, just delete the symlinks—your repo is exactly as it was.
 
 The `git/info/exclude` trick is the real gem here. I've started using it for other local-only tooling too—anything I want on my machine but not in the shared codebase. It's one of those Git features that's been there forever but most people never discover.
+
+---
+
+## Updates
+
+### March 2026 — Community Feedback & Updated Commands
+
+Thank you to everyone who tried this setup! Several readers reached out after implementing the symlink pattern in their own repos, and I wanted to share their feedback along with some important updates.
+
+One reader got the setup working on their monorepo and shared some really helpful notes about what's changed since I originally published this:
+
+Since this post went live, Squad has evolved quite a bit. The team renamed directories, moved to an official npm package, and added new features like `squad.config.ts` for team configuration and GitHub Actions integration. Here's what changed:
+
+**Updated install command:**
+```bash
+npx @bradygaster/squad-cli    # instead of: npx github:bradygaster/squad
+```
+
+**Updated directory structure:**
+- `.ai-team/` → `.squad/` (directory renamed)
+- `.ai-team-templates/` → no longer exists as a separate directory
+- Team configuration now lives in `squad.config.ts` at the repo root
+- GitHub Actions workflows are in `.github/workflows/` for automation
+
+**Updated symlink setup** (for the latest version):
+```powershell
+# Directory symlink for team state
+New-Item -ItemType SymbolicLink -Path ".squad" -Target "<squad-repo-path>\.squad"
+
+# File symlink for the agent definition
+cmd /c mklink ".github\agents\squad.agent.md" "<squad-repo-path>\.github\agents\squad.agent.md"
+
+# Add to .git/info/exclude
+Add-Content -Path ".git\info\exclude" -Value @"
+
+# Squad (symlinked from side repo)
+.squad
+.squad/
+.github/agents/squad.agent.md
+"@
+```
+
+The core pattern still works exactly the same way—keep Squad's files in a separate repo, symlink them in, and use `.git/info/exclude` to hide them locally. You just need to adjust the directory names for the new version.
+
+For a working example of the symlink pattern in a real production repo, check out [vapor-squad](https://github.com/spboyer/vapor-squad)—Scott Hunter's team at Microsoft is using this approach to keep Squad state separate from their main codebase.
+
+If you're coming from an older Squad version, the [migration guide](https://bradygaster.github.io/squad/docs/guide/migration/) has step-by-step instructions for upgrading.
 
 ---
 
