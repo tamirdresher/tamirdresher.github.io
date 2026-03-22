@@ -307,10 +307,23 @@ If you're running Aspire and you're curious about AI-assisted development, this 
 cd your-app/AppHost
 dotnet run
 # Aspire Dashboard starts on https://localhost:18888
-# MCP server runs on a dynamic port (check dashboard for URL)
 ```
 
-**2. Configure Squad to use Aspire MCP:**
+**2. Configure Squad agents to use Aspire CLI (recommended for 13.2+):**
+
+Agents automatically detect when the Aspire CLI is installed and can run commands like:
+```bash
+aspire resources          # List all services and health
+aspire logs backend       # Stream console logs
+aspire telemetry logs api # Query structured logs
+aspire start myservice    # Start a stopped resource
+```
+
+No MCP configuration needed. The CLI works anywhere it's installed.
+
+**Alternative: Using the MCP Server (13.1 approach):**
+
+If you need programmatic access or are working with [worktrees](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html), you can still use the MCP server.
 
 In your `.copilot/mcp-config.json`:
 ```json
@@ -325,15 +338,11 @@ In your `.copilot/mcp-config.json`:
 }
 ```
 
-(See my [port isolation post](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html) for the full proxy setup.)
+(See my [port isolation post](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html) for the full proxy setup and why you'd need it for parallel worktrees.)
 
-**3. Agents automatically detect aspire-* tools:**
+**3. Watch agents query the system:**
 
-No configuration needed. Squad's coordinator routes `aspire-list_resources`, `aspire-list_traces`, etc. to the right agents based on their roles.
-
-**4. Watch agents query the system:**
-
-Open a GitHub issue, assign it to an agent (e.g., Data), and watch the agent query Aspire for logs, traces, and resource status as it works.
+Open a GitHub issue, assign it to an agent (e.g., Data), and watch the agent use `aspire logs` and `aspire resources` to diagnose and fix issues.
 
 ---
 
