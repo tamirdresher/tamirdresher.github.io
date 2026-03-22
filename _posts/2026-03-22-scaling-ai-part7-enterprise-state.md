@@ -77,6 +77,21 @@ And when both PRs finally merge? Git tries to auto-merge `.squad/schedule-state.
 
 The rate of change is completely different. Code changes once a day. Squad state changes **fifty times a day**. It's like storing your brain's short-term memory in the same filing cabinet as your tax returns. Different update frequency. Different access pattern. Different lifecycle.
 
+I later realized this pattern is almost identical to how ADRs (Architecture Decision Records) work — something I'd read about years ago but never fully connected to what Squad does. ADRs track decisions through states: *Proposed → Accepted → Superseded/Deprecated*. Squad's `decisions.md` does the same thing. The parallel is exact, down to the lifecycle — agents propose a decision, the team accepts it (or overwrites it), and old decisions get marked superseded rather than deleted. If you're already using ADRs on your team, Squad's decisions layer will feel immediately familiar. If you're not, this might be a good reason to start. [Michael Nygard's original ADR post](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions) is the classic reference.
+
+<div class="mermaid">
+stateDiagram-v2
+    direction LR
+    [*] --> Proposed : Agent creates decision
+    Proposed --> Accepted : No conflict detected
+    Proposed --> Rejected : Explicit team override
+    Accepted --> Superseded : Newer decision overrides
+    Superseded --> [*]
+    Rejected --> [*]
+</div>
+
+*Squad decisions follow the same lifecycle as Architecture Decision Records — states are explicit, history is preserved.*
+
 ---
 
 ## The Four Approaches I'm Evaluating
@@ -215,9 +230,11 @@ Now squad state PRs merge automatically. Code PRs still need human review.
 
 This works for small teams with low PR volume. At scale, the race conditions and PR overhead become a bottleneck.
 
+> **Tip**: If you're already running Ralph in watch mode (`ralph-watch.ps1` or `npx @bradygaster/squad-cli watch`), you might not need the GitHub Action at all. Ralph already monitors open PRs — you can extend its logic to detect squad-only PRs and merge them directly using `gh pr merge`. The advantage: no GitHub Actions configuration, no security review, and the auto-merge happens on Ralph's clock rather than GitHub's webhook latency. This is probably the lowest-friction path for teams that already have Ralph running.
+
 ---
 
-### Approach 4: Self-Bootstrapping Worktree (the clever way)
+### Approach 4: Self-Bootstrapping Worktree(the clever way)
 
 Here's a thought I had while writing this post: what if we could combine the elegance of the orphan branch with the simplicity of "just clone and go"?
 
@@ -262,12 +279,13 @@ The insight: **Approach 2 (separate repo) was right in spirit, but didn't go far
 
 Here's the simplest version of Approach 2 that nobody mentioned:
 
-```bash
+```powershell
+# PowerShell — works in both PowerShell and bash (git commands are identical)
 # Create a local bare git repo for squad state — no GitHub required
-git init --bare ~/squad-state/myapp.git
+git init --bare "$HOME/squad-state/myapp.git"   # Bash: git init --bare ~/squad-state/myapp.git
 
 # Mount it into .squad/ from your main repo
-git clone ~/squad-state/myapp.git .squad
+git clone "$HOME/squad-state/myapp.git" .squad  # Bash: git clone ~/squad-state/myapp.git .squad
 ```
 
 That's it. A bare repo on your local filesystem. Agents push to it directly — `git push` works exactly the same, just to a `file://` path instead of `https://`. Full git history. Full branching. Works completely offline. No PR required. No branch protection to configure. No GitHub Action to write or get approved by your security team.
@@ -280,36 +298,42 @@ At this point you might be thinking: "But someone has to bootstrap this. Where d
 
 Back in the main repo. It has to — that's the one inescapable constraint. There needs to be *something* in the code repo that knows how to initialize the squad state location. But this is actually fine, and it's simpler than it sounds:
 
-```bash
-#!/usr/bin/env bash
-# scripts/squad-init.sh — Run once after cloning the repo.
+```powershell
+# scripts/squad-init.ps1 — Run once after cloning the repo.
+# Bash equivalent: scripts/squad-init.sh (see inline comments)
 
-REPO_NAME=$(basename "$(git rev-parse --show-toplevel)")
-SQUAD_REPO="$HOME/squad-state/${REPO_NAME}.git"
+$RepoName  = Split-Path (git rev-parse --show-toplevel) -Leaf   # Bash: REPO_NAME=$(basename "$(git rev-parse --show-toplevel)")
+$SquadRepo = "$HOME/squad-state/$RepoName.git"                  # Bash: SQUAD_REPO="$HOME/squad-state/${REPO_NAME}.git"
 
 # Create the local squad state repo if it doesn't exist
-if [ ! -d "$SQUAD_REPO" ]; then
-  echo "Creating local squad state repo at $SQUAD_REPO"
-  mkdir -p "$SQUAD_REPO"
-  git init --bare "$SQUAD_REPO"
-fi
+# Bash: if [ ! -d "$SQUAD_REPO" ]; then mkdir -p "$SQUAD_REPO" && git init --bare "$SQUAD_REPO"; fi
+if (-not (Test-Path $SquadRepo)) {
+    Write-Host "Creating local squad state repo at $SquadRepo"
+    New-Item -ItemType Directory -Path $SquadRepo -Force | Out-Null
+    git init --bare $SquadRepo
+}
 
 # Clone it into .squad/
-if [ ! -d ".squad" ]; then
-  git clone "$SQUAD_REPO" .squad
-fi
+# Bash: if [ ! -d ".squad" ]; then git clone "$SQUAD_REPO" .squad; fi
+if (-not (Test-Path ".squad")) {
+    git clone $SquadRepo .squad
+}
 
 # Keep .squad/ out of the main repo (no .gitignore pollution)
-grep -qxF ".squad" .git/info/exclude || echo ".squad" >> .git/info/exclude
+# Bash: grep -qxF ".squad" .git/info/exclude || echo ".squad" >> .git/info/exclude
+$ExcludeFile = ".git/info/exclude"
+if (-not (Get-Content $ExcludeFile -ErrorAction SilentlyContinue | Select-String "^\.squad$")) {
+    Add-Content $ExcludeFile ".squad"
+}
 
 # Install the post-checkout hook
-cp scripts/hooks/post-checkout .git/hooks/post-checkout
-chmod +x .git/hooks/post-checkout
+# Bash: cp scripts/hooks/post-checkout .git/hooks/post-checkout && chmod +x .git/hooks/post-checkout
+Copy-Item "scripts/hooks/post-checkout.ps1" ".git/hooks/post-checkout"
 
-echo "✓ Squad state initialized at $SQUAD_REPO"
+Write-Host "✔ Squad state initialized at $SquadRepo"
 ```
 
-Run once after cloning: `./scripts/squad-init.sh`. The `.squad/` directory appears, local to your machine, completely private, no GitHub involved. The two files that live in the main repo (`scripts/squad-init.sh` and `scripts/hooks/post-checkout`) are the only Squad artifacts that need to be there — and they're just shell scripts, not state.
+Run once after cloning: `./scripts/squad-init.ps1` (or `bash scripts/squad-init.sh` if you're on Linux/macOS). The `.squad/` directory appears, local to your machine, completely private, no GitHub involved. The two files that live in the main repo (`scripts/squad-init.ps1` and `scripts/hooks/post-checkout.ps1`) are the only Squad artifacts that need to be there — and they're just scripts, not state.
 
 ### Handling Multiple Worktrees
 
@@ -324,44 +348,57 @@ Each worktree needs its own `.squad/` directory pointing to the *matching branch
 
 The solution is a `post-checkout` hook that runs automatically when you `git worktree add` or `git checkout`:
 
-```bash
-#!/usr/bin/env bash
-# scripts/hooks/post-checkout
+```powershell
+# scripts/hooks/post-checkout.ps1
 # Runs after checkout. Wires up .squad/ to the right squad branch.
+# Bash equivalent: scripts/hooks/post-checkout
 
-REPO_NAME=$(basename "$(git rev-parse --show-toplevel)")
-SQUAD_REPO="$HOME/squad-state/${REPO_NAME}.git"
-CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "detached")
-WORKTREE_ROOT=$(git rev-parse --show-toplevel)
-SAFE_BRANCH=$(echo "$CURRENT_BRANCH" | tr '/' '-')
-SQUAD_WORKTREE="$HOME/squad-state/${REPO_NAME}-${SAFE_BRANCH}"
+$RepoName     = Split-Path (git rev-parse --show-toplevel) -Leaf          # Bash: REPO_NAME=$(basename "$(git rev-parse --show-toplevel)")
+$SquadRepo    = "$HOME/squad-state/$RepoName.git"                         # Bash: SQUAD_REPO="$HOME/squad-state/${REPO_NAME}.git"
+$CurrentBranch = (git symbolic-ref --short HEAD 2>$null) ?? "detached"   # Bash: CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "detached")
+$WorktreeRoot = git rev-parse --show-toplevel                             # Bash: WORKTREE_ROOT=$(git rev-parse --show-toplevel)
+$SafeBranch   = $CurrentBranch -replace "/", "-"                          # Bash: SAFE_BRANCH=$(echo "$CURRENT_BRANCH" | tr '/' '-')
+$SquadWorktree = "$HOME/squad-state/$RepoName-$SafeBranch"               # Bash: SQUAD_WORKTREE="$HOME/squad-state/${REPO_NAME}-${SAFE_BRANCH}"
 
 # Create a matching branch in the squad repo if it doesn't exist
-if ! git -C "$SQUAD_REPO" rev-parse --verify "$CURRENT_BRANCH" &>/dev/null 2>&1; then
-  echo "Creating squad branch: $CURRENT_BRANCH"
-  # Clone briefly to create the branch, then clean up
-  TMPDIR=$(mktemp -d)
-  git clone "$SQUAD_REPO" "$TMPDIR/tmp-squad"
-  git -C "$TMPDIR/tmp-squad" checkout -b "$CURRENT_BRANCH"
-  git -C "$TMPDIR/tmp-squad" push origin "$CURRENT_BRANCH"
-  rm -rf "$TMPDIR"
-fi
+# Bash: if ! git -C "$SQUAD_REPO" rev-parse --verify "$CURRENT_BRANCH" &>/dev/null 2>&1; then ...
+$branchExists = git -C $SquadRepo rev-parse --verify $CurrentBranch 2>$null
+if (-not $branchExists) {
+    Write-Host "Creating squad branch: $CurrentBranch"
+    # Bash: TMPDIR=$(mktemp -d); git clone "$SQUAD_REPO" "$TMPDIR/tmp-squad"; ...
+    $TmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.IO.Path]::GetRandomFileName())
+    git clone $SquadRepo "$TmpDir/tmp-squad"
+    git -C "$TmpDir/tmp-squad" checkout -b $CurrentBranch
+    git -C "$TmpDir/tmp-squad" push origin $CurrentBranch
+    Remove-Item $TmpDir -Recurse -Force   # Bash: rm -rf "$TMPDIR"
+}
 
 # Set up the matching squad worktree
-if [ ! -d "$SQUAD_WORKTREE" ]; then
-  git clone --branch "$CURRENT_BRANCH" "$SQUAD_REPO" "$SQUAD_WORKTREE"
-fi
+# Bash: if [ ! -d "$SQUAD_WORKTREE" ]; then git clone --branch "$CURRENT_BRANCH" "$SQUAD_REPO" "$SQUAD_WORKTREE"; fi
+if (-not (Test-Path $SquadWorktree)) {
+    git clone --branch $CurrentBranch $SquadRepo $SquadWorktree
+}
 
 # Point .squad/ at it
-rm -f "$WORKTREE_ROOT/.squad"
-ln -s "$SQUAD_WORKTREE" "$WORKTREE_ROOT/.squad"
+# Bash: rm -f "$WORKTREE_ROOT/.squad"; ln -s "$SQUAD_WORKTREE" "$WORKTREE_ROOT/.squad"
+$SquadLink = Join-Path $WorktreeRoot ".squad"
+if (Test-Path $SquadLink) { Remove-Item $SquadLink -Force }           # Bash: rm -f "$WORKTREE_ROOT/.squad"
+New-Item -ItemType SymbolicLink -Path $SquadLink -Target $SquadWorktree | Out-Null  # Bash: ln -s ...
 
-echo "Squad state → $SQUAD_WORKTREE ($CURRENT_BRANCH)"
+Write-Host "Squad state → $SquadWorktree ($CurrentBranch)"
 ```
 
-About 20 lines of shell. When you run `git worktree add /projects/myapp-feature-x feature/auth-refactor`, the hook fires, creates a matching `feature/auth-refactor` branch in the local squad state repo, sets up a dedicated working directory for it, and symlinks `.squad/` there.
+About 30 lines of PowerShell (versus 20 of bash — the verbosity is real, but so is the inline documentation). When you run `git worktree add /projects/myapp-feature-x feature/auth-refactor`, the hook fires, creates a matching `feature/auth-refactor` branch in the local squad state repo, sets up a dedicated working directory for it, and symlinks `.squad/` there.
 
 Branch names match. Squad state stays isolated per feature. No cross-contamination between worktrees. The squad repo has worktrees too — one per feature branch — but that's fine, because they're just directories, and the hook manages them automatically.
+
+### Prior Art Worth Knowing: Gerrit
+
+While I was researching this problem, I stumbled on an article about [Gerrit](https://www.gerritcodereview.com/) — Google's open-source code review system, used by Android, Chromium, and a bunch of other large projects. I'd never heard of it before. It turns out Gerrit has been solving this exact problem for a decade. It stores all review metadata — votes, change IDs, review comments — in git notes (`refs/notes/review`). Not in a database. Not in a sidebar. In git itself, attached to commits, pushed to a separate refspec that has no branch protection. The code and the review state live in the same repo but move through completely different workflows.
+
+That's the exact pattern we're rediscovering for squad state. Gerrit figured it out first.
+
+The lesson I took from this: separating "state that needs human review" from "state that doesn't" is a solved problem. The tooling looks different, but the architecture is the same. If your team is skeptical of the orphan-branch approach, you can point to Gerrit as a 10-year-old production example of why this works.
 
 ### When Would You Use GitHub, Then?
 
@@ -369,8 +406,9 @@ The local-only setup is great for personal projects or solo workflows. For teams
 
 Create a GitHub repo, push the squad state there — but don't configure any branch protection rules. No required reviewers. No PR workflow. Agents push directly to whatever branch they're on. GitHub becomes a backup and sync point, not a gate:
 
-```bash
+```powershell
 # Add GitHub as a remote for backup/sync (optional team setup)
+# git commands are identical in PowerShell and bash
 git -C .squad remote add origin git@github.com:myorg/myapp-squad.git
 git -C .squad push -u origin main
 ```
