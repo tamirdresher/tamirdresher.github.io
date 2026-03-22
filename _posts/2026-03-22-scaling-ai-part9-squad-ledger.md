@@ -16,19 +16,17 @@ In [Part 7](/blog/2026/03/22/scaling-ai-part7-enterprise-state), I showed you th
 
 I laid out four approaches and said "I'm still figuring it out."
 
-Well, I figured it out. This post is the solution.
+I couldn't leave it at that. The problem kept nagging at me, and I think I found the answer.
 
 ---
 
 ## Why "Upstream" Was the Wrong Word
 
-Before I get into the architecture, let me tell you about a naming disaster that cost me three days of confusion.
-
 When I first built the state synchronization system, I called the external repo "upstream." As in, `.squad/upstream.json` pointed to the repo where shared state lived. The scripts were called "sync upstream." The config file was `upstream-config.json`.
 
-The problem? In git, "upstream" already means something very specific: *the remote you pull from*. When I said "push state upstream," half my team thought I meant `git push origin`. The other half thought I meant the parent Squad repo (Brady's `bradygaster/squad`). Nobody thought I meant "the separate repo where agent memory lives."
+The problem? In git, "upstream" already means something very specific: *the remote you pull from*. When I said "push state upstream," it was confusing — did I mean `git push origin`? The parent Squad repo? The separate repo where agent memory lives?
 
-Three days of "wait, which upstream?" later, I killed the word entirely.
+So I renamed it: **Ledger**.
 
 The new name: **Ledger**.
 
@@ -109,7 +107,7 @@ That's the whole pointer. The sync workflow reads it, knows where to push, and h
 
 ## The Hard Problem: Branch-State Correspondence
 
-Here's where it gets interesting. And by "interesting" I mean "the thing that took me two weeks and a design document to figure out."
+Here's where it gets interesting. And by "interesting" I mean "the thing that required a design document and way too much thinking."
 
 The architecture above solves the *storage* problem — where does state live. But it doesn't solve the *semantics* problem: **what happens to a decision when the branch it was made on gets rejected?**
 
@@ -190,7 +188,7 @@ sed -i "s/Lifecycle: \`pending-merge\`\(.*branch:${BRANCH_NAME}\)/Lifecycle: \`w
 
 It's `sed`. Not a database migration, not a state machine library, not a Kubernetes operator. Just `sed`. Because the ledger is a Markdown file, and text manipulation tools that have been stable since 1974 are exactly the right level of complexity for this job.
 
-That was the plan, anyway. And it worked. For about two weeks.
+That was the plan, anyway. And it worked. But something kept bugging me.
 
 ---
 
@@ -198,9 +196,9 @@ That was the plan, anyway. And it worked. For about two weeks.
 
 I want you to appreciate the irony of what I'm about to tell you.
 
-I spent two weeks designing the lifecycle system above. I built the state machine. I wrote the `sed` commands. I coded the GitHub Actions workflow with its three triggers and its drift detection. I even made a table with five lifecycle states and felt *clever* about it.
+I spent time designing the lifecycle system above. I built the state machine. I wrote the `sed` commands. I coded the GitHub Actions workflow with its three triggers and its drift detection. I even made a table with five lifecycle states and felt *clever* about it.
 
-And then, while reading a Gerrit code review architecture document at 1 AM (as one does), I stumbled across a feature that's been in Git since 2010.
+And then, while reading a Gerrit code review architecture document (as one does), I stumbled across a feature that's been in Git since 2010.
 
 **Git Notes.**
 
@@ -333,7 +331,7 @@ Just so we're all on the same page about what this simplification looks like:
 - `git fetch` to read it
 - Walk away. Git handles the rest.
 
-Two weeks of lifecycle engineering replaced by a feature that's been in Git since I was still writing WPF applications. But that's the nature of engineering — sometimes the best solution is the one you didn't know existed, and the hardest part is being honest about the fact that you overcomplicated it.
+All that lifecycle engineering replaced by a feature that's been in Git since I was still writing WPF applications. But that's the nature of engineering — sometimes the best solution is the one you didn't know existed, and the hardest part is being honest about the fact that you overcomplicated it.
 
 ### Why Nobody Uses This (Yet)
 
