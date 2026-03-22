@@ -213,6 +213,60 @@ That's the vision.
 
 ---
 
+## What's Coming in Aspire 13.2: The Tooling Meets Squad Halfway
+
+I've been playing with the daily Aspire builds ahead of the 13.2 release (yes, I'm brave enough to run daily builds), and there are changes coming that make the Squad integration even more interesting.
+
+### `aspire mcp` Becomes `aspire agent`
+
+The Aspire CLI command was renamed from `aspire mcp` to `aspire agent` in 13.2. This isn't just a naming change — it's a philosophical shift. The tooling is literally called "agent" now, as if Aspire is meeting Squad halfway.
+
+When you run `aspire agent`, you're not just exposing an MCP server. You're explicitly positioning the Aspire Dashboard as something AI agents interact with. The naming makes the intent clear: **Aspire is built for agents, not just humans**.
+
+This matters for Squad because it signals that the Aspire team is thinking about AI-first workflows. The renaming (tracked in [aspire.dev#410](https://github.com/microsoft/aspire.dev/issues/410)) is a declaration: agents are first-class citizens in the Aspire ecosystem.
+
+### `aspire do`: Autonomous Build/Test Pipelines
+
+New in 13.2: `aspire do` is a dependency-tracked, parallelizable pipeline for build/test/deploy. Developers can define custom steps, visualize deployment pipelines, and Aspire handles the orchestration.
+
+Here's why this matters for Squad: **agents can now drive the entire build/test cycle autonomously**.
+
+Imagine this workflow:
+1. Data makes a code change
+2. Data runs `aspire do build` to build the service
+3. Aspire automatically runs dependent steps (restore packages, compile, containerize)
+4. Data then runs `aspire do test` to validate
+5. Aspire runs integration tests against the full AppHost
+6. If tests pass, Data runs `aspire do deploy-dev` to push to the development environment
+
+All of this is dependency-tracked — if the build hasn't changed, `aspire do test` skips re-building. Agents get a declarative pipeline they can invoke without understanding the full build graph.
+
+This is the missing piece. Before `aspire do`, agents could query the running system (via MCP), but they couldn't easily drive the build/test/deploy cycle. Now they can.
+
+### Dashboard Agent Hooks: One-Click Integration
+
+The Aspire Dashboard in 13.2 has direct integration for the agent/MCP, making it possible for AI tools to connect with one click. No more manually configuring MCP proxy scripts or hunting for port numbers — the dashboard exposes the agent endpoint prominently, and tools like Squad can auto-discover it.
+
+This lowers the barrier for agents to connect to Aspire. Instead of requiring developers to read the port isolation post and set up the proxy, Squad can detect the Aspire Dashboard, connect to the agent endpoint, and start querying immediately.
+
+### Even Deeper Polyglot Support
+
+Aspire 13 brought polyglot support (JavaScript, Python, Go as first-class citizens). Aspire 13.2 goes further:
+- **Native debugging** for Python and JavaScript projects
+- **Containerization out of the box** for all languages
+- **Uvicorn for FastAPI** (Python), **Vite for JS frameworks** — framework-specific optimizations
+- **Multi-language distributed tracing** that just works
+
+This strengthens the Squad integration because agents working across languages now get even better observability. A Python FastAPI service, a C# backend, and a TypeScript frontend all show up in the same distributed trace — and agents can query the entire flow via `aspire-list_traces`.
+
+### What This Means for the Future
+
+Aspire 13.2 isn't just an incremental update — it's a signal that the Aspire team is thinking about AI agents as core users. The `mcp` → `agent` rename, the `aspire do` pipeline, the dashboard agent hooks — these aren't features added for humans. They're features added because **agents need them**.
+
+And Squad benefits directly. The gap between "agents can query the system" and "agents can build, test, deploy, and monitor the system" is closing fast.
+
+---
+
 ## The Honest Version
 
 This isn't production-ready "set it and forget it" automation. Ralph sometimes over-files issues (I've had mornings with 12 notifications for the same root cause because five agents all independently detected the same unhealthy service). The agents occasionally mis-diagnose a problem — they see an error in the logs and assume causation when it's just correlation.
