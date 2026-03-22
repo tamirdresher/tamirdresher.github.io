@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="redGlow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+    <linearGradient id="greenGlow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Subtle grid pattern -->
+  <g opacity="0.05">
+    <line x1="0" y1="0" x2="1200" y2="0" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="70" x2="1200" y2="70" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="140" x2="1200" y2="140" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="210" x2="1200" y2="210" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="280" x2="1200" y2="280" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="350" x2="1200" y2="350" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="420" x2="1200" y2="420" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="490" x2="1200" y2="490" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="560" x2="1200" y2="560" stroke="white" stroke-width="1"/>
+  </g>
+
+  <!-- Title -->
+  <text x="600" y="100" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="800" fill="white">When Git Is Your Database</text>
+  <text x="600" y="150" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="24" fill="#94a3b8">The Enterprise State Problem Nobody Warned Me About</text>
+
+  <!-- Series badge -->
+  <rect x="440" y="170" width="320" height="32" rx="16" fill="url(#accent)" opacity="0.3"/>
+  <text x="600" y="192" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#93c5fd" font-weight="600">Part 7 · Scaling AI-Native Software Engineering</text>
+
+  <!-- LEFT SIDE: PR with mixed files -->
+  <g transform="translate(80, 240)">
+    <!-- PR box -->
+    <rect width="460" height="320" rx="12" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+    <rect width="460" height="44" rx="12" fill="#334155"/>
+    <rect x="0" y="32" width="460" height="12" fill="#334155"/>
+
+    <!-- PR header -->
+    <circle cx="24" cy="22" r="8" fill="#22c55e"/>
+    <text x="44" y="27" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" font-weight="600">PR #52 — Configurable namespace support</text>
+    <text x="420" y="27" text-anchor="end" font-family="monospace" font-size="12" fill="#64748b">97 files</text>
+
+    <!-- Code files (good) -->
+    <text x="20" y="70" font-family="monospace" font-size="11" fill="#22c55e">+ src/Services/NamespaceConfig.cs</text>
+    <text x="20" y="90" font-family="monospace" font-size="11" fill="#22c55e">+ src/Controllers/ProviderController.cs</text>
+    <text x="20" y="110" font-family="monospace" font-size="11" fill="#3b82f6">~ tests/NamespaceTests.cs</text>
+
+    <!-- Divider -->
+    <line x1="20" y1="125" x2="440" y2="125" stroke="#334155" stroke-width="1"/>
+    <text x="230" y="142" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#64748b">— 40 squad files below —</text>
+
+    <!-- Squad files (the problem) -->
+    <text x="20" y="165" font-family="monospace" font-size="11" fill="#ef4444">+ .squad/decisions/namespace-config.md</text>
+    <text x="20" y="185" font-family="monospace" font-size="11" fill="#ef4444">~ .squad/agents/data/history.md</text>
+    <text x="20" y="205" font-family="monospace" font-size="11" fill="#ef4444">~ .squad/agents/worf/history.md</text>
+    <text x="20" y="225" font-family="monospace" font-size="11" fill="#ef4444">~ .squad/schedule-state.json</text>
+    <text x="20" y="245" font-family="monospace" font-size="11" fill="#ef4444">~ .squad/orchestration-log/...</text>
+    <text x="20" y="265" font-family="monospace" font-size="11" fill="#ef4444">~ .squad/decisions.md</text>
+    <text x="20" y="285" font-family="monospace" font-size="11" fill="#475569">  ... 34 more .squad/ files</text>
+
+    <!-- Badge -->
+    <rect x="300" y="295" width="140" height="20" rx="10" fill="url(#redGlow)" opacity="0.8"/>
+    <text x="370" y="309" text-anchor="middle" font-family="sans-serif" font-size="11" fill="white" font-weight="600">Needs Approval ⏳</text>
+  </g>
+
+  <!-- ARROW -->
+  <g transform="translate(570, 380)">
+    <text x="30" y="0" font-family="sans-serif" font-size="40" fill="#64748b">→</text>
+    <text x="30" y="30" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#94a3b8">Meir reviews</text>
+    <text x="30" y="48" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#94a3b8">97 files 😱</text>
+  </g>
+
+  <!-- RIGHT SIDE: The reviewer's view -->
+  <g transform="translate(660, 240)">
+    <rect width="460" height="320" rx="12" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+    <rect width="460" height="44" rx="12" fill="#334155"/>
+    <rect x="0" y="32" width="460" height="12" fill="#334155"/>
+
+    <!-- Reviewer header -->
+    <circle cx="24" cy="22" r="8" fill="#f59e0b"/>
+    <text x="44" y="27" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" font-weight="600">Reviewer's Perspective</text>
+
+    <!-- What reviewer sees -->
+    <text x="230" y="100" text-anchor="middle" font-family="system-ui, sans-serif" font-size="72" fill="#ef4444" font-weight="800" opacity="0.9">40</text>
+    <text x="230" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#94a3b8">squad files they don't</text>
+    <text x="230" y="152" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#94a3b8">need to review</text>
+
+    <!-- vs -->
+    <line x1="80" y1="175" x2="380" y2="175" stroke="#334155" stroke-width="1"/>
+    <text x="230" y="200" text-anchor="middle" font-family="system-ui, sans-serif" font-size="56" fill="#22c55e" font-weight="800" opacity="0.9">3</text>
+    <text x="230" y="228" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#94a3b8">actual code files</text>
+    <text x="230" y="248" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#94a3b8">that matter</text>
+
+    <!-- Bottom quote -->
+    <text x="230" y="295" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#f97316" font-style="italic">"The squad couldn't remember things</text>
+    <text x="230" y="312" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#f97316" font-style="italic">without asking permission."</text>
+  </g>
+</svg>

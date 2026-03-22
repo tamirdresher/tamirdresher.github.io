@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700">
+  <defs>
+    <style>
+      .title { font: bold 18px sans-serif; fill: #2c3e50; }
+      .label { font: 14px sans-serif; fill: #34495e; }
+      .small { font: 11px sans-serif; fill: #7f8c8d; }
+      .pro { font: 12px sans-serif; fill: #27ae60; }
+      .con { font: 12px sans-serif; fill: #e74c3c; }
+      .approach1 { fill: #3498db; stroke: #2980b9; stroke-width: 2; }
+      .approach2 { fill: #9b59b6; stroke: #8e44ad; stroke-width: 2; }
+      .approach3 { fill: #e67e22; stroke: #d35400; stroke-width: 2; }
+    </style>
+  </defs>
+
+  <!-- Main Title -->
+  <text x="500" y="35" text-anchor="middle" class="title" font-size="22">Three Approaches to Enterprise State Management</text>
+
+  <!-- Approach 1: Orphan Branch -->
+  <g id="approach1">
+    <rect x="50" y="70" width="280" height="580" class="approach1" rx="8"/>
+    <text x="190" y="105" text-anchor="middle" class="label" fill="white" font-weight="bold" font-size="16">1. Orphan Branch</text>
+    <text x="190" y="130" text-anchor="middle" class="small" fill="white">squad/state (worktree)</text>
+    
+    <!-- Diagram -->
+    <rect x="70" y="150" width="240" height="120" fill="white" rx="4"/>
+    <text x="190" y="175" text-anchor="middle" class="small">Main Repo</text>
+    <rect x="85" y="185" width="90" height="30" fill="#3498db" rx="3"/>
+    <text x="130" y="205" text-anchor="middle" class="small" fill="white">main</text>
+    <rect x="190" y="185" width="105" height="30" fill="#3498db" rx="3"/>
+    <text x="242" y="205" text-anchor="middle" class="small" fill="white">feature/*</text>
+    
+    <line x1="70" y1="230" x2="310" y2="230" stroke="#95a5a6" stroke-width="1"/>
+    
+    <rect x="85" y="240" width="210" height="20" fill="#27ae60" rx="3"/>
+    <text x="190" y="255" text-anchor="middle" class="small" fill="white">squad/state (orphan)</text>
+    
+    <!-- Pros -->
+    <text x="70" y="295" class="label" font-weight="bold">✓ Pros:</text>
+    <text x="80" y="315" class="pro">• Zero PR delay</text>
+    <text x="80" y="335" class="pro">• Clean code diffs</text>
+    <text x="80" y="355" class="pro">• Independent audit trail</text>
+    <text x="80" y="375" class="pro">• No merge conflicts</text>
+    <text x="80" y="395" class="pro">• Same repo (Git stays single source)</text>
+    
+    <!-- Cons -->
+    <text x="70" y="430" class="label" font-weight="bold">✗ Cons:</text>
+    <text x="80" y="450" class="con">• git worktree is exotic</text>
+    <text x="80" y="470" class="con">• Setup complexity</text>
+    <text x="80" y="490" class="con">• Team education needed</text>
+    <text x="80" y="510" class="con">• IDE may not recognize .squad/</text>
+    
+    <!-- Complexity -->
+    <rect x="70" y="540" width="240" height="40" fill="#f39c12" rx="4"/>
+    <text x="190" y="565" text-anchor="middle" class="small" fill="white" font-weight="bold">Complexity: Medium</text>
+  </g>
+
+  <!-- Approach 2: Separate Repo -->
+  <g id="approach2">
+    <rect x="360" y="70" width="280" height="580" class="approach2" rx="8"/>
+    <text x="500" y="105" text-anchor="middle" class="label" fill="white" font-weight="bold" font-size="16">2. Separate Repo</text>
+    <text x="500" y="130" text-anchor="middle" class="small" fill="white">myrepo-squad</text>
+    
+    <!-- Diagram -->
+    <rect x="380" y="150" width="240" height="60" fill="white" rx="4"/>
+    <text x="500" y="175" text-anchor="middle" class="small">myrepo (code)</text>
+    <rect x="395" y="185" width="90" height="20" fill="#9b59b6" rx="3"/>
+    <text x="440" y="200" text-anchor="middle" class="small" fill="white">main</text>
+    
+    <text x="500" y="230" text-anchor="middle" class="small" font-weight="bold">+</text>
+    
+    <rect x="380" y="240" width="240" height="60" fill="white" rx="4"/>
+    <text x="500" y="265" text-anchor="middle" class="small">myrepo-squad (state)</text>
+    <rect x="395" y="275" width="105" height="20" fill="#27ae60" rx="3"/>
+    <text x="447" y="290" text-anchor="middle" class="small" fill="white">main</text>
+    
+    <!-- Pros -->
+    <text x="380" y="330" class="label" font-weight="bold">✓ Pros:</text>
+    <text x="390" y="350" class="pro">• Simpler than worktree</text>
+    <text x="390" y="370" class="pro">• Easy to understand</text>
+    <text x="390" y="390" class="pro">• Same isolation benefits</text>
+    <text x="390" y="410" class="pro">• Standard git clone workflow</text>
+    
+    <!-- Cons -->
+    <text x="380" y="445" class="label" font-weight="bold">✗ Cons:</text>
+    <text x="390" y="465" class="con">• Two repos to manage</text>
+    <text x="390" y="485" class="con">• Cross-repo references messy</text>
+    <text x="390" y="505" class="con">• Split context</text>
+    <text x="390" y="525" class="con">• Need to clone both repos</text>
+    
+    <!-- Complexity -->
+    <rect x="380" y="540" width="240" height="40" fill="#f39c12" rx="4"/>
+    <text x="500" y="565" text-anchor="middle" class="small" fill="white" font-weight="bold">Complexity: Low</text>
+  </g>
+
+  <!-- Approach 3: Auto-Merge Bot -->
+  <g id="approach3">
+    <rect x="670" y="70" width="280" height="580" class="approach3" rx="8"/>
+    <text x="810" y="105" text-anchor="middle" class="label" fill="white" font-weight="bold" font-size="16">3. Auto-Merge Bot</text>
+    <text x="810" y="130" text-anchor="middle" class="small" fill="white">GitHub Action</text>
+    
+    <!-- Diagram -->
+    <rect x="690" y="150" width="240" height="120" fill="white" rx="4"/>
+    <text x="810" y="175" text-anchor="middle" class="small">Main Repo (all files)</text>
+    <rect x="705" y="190" width="80" height="25" fill="#e67e22" rx="3"/>
+    <text x="745" y="207" text-anchor="middle" class="small" fill="white">src/*</text>
+    <rect x="795" y="190" width="120" height="25" fill="#27ae60" rx="3"/>
+    <text x="855" y="207" text-anchor="middle" class="small" fill="white">.squad/*</text>
+    
+    <text x="810" y="240" text-anchor="middle" class="small" font-weight="bold">⬇</text>
+    <text x="810" y="257" text-anchor="middle" class="small">PR only touches .squad/</text>
+    <text x="810" y="272" text-anchor="middle" class="small" font-weight="bold">→ Auto-approve</text>
+    
+    <!-- Pros -->
+    <text x="690" y="310" class="label" font-weight="bold">✓ Pros:</text>
+    <text x="700" y="330" class="pro">• One repo</text>
+    <text x="700" y="350" class="pro">• Minimal setup</text>
+    <text x="700" y="370" class="pro">• Standard workflow</text>
+    <text x="700" y="390" class="pro">• Easy to understand</text>
+    
+    <!-- Cons -->
+    <text x="690" y="425" class="label" font-weight="bold">✗ Cons:</text>
+    <text x="700" y="445" class="con">• Race conditions</text>
+    <text x="700" y="465" class="con">• Concurrent PR conflicts</text>
+    <text x="700" y="485" class="con">• Compliance approval for auto-merge</text>
+    <text x="700" y="505" class="con">• Still creates PRs (slower)</text>
+    <text x="700" y="525" class="con">• Noisy PR history</text>
+    
+    <!-- Complexity -->
+    <rect x="690" y="540" width="240" height="40" fill="#f39c12" rx="4"/>
+    <text x="810" y="565" text-anchor="middle" class="small" fill="white" font-weight="bold">Complexity: Low (but limited)</text>
+  </g>
+
+  <!-- Bottom Note -->
+  <text x="500" y="680" text-anchor="middle" class="label" fill="#7f8c8d">
+    Choose based on team size, compliance requirements, and tolerance for git complexity
+  </text>
+</svg>
