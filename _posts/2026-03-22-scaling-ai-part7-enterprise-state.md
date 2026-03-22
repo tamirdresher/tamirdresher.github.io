@@ -89,16 +89,25 @@ sequenceDiagram
     participant S as Squad State
     participant R as Reviewer
 
-    Note over A,R: ❌ The problem — everything in one repo
-    A->>C: commit code + .squad/ changes
-    A->>C: open PR (97 files 😬)
-    R->>C: review PR — code or squad diary?
-    Note over R: 40 min reading squad's memory
+    rect rgb(255, 220, 220)
+        Note over A,R: ❌ BEFORE — mixed repo, approval required for everything
+        A->>C: commit code + .squad/ changes
+        A->>C: open PR (97 files 😬)
+        C-->>R: review request
+        Note over R: 40 min reading squad diary instead of code
+        R->>C: slow approval
+        C-->>A: merged — squad state was blocked until now
+    end
 
-    Note over A,R: ✅ The solution — separated state
-    A->>C: commit code only → PR (12 files)
-    A->>S: push squad state directly (no PR)
-    R->>C: clean diff, done in 5 min
+    rect rgb(220, 255, 220)
+        Note over A,R: ✅ AFTER — separated state, no PR required for agent memory
+        A->>C: commit code only → PR (12 files)
+        A->>S: push squad state directly — no PR, no wait
+        C-->>R: review request (clean diff)
+        Note over R: 5 min review — only actual code changes
+        R->>C: quick approval
+        Note over S: squad state has been live since first push
+    end
 </div>
 
 *One of these workflows makes your teammates happy. The other one explains why Meir called me that morning.*
@@ -501,3 +510,4 @@ This is one of those problems where the "right" answer depends entirely on your 
 > - **Part 5**: [Knowledge is Power — How an AI Squad Learns to Evolve Itself](/blog/2026/03/18/scaling-ai-part5-evolution)
 > - **Part 6**: [9 AI Agents, One API Quota — The Rate Limiting Problem](/blog/2026/03/20/rate-limiting-multi-agent)
 > - **Part 7**: When Git Is Your Database — The Enterprise State Problem ← You are here
+
