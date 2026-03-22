@@ -246,6 +246,152 @@ This is the "maybe we can have our cake and eat it too" option. I haven't implem
 
 ---
 
+## One More Thing: You Don't Actually Need GitHub
+
+I shared a draft of this post with a few colleagues before publishing, and one of them left a comment that made me stop and stare at the ceiling for a while.
+
+He pointed out something I'd completely glossed over: *all four approaches above assume you're using GitHub*. Branch protection. Pull requests. GitHub Actions for auto-merge. Even the "separate repo" approach assumes you're creating a GitHub repo and pushing to it.
+
+But here's the thing I'd missed: **the problem was never git. The problem was combining git with GitHub's PR workflow.**
+
+Let me say that again, because it's the kind of insight that feels obvious in retrospect. Squad state needs to move fast — commit, push, done, no waiting. GitHub's PR workflow is designed to slow things down — review, approve, merge. Those two things are not compatible. But the *git part*? The part where you track every change with a commit, get full history, can branch and merge? That part is great. That's exactly what you want for squad state.
+
+The insight: **Approach 2 (separate repo) was right in spirit, but didn't go far enough**. You don't need GitHub *at all* for the squad state repo. You just need a git repo. Those are different things.
+
+### Going Fully Local
+
+Here's the simplest version of Approach 2 that nobody mentioned:
+
+```bash
+# Create a local bare git repo for squad state — no GitHub required
+git init --bare ~/squad-state/myapp.git
+
+# Mount it into .squad/ from your main repo
+git clone ~/squad-state/myapp.git .squad
+```
+
+That's it. A bare repo on your local filesystem. Agents push to it directly — `git push` works exactly the same, just to a `file://` path instead of `https://`. Full git history. Full branching. Works completely offline. No PR required. No branch protection to configure. No GitHub Action to write or get approved by your security team.
+
+The squad state is versioned. Auditable. Branchable. And completely autonomous.
+
+### The Initializer Problem (And Its Solution)
+
+At this point you might be thinking: "But someone has to bootstrap this. Where does the setup script live?"
+
+Back in the main repo. It has to — that's the one inescapable constraint. There needs to be *something* in the code repo that knows how to initialize the squad state location. But this is actually fine, and it's simpler than it sounds:
+
+```bash
+#!/usr/bin/env bash
+# scripts/squad-init.sh — Run once after cloning the repo.
+
+REPO_NAME=$(basename "$(git rev-parse --show-toplevel)")
+SQUAD_REPO="$HOME/squad-state/${REPO_NAME}.git"
+
+# Create the local squad state repo if it doesn't exist
+if [ ! -d "$SQUAD_REPO" ]; then
+  echo "Creating local squad state repo at $SQUAD_REPO"
+  mkdir -p "$SQUAD_REPO"
+  git init --bare "$SQUAD_REPO"
+fi
+
+# Clone it into .squad/
+if [ ! -d ".squad" ]; then
+  git clone "$SQUAD_REPO" .squad
+fi
+
+# Keep .squad/ out of the main repo (no .gitignore pollution)
+grep -qxF ".squad" .git/info/exclude || echo ".squad" >> .git/info/exclude
+
+# Install the post-checkout hook
+cp scripts/hooks/post-checkout .git/hooks/post-checkout
+chmod +x .git/hooks/post-checkout
+
+echo "✓ Squad state initialized at $SQUAD_REPO"
+```
+
+Run once after cloning: `./scripts/squad-init.sh`. The `.squad/` directory appears, local to your machine, completely private, no GitHub involved. The two files that live in the main repo (`scripts/squad-init.sh` and `scripts/hooks/post-checkout`) are the only Squad artifacts that need to be there — and they're just shell scripts, not state.
+
+### Handling Multiple Worktrees
+
+Here's where the second wrinkle shows up. If you use git worktrees (and if you're running a squad on a non-trivial codebase, you probably should), you might have something like:
+
+```
+/projects/myapp/            ← main worktree, branch: main
+/projects/myapp-feature-x/  ← added worktree, branch: feature/auth-refactor
+```
+
+Each worktree needs its own `.squad/` directory pointing to the *matching branch* in the squad state repo. If both worktrees shared the same squad state, agents on different features would overwrite each other's decisions and history files. Which would be a disaster. Or at least a very confusing afternoon.
+
+The solution is a `post-checkout` hook that runs automatically when you `git worktree add` or `git checkout`:
+
+```bash
+#!/usr/bin/env bash
+# scripts/hooks/post-checkout
+# Runs after checkout. Wires up .squad/ to the right squad branch.
+
+REPO_NAME=$(basename "$(git rev-parse --show-toplevel)")
+SQUAD_REPO="$HOME/squad-state/${REPO_NAME}.git"
+CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "detached")
+WORKTREE_ROOT=$(git rev-parse --show-toplevel)
+SAFE_BRANCH=$(echo "$CURRENT_BRANCH" | tr '/' '-')
+SQUAD_WORKTREE="$HOME/squad-state/${REPO_NAME}-${SAFE_BRANCH}"
+
+# Create a matching branch in the squad repo if it doesn't exist
+if ! git -C "$SQUAD_REPO" rev-parse --verify "$CURRENT_BRANCH" &>/dev/null 2>&1; then
+  echo "Creating squad branch: $CURRENT_BRANCH"
+  # Clone briefly to create the branch, then clean up
+  TMPDIR=$(mktemp -d)
+  git clone "$SQUAD_REPO" "$TMPDIR/tmp-squad"
+  git -C "$TMPDIR/tmp-squad" checkout -b "$CURRENT_BRANCH"
+  git -C "$TMPDIR/tmp-squad" push origin "$CURRENT_BRANCH"
+  rm -rf "$TMPDIR"
+fi
+
+# Set up the matching squad worktree
+if [ ! -d "$SQUAD_WORKTREE" ]; then
+  git clone --branch "$CURRENT_BRANCH" "$SQUAD_REPO" "$SQUAD_WORKTREE"
+fi
+
+# Point .squad/ at it
+rm -f "$WORKTREE_ROOT/.squad"
+ln -s "$SQUAD_WORKTREE" "$WORKTREE_ROOT/.squad"
+
+echo "Squad state → $SQUAD_WORKTREE ($CURRENT_BRANCH)"
+```
+
+About 20 lines of shell. When you run `git worktree add /projects/myapp-feature-x feature/auth-refactor`, the hook fires, creates a matching `feature/auth-refactor` branch in the local squad state repo, sets up a dedicated working directory for it, and symlinks `.squad/` there.
+
+Branch names match. Squad state stays isolated per feature. No cross-contamination between worktrees. The squad repo has worktrees too — one per feature branch — but that's fine, because they're just directories, and the hook manages them automatically.
+
+### When Would You Use GitHub, Then?
+
+The local-only setup is great for personal projects or solo workflows. For teams, you probably still want a remote for backup and sync. But here's the crucial point: **the remote doesn't need branch protection.**
+
+Create a GitHub repo, push the squad state there — but don't configure any branch protection rules. No required reviewers. No PR workflow. Agents push directly to whatever branch they're on. GitHub becomes a backup and sync point, not a gate:
+
+```bash
+# Add GitHub as a remote for backup/sync (optional team setup)
+git -C .squad remote add origin git@github.com:myorg/myapp-squad.git
+git -C .squad push -u origin main
+```
+
+Now squad state is backed up to GitHub on every push. Team members can clone `myapp-squad` directly instead of running the init script from scratch. But there are no PRs, no approvals, no notifications. Just git doing what git does.
+
+**Use GitHub for squad state when:**
+- You want cloud backup for the state history
+- Multiple team members need to sync state across machines
+- You want visibility into squad decisions across branches from a central location
+
+**Skip GitHub entirely when:**
+- You're the only developer, running everything locally
+- Your squad runs on a single machine
+- You're in an air-gapped or restricted environment
+- You just want to try Squad without creating new repositories or filing tickets to get branch protection configured
+
+The real insight: I framed this whole post as a "git as database" problem, but that framing was slightly wrong. The actual problem is **two different workflows living in the same repo** — a slow, human-gated workflow for code and a fast, autonomous workflow for squad state. Separate the repos, separate the workflows, and the mismatch disappears. GitHub is just one option for where the second repo lives. A directory on your `~` drive works just as well.
+
+---
+
 ## What I'm Actually Doing
 
 Right now? I'm running **Approach 1 (Orphan Branch)** in my personal repos and a hybrid of **Approach 2 (Separate Repo)** in the work repo while I socialize the worktree approach with the team.
