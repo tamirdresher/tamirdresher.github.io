@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#512BD4;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#0078D4;stop-opacity:0.1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="400" fill="url(#bgGradient)"/>
+  
+  <!-- Aspire Logo (Left) -->
+  <g transform="translate(150, 200)">
+    <circle cx="0" cy="0" r="60" fill="#512BD4" opacity="0.2"/>
+    <circle cx="0" cy="0" r="45" fill="#512BD4" opacity="0.4"/>
+    <text x="0" y="10" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#512BD4" text-anchor="middle">A</text>
+    <text x="0" y="80" font-family="Arial, sans-serif" font-size="18" fill="#333" text-anchor="middle" font-weight="600">Aspire</text>
+    <text x="0" y="100" font-family="Arial, sans-serif" font-size="12" fill="#666" text-anchor="middle">App Orchestrator</text>
+  </g>
+  
+  <!-- Heart (Center) -->
+  <g transform="translate(400, 200)">
+    <path d="M0,-20 C-10,-40 -40,-40 -40,-20 C-40,0 0,30 0,30 C0,30 40,0 40,-20 C40,-40 10,-40 0,-20 Z" 
+          fill="#E74856" opacity="0.9"/>
+    <text x="0" y="60" font-family="Arial, sans-serif" font-size="14" fill="#666" text-anchor="middle" font-weight="600">MCP/CLI Bridge</text>
+  </g>
+  
+  <!-- Squad Logo (Right) -->
+  <g transform="translate(650, 200)">
+    <circle cx="0" cy="0" r="60" fill="#0078D4" opacity="0.2"/>
+    <circle cx="0" cy="0" r="45" fill="#0078D4" opacity="0.4"/>
+    <text x="0" y="10" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#0078D4" text-anchor="middle">S</text>
+    <text x="0" y="80" font-family="Arial, sans-serif" font-size="18" fill="#333" text-anchor="middle" font-weight="600">Squad</text>
+    <text x="0" y="100" font-family="Arial, sans-serif" font-size="12" fill="#666" text-anchor="middle">AI Team Orchestrator</text>
+  </g>
+  
+  <!-- Connection Lines -->
+  <line x1="210" y1="200" x2="360" y2="200" stroke="#512BD4" stroke-width="3" opacity="0.5" stroke-dasharray="5,5"/>
+  <line x1="440" y1="200" x2="590" y2="200" stroke="#0078D4" stroke-width="3" opacity="0.5" stroke-dasharray="5,5"/>
+  
+  <!-- Title -->
+  <text x="400" y="40" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#333" text-anchor="middle">
+    Aspire + Squad = ❤️
+  </text>
+  <text x="400" y="65" font-family="Arial, sans-serif" font-size="14" fill="#666" text-anchor="middle">
+    When Your App Platform Meets Your AI Team
+  </text>
+  
+  <!-- Bottom Text -->
+  <text x="400" y="380" font-family="Arial, sans-serif" font-size="12" fill="#999" text-anchor="middle">
+    Observability meets autonomy. Runtime meets development. One codebase, two orchestrators.
+  </text>
+</svg>
