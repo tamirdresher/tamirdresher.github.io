@@ -14,7 +14,7 @@
     <circle cx="0" cy="0" r="60" fill="#512BD4" opacity="0.2"/>
     <circle cx="0" cy="0" r="45" fill="#512BD4" opacity="0.4"/>
     <text x="0" y="10" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#512BD4" text-anchor="middle">A</text>
-    <text x="0" y="80" font-family="Arial, sans-serif" font-size="18" fill="#333" text-anchor="middle" font-weight="600">.NET Aspire</text>
+    <text x="0" y="80" font-family="Arial, sans-serif" font-size="18" fill="#333" text-anchor="middle" font-weight="600">Aspire</text>
     <text x="0" y="100" font-family="Arial, sans-serif" font-size="12" fill="#666" text-anchor="middle">App Orchestrator</text>
   </g>
   
