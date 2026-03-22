@@ -134,7 +134,7 @@ That's why [I wrote](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html) t
 
 ## How Squad Detects Aspire Tools
 
-This isn't magic. Squad's coordinator (`squad.agent.md`) explicitly looks for MCP tools prefixed with `aspire-*` and routes them to agents based on their roles.
+This isn't magic. Squad's coordinator (`squad.agent.md`) [explicitly](https://github.com/bradygaster/squad/blob/dev/.squad-templates/squad.agent.md#detection) looks for MCP tools prefixed with `aspire-*` and routes them to agents based on their roles.
 
 From the Squad source:
 
