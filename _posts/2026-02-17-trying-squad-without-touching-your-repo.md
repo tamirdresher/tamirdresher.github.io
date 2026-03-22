@@ -277,7 +277,7 @@ Add-Content -Path ".git\info\exclude" -Value @"
 
 The core pattern still works exactly the same way—keep Squad's files in a separate repo, symlink them in, and use `.git/info/exclude` to hide them locally. You just need to adjust the directory names for the new version.
 
-For a working example of the symlink pattern in a real production repo, check out [vapor-squad](https://github.com/spboyer/vapor-squad)—Scott Hunter's team at Microsoft is using this approach to keep Squad state separate from their main codebase.
+For a working example of the symlink pattern in a real production repo, check out [vapor-squad](https://github.com/spboyer/vapor-squad)— A real team at Microsoft is using this approach to keep Squad state separate from their main codebase.
 
 If you're coming from an older Squad version, the [migration guide](https://bradygaster.github.io/squad/docs/guide/migration/) has step-by-step instructions for upgrading.
 
