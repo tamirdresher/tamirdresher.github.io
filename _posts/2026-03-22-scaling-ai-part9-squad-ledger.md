@@ -13,7 +13,7 @@ In [Part 7](/blog/2026/03/22/scaling-ai-part7-enterprise-state), I showed you th
 
 I laid out four approaches and said "I'm still figuring it out."
 
-I couldn't leave it at that. The problem kept nagging at me, and I think I found the answer.
+I couldn't leave it at that. The problem kept nagging at me, and I think I found an approach that could work. I haven't implemented it yet — this post is me thinking through the design, evaluating the options, and proposing what I believe is the right pattern. I'll test it and report back.
 
 ---
 
@@ -179,7 +179,7 @@ sed -i "s/Lifecycle: \`pending-merge\`\(.*branch:${BRANCH_NAME}\)/Lifecycle: \`w
 
 It's `sed`. Not a database migration, not a state machine library, not a Kubernetes operator. Just `sed`. Because the ledger is a Markdown file, and text manipulation tools that have been stable since 1974 are exactly the right level of complexity for this job.
 
-That was the plan, anyway. And it worked. But something kept bugging me.
+That was the plan, anyway. But something kept bugging me.
 
 ---
 
@@ -187,7 +187,7 @@ That was the plan, anyway. And it worked. But something kept bugging me.
 
 I want you to appreciate the irony of what I'm about to tell you.
 
-I spent time designing the lifecycle system above. I built the state machine. I wrote the `sed` commands. I coded the GitHub Actions workflow with its three triggers and its drift detection. I even made a table with five lifecycle states and felt *clever* about it.
+I was sketching out the lifecycle system above — the state machine, the `sed` commands, the GitHub Actions workflow with three triggers and drift detection. I even drew a table with five lifecycle states and felt *clever* about it.
 
 And then, while reading a Gerrit code review architecture document (as one does), I stumbled across a feature that's been in Git since 2010.
 
@@ -228,7 +228,7 @@ Remember my three scenarios from earlier? The rejected feature, the universal tr
 
 Let me say that again because I'm still a little angry I didn't see it sooner: **Git's own reachability model IS the lifecycle engine.** Commits that land in `main` are reachable. Commits on rejected branches are not. Notes follow commits. Therefore, decisions follow the branches they were made on — automatically, with zero application code.
 
-All those lifecycle states I designed? `pending-merge`, `merged`, `withdrawn`, `superseded`? They were a hand-built reimplementation, in fragile `sed` and Markdown regex, of what Git's commit graph already provides for free.
+All those lifecycle states I was designing? `pending-merge`, `merged`, `withdrawn`, `superseded`? They'd be a hand-built reimplementation, in fragile `sed` and Markdown regex, of what Git's commit graph already provides for free.
 
 I felt the way you feel when you discover the standard library has a function for the thing you just spent a weekend implementing. Except worse, because this function has existed since before I started using Git.
 
@@ -492,7 +492,7 @@ That's the real workflow. Not pseudocode, not a conceptual diagram — the actua
 
 ## Try It Yourself
 
-I've published two repos you can use right now:
+I've set up two prototype repos to explore this pattern:
 
 **The ledger:** [tamirdresher/squad-state-upstream](https://github.com/tamirdresher/squad-state-upstream)
 This is the state storage repo. It has a `squad/state` branch with the `.squad/` directory structure. Clone it, browse it, see how the decisions and agent histories are structured.
@@ -562,42 +562,37 @@ That's both tiers. Tier 1 syncs permanent state via GitHub Actions when PRs merg
 
 ## The Honest Version
 
-Here's what's still rough. I'm not going to pretend this is production-hardened at scale — though the Git Notes revelation did sand off a lot of the sharp edges.
+Here's what I'm still working through. This is a proposed design, not a battle-tested production system.
 
-**The biggest simplification: lifecycle management is gone.** The original `sed`-based lifecycle transitions — `pending-merge` → `merged`, `pending-merge` → `withdrawn` — were the most fragile part of the system. They broke if you forgot backticks, they raced on concurrent merges, they silently skipped malformed entries. Git Notes eliminated all of that. Branch-scoped decisions now follow commit reachability, which is handled by Git itself. I deleted the lifecycle state machine and nothing broke. Things actually got *better*.
+**The biggest simplification: lifecycle management might not be needed.** The original `sed`-based lifecycle transitions — `pending-merge` → `merged`, `pending-merge` → `withdrawn` — would be the most fragile part of the system. Git Notes could eliminate all of that. Branch-scoped decisions would follow commit reachability, handled by Git itself. That's the theory — I still need to validate it at scale.
 
-**But GitHub's UI is blind to notes.** This is the trade-off. Your code reviewers won't see squad notes in the PR diff or the commit view. For AI agents that consume everything via `git log --show-notes`, this is a non-issue. For humans who want to browse decisions in the GitHub web UI? They'll need to use the CLI or wait for GitHub to add notes rendering. (GitHub, if you're reading this — please.)
+**But GitHub's UI is blind to notes.** This is the trade-off. Code reviewers won't see squad notes in the PR diff or the commit view. For AI agents that consume everything via `git log --show-notes`, this is a non-issue. For humans who want to browse decisions in the GitHub web UI? They'll need to use the CLI. (GitHub, if you're reading this — please add notes rendering.)
 
-**Notes aren't fetched by default.** Every new clone needs `git config --add remote.origin.fetch "+refs/notes/squad/*:refs/notes/squad/*"`. If an agent forgets this config, it silently doesn't see any branch-scoped decisions. The fix is to add it to your squad bootstrap script, but it's one more thing to remember.
+**Notes aren't fetched by default.** Every new clone needs `git config --add remote.origin.fetch "+refs/notes/squad/*:refs/notes/squad/*"`. If an agent forgets this config, it silently doesn't see any branch-scoped decisions. That needs to be part of the bootstrap.
 
-**The `merge=union` strategy for Tier 1 isn't bulletproof.** For the ledger's Markdown files — decisions, routing rules, agent histories — union merge works great because they're self-contained blocks separated by `---` dividers. It works terribly for JSON, which is why we exclude JSON state files from the ledger sync. But even for Markdown, if two agents add entries with the same heading at the same line, union merge can produce duplicates. In practice this is rare. In theory it's a bug waiting to happen.
+**Concurrent notes can conflict.** If two agents push notes to the same ref at the same time, one push will fail with a non-fast-forward error. `git notes merge` exists and handles this, but agents need to be taught to fetch-merge-push. Gerrit does this at Google scale, so it's a solved problem — but I haven't tested it with Squad yet.
 
-**Concurrent notes can conflict.** If two agents push notes to the same `refs/notes/squad/decisions` ref at the same time, one push will fail with a non-fast-forward error. `git notes merge` exists and handles this, but agents need to be taught to fetch-merge-push instead of just push. Gerrit solves this at Google scale, so it's a solved problem — it's just not something Git does automatically.
+**Agent compliance is still voluntary.** The two-tier split makes it clearer *where* to write (permanent → Tier 1, branch-scoped → Tier 2 notes), but agents are LLMs. They might write a branch-scoped decision to `decisions.md` instead of as a note. There's no schema enforcement — it's conventions and good prompting.
 
-**Agent compliance is still voluntary.** The two-tier split made it clearer *where* to write (permanent → Tier 1, branch-scoped → Tier 2 notes), but agents are LLMs. They sometimes write a branch-scoped decision to `decisions.md` instead of as a note, or vice versa. There's no schema enforcement — it's conventions and good prompting all the way down.
-
-**If I were starting over** — which, honestly, the Git Notes discovery basically forced me to do — I'd start with the two-tier model from day one. Tier 1 for permanent state on the orphan branch, Tier 2 for branch-scoped state via Git Notes. No lifecycle states, no `sed`, no transition workflows. The five-state model wasn't wrong, exactly — it correctly identified the problem. It just solved it at the wrong layer. Git's commit graph was already the state machine I needed.
+**Next steps:** I'm going to test this with a real squad on a real repo and report back. If you want to experiment alongside me, the prototype repos are above.
 
 ---
 
-## What This Actually Solves
+## What This Could Solve
 
-Let me circle back to the problems from [Part 7](/blog/2026/03/22/scaling-ai-part7-enterprise-state):
+If this pattern works as I expect, here's what it addresses from [Part 7](/blog/2026/03/22/scaling-ai-part7-enterprise-state):
 
-| Problem | Before | After (Ledger + Git Notes) |
+| Problem | Before | Proposed (Ledger + Git Notes) |
 |---------|--------|-------|
 | PRs cluttered with squad state | 40+ `.squad/` files in every PR | Zero — state syncs independently via Tier 1 |
-| Agent decisions lost on PR rejection | Decisions either persisted incorrectly or were deleted entirely | Git Notes follow commit reachability — merged commits keep their notes, rejected branches don't |
-| Lifecycle management complexity | `sed`-based state machine with five states and three workflow triggers | No lifecycle code — Git's commit graph IS the lifecycle |
+| Agent decisions lost on PR rejection | Decisions either persisted incorrectly or were deleted entirely | Git Notes would follow commit reachability — merged commits keep notes, rejected branches don't |
+| Lifecycle management complexity | Custom state machine with five states and three workflow triggers | No lifecycle code — Git's commit graph IS the lifecycle |
 | Parallel agents with stale state | Each branch had its own copy, no cross-branch visibility | Tier 1 (shared ledger) + Tier 2 (Git Notes) — each with the right persistence model |
-| JSON merge corruption | Git line-merge on JSON = broken state | JSON excluded from sync, Markdown with `merge=union` for Tier 1 |
 | Reviewer cognitive overload | "Why is there 700 lines of orchestration log in my auth PR?" | Code PRs only contain code |
 
-Is it perfect? No. Is it significantly better than what I had? Absurdly so. The code reviewers on my team no longer have to wade through agent diaries to find the actual feature changes. The agents can remember things without asking permission first. And when a feature gets rejected, the team's collective knowledge doesn't get thrown out with the bathwater — branch-scoped decisions just naturally fade with the commits they were attached to, while the permanent stuff stays on the ledger forever.
+I think this is the right direction. The two-tier pattern matches persistence model to data lifecycle — permanent state on a permanent branch, branch-scoped state on branch-scoped commits. That's basically database normalization applied to git refs.
 
-The two-tier pattern turned out to be one of those solutions that feels obvious in retrospect — of course you should match your persistence model to your data's lifecycle. Permanent state goes on a permanent branch. Branch-scoped state goes on branch-scoped commits. That's just database normalization applied to git refs. But it took running a squad in an enterprise context for a couple of months, building an entire lifecycle state machine, and then discovering `git notes` at 1 AM to make the solution click.
-
-Sometimes the best engineering is realizing that someone already solved your problem fifteen years ago and you just didn't know to look.
+I'll be testing this over the next few weeks and will share what I find. If you try it before I do, let me know how it goes — tag me on [Twitter/X](https://twitter.com/tamir_dresher).
 
 ---
 
