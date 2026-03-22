@@ -319,7 +319,7 @@ If you're running Aspire and you're curious about AI-assisted development, this 
 **1. Run an Aspire AppHost:**
 ```bash
 cd your-app/AppHost
-dotnet run
+aspire run // or simply 'dotnet run' 
 # Aspire Dashboard starts on https://localhost:18888
 ```
 
