@@ -9,9 +9,6 @@ series_part: 9
 
 ![The Squad Ledger](/assets/scaling-ai-part9-squad-ledger/hero.png)
 
-> *"A library is not a luxury but one of the necessities of life."*
-> — Henry Ward Beecher (who clearly never dealt with merge conflicts in his library's card catalog)
-
 In [Part 7](/blog/2026/03/22/scaling-ai-part7-enterprise-state), I showed you the mess. Ninety-seven files in a PR. Forty of them squad memory. Corrupted JSON from line-based merges. Two agents making decisions in parallel that neither could see. Code reviewers drowning in `.squad/` diffs instead of reviewing actual features.
 
 I laid out four approaches and said "I'm still figuring it out."
@@ -20,17 +17,11 @@ I couldn't leave it at that. The problem kept nagging at me, and I think I found
 
 ---
 
-## Why "Upstream" Was the Wrong Word
+## The Ledger Pattern
 
-When I first built the state synchronization system, I called the external repo "upstream." As in, `.squad/upstream.json` pointed to the repo where shared state lived. The scripts were called "sync upstream." The config file was `upstream-config.json`.
+When I started thinking about where to put the squad state if not in the main repo, I kept coming back to the idea of a side-repo. But calling it "upstream" was confusing — in git, "upstream" already means the remote you pull from. So I started thinking of it as a **Ledger** — a separate, append-only record of everything the squad knows and decides.
 
-The problem? In git, "upstream" already means something very specific: *the remote you pull from*. When I said "push state upstream," it was confusing — did I mean `git push origin`? The parent Squad repo? The separate repo where agent memory lives?
-
-So I renamed it: **Ledger**.
-
-The new name: **Ledger**.
-
-It's not poetry. It's accounting. And that's exactly the right metaphor:
+The metaphor fits:
 
 - **Append-only** — you don't rewrite history in a ledger. You add new entries.
 - **Authoritative** — when there's a disagreement about what was decided, the ledger is the source of truth.
@@ -38,7 +29,7 @@ It's not poetry. It's accounting. And that's exactly the right metaphor:
 - **Timestamped** — every entry has a date, an author, and a context.
 - **Never deleted** — even voided entries stay in the book, crossed out but visible.
 
-Financial ledgers have worked this way for five hundred years. Turns out the same properties are exactly what you need for AI agent memory. Who knew double-entry bookkeeping would be relevant to my Star Trek–themed automation setup.
+Financial ledgers have worked this way for five hundred years. Turns out the same properties are exactly what you need for AI agent memory.
 
 ---
 
