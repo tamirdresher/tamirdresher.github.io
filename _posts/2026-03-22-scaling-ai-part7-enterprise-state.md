@@ -38,7 +38,7 @@ Files changed: 97
 
 Ninety-seven files. Forty of them were squad state. For a feature that touched maybe a dozen actual source files.
 
-I scrolled through the diff. The actual code changes were clean — `src/auth/middleware.go`, `src/auth/tokens.go`, `tests/auth_test.go`. Five minutes to review. Perfect.
+I scrolled through the diff. The actual C# changes were reasonable — service configuration, some new classes, updated tests. Maybe 15 minutes to review properly.
 
 But the other 731 files? All `.squad/` state:
 
