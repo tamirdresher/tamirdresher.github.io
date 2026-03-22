@@ -26,23 +26,23 @@ Specifically: your agents need permission to remember things.
 
 ## The Moment I Realized We Had a Problem
 
-A couple of days after I started working with Squad, the agents were doing their thing — picking up issues, writing code, opening PRs. It was working great. Data picked up an authentication bug, did his analysis, wrote a decision doc, fixed the code, added tests, and opened a pull request. All autonomously, while I was sleeping.
+A couple of days after I started working with Squad, the agents were doing their thing — picking up issues, writing code, opening PRs. It was working great. Data picked up a feature request for our C# platform service, did his analysis, wrote a decision doc, implemented the changes, added tests, and opened a pull request. All autonomously, while I was doing other work.
 
 I woke up, checked the PR, and saw this:
 
 ```
-Files changed: 734
-+ 1,200 additions
-- 300 deletions
+Files changed: 97
++ squad files: 40
++ actual code: 57
 ```
 
-Seven hundred and thirty-four files. For a three-file authentication fix.
+Ninety-seven files. Forty of them were squad state. For a feature that touched maybe a dozen actual source files.
 
 I scrolled through the diff. The actual code changes were clean — `src/auth/middleware.go`, `src/auth/tokens.go`, `tests/auth_test.go`. Five minutes to review. Perfect.
 
 But the other 731 files? All `.squad/` state:
 
-- `.squad/decisions/auth-strategy-2026-03-19.md` — Data's decision analysis
+- `.squad/decisions/namespace-config-2026-03.md` — Data's decision analysis
 - `.squad/agents/data/history.md` — updated with this work session
 - `.squad/agents/worf/history.md` — Worf reviewed the security implications
 - `.squad/schedule-state.json` — Ralph's orchestration state
@@ -50,7 +50,7 @@ But the other 731 files? All `.squad/` state:
 - `.squad/ceremonies/daily-sync/2026-03-19.md` — sync notes
 - ... 725 more files ...
 
-The PR was 95% squad memory, 5% actual work. And here's the thing about Microsoft repos — you can't push to main. Period. Every PR requires at least one other person to approve it. Not a bot, not yourself — another human. So my teammate Meir opened the PR, saw hundreds of files, and started reading through them — trying to figure out what actually changed. But those `.squad/` files had nothing to do with the 2-3 files of actual code that were modified. The cognitive load was insane. He was reviewing the squad's internal diary instead of the auth fix.
+The PR was almost half squad memory, half actual work. And here's the thing about Microsoft repos — you can't push to main. Period. Every PR requires at least one other person to approve it. Not a bot, not yourself — another human. So my teammate Meir opened the PR, saw 97 files, and started reading through them — trying to figure out what actually changed. But 40 of those files had nothing to do with the code that was modified. The cognitive load was insane. He was reviewing the squad's internal diary instead of the actual feature.
 
 **The squad couldn't remember things without asking permission. And the humans who gave permission couldn't find the actual work buried under the squad's memory.**
 
@@ -65,13 +65,13 @@ Here's the root problem. Squad's design philosophy is "Git as database." The `.s
 - **Ceremony logs** — daily syncs, retrospectives, planning notes
 - **Orchestration state** — Ralph's work queue, scheduling metadata, coordination files
 
-All of this lives in the same repo as the code. Which means when Data makes a code change on `feature/auth`, his branch includes both the code *and* the new squad state from this work session.
+All of this lives in the same repo as the code. Which means when Data makes a code change on a feature branch, his branch includes both the code *and* the new squad state from this work session.
 
 Meanwhile, Seven is working on documentation on `feature/docs`. Her branch has her own squad state updates — new decisions, updated history files, ceremony notes.
 
 Both PRs go up. Both sit waiting for approval. And here's the kicker: **neither branch sees the other's decisions until both PRs merge.**
 
-Data doesn't know about Seven's decision to standardize on a new doc format. Seven doesn't know about Data's authentication decision. They're working with stale state, making decisions in parallel that might conflict.
+Data doesn't know about Seven's decision to standardize on a new doc format. Seven doesn't know about Data's feature decision. They're working with stale state, making decisions in parallel that might conflict.
 
 And when both PRs finally merge? Git tries to auto-merge `.squad/schedule-state.json` — a JSON file — using a line-based merge strategy. JSON doesn't merge line-by-line. It corrupts. I've fixed three corrupted JSON files in the past month alone.
 
@@ -108,7 +108,7 @@ git push -u origin squad/state
 git worktree add .squad squad/state
 ```
 
-Now `.squad/` is a worktree — it points to the `squad/state` branch. When you switch between code branches (`git checkout feature/auth`), `.squad/` **stays put**. It's always on `squad/state`, regardless of what code branch you're on.
+Now `.squad/` is a worktree — it points to the `squad/state` branch. When you switch between code branches, `.squad/` **stays put**. It's always on `squad/state`, regardless of what code branch you're on.
 
 ![Orphan Branch Architecture](/assets/scaling-ai-part7-enterprise-state/orphan-branch-architecture.svg)
 
