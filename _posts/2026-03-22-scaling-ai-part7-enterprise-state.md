@@ -45,7 +45,7 @@ Ninety-seven files. Forty of them were squad state. For a feature that touched m
 
 I scrolled through the diff. The actual C# changes were reasonable — service configuration, some new classes, updated tests. Maybe 15 minutes to review properly.
 
-But the other 731 files? All `.squad/` state:
+But the other 40 files? All `.squad/` state:
 
 - `.squad/decisions/namespace-config-2026-03.md` — Data's decision analysis
 - `.squad/agents/data/history.md` — updated with this work session
@@ -78,7 +78,7 @@ Both PRs go up. Both sit waiting for approval. And here's the kicker: **neither 
 
 Data doesn't know about Seven's decision to standardize on a new doc format. Seven doesn't know about Data's feature decision. They're working with stale state, making decisions in parallel that might conflict.
 
-And when both PRs finally merge? Git tries to auto-merge `.squad/schedule-state.json` — a JSON file — using a line-based merge strategy. JSON doesn't merge line-by-line. It corrupts. I've fixed three corrupted JSON files in the past month alone.
+And when both PRs finally merge? Git tries to auto-merge `.squad/schedule-state.json` — a JSON file — using a line-based merge strategy. Git's line-based merge can corrupt JSON when two agents touch the same structural region — and with squad state, that happens constantly. I've fixed three corrupted JSON files in the past month alone.
 
 The rate of change is completely different. Code changes once a day. Squad state changes **fifty times a day**. It's like storing your brain's short-term memory in the same filing cabinet as your tax returns. Different update frequency. Different access pattern. Different lifecycle.
 
@@ -153,6 +153,7 @@ echo "# Squad State" > README.md
 git add README.md
 git commit -m "Initialize squad state branch"
 git push -u origin squad/state
+git checkout main   # return to main before adding the worktree
 
 # Mount it into .squad/ (from your main branch)
 git worktree add .squad squad/state
@@ -248,6 +249,8 @@ jobs:
           gh pr merge ${{ github.event.pull_request.number }} --auto --squash
 ```
 
+> **⚠️ GITHUB_TOKEN cannot approve its own PRs.** GitHub blocks self-review: if the workflow that *opens* the PR uses `GITHUB_TOKEN`, the same token *cannot* approve it — you'll get HTTP 422. The workflow also needs `permissions: pull-requests: write` and `contents: write` declared. To make this work in practice you need a separate bot PAT or a dedicated GitHub App token. This is the biggest practical failure mode for this approach.
+
 Now squad state PRs merge automatically. Code PRs still need human review.
 
 **The good:**
@@ -274,7 +277,7 @@ This works for small teams with low PR volume. At scale, the race conditions and
 
 ---
 
-### Approach 4: Self-Bootstrapping Worktree (the clever way)
+### Approach 4: Self-Bootstrapping Worktree *(idea — not yet implemented)*
 
 Here's a thought I had while writing this post: what if we could combine the elegance of the orphan branch with the simplicity of "just clone and go"?
 
@@ -339,39 +342,49 @@ At this point you might be thinking: "But someone has to bootstrap this. Where d
 Back in the main repo. It has to — that's the one inescapable constraint. There needs to be *something* in the code repo that knows how to initialize the squad state location. But this is actually fine, and it's simpler than it sounds:
 
 ```powershell
-# scripts/squad-init.ps1 — Run once after cloning the repo.
+# scripts/squad-init.ps1 - Run once after cloning the repo.
+# Requires: PowerShell 7+ (pwsh), Git for Windows
 # Bash equivalent: scripts/squad-init.sh (see inline comments)
 
-$RepoName  = Split-Path (git rev-parse --show-toplevel) -Leaf   # Bash: REPO_NAME=$(basename "$(git rev-parse --show-toplevel)")
-$SquadRepo = "$HOME/squad-state/$RepoName.git"                  # Bash: SQUAD_REPO="$HOME/squad-state/${REPO_NAME}.git"
+$RepoName  = Split-Path (git rev-parse --show-toplevel) -Leaf
+$SquadRepo = "$HOME/squad-state/$RepoName.git"
 
-# Create the local squad state repo if it doesn't exist
-# Bash: if [ ! -d "$SQUAD_REPO" ]; then mkdir -p "$SQUAD_REPO" && git init --bare "$SQUAD_REPO"; fi
 if (-not (Test-Path $SquadRepo)) {
     Write-Host "Creating local squad state repo at $SquadRepo"
     New-Item -ItemType Directory -Path $SquadRepo -Force | Out-Null
     git init --bare $SquadRepo
+
+    # Seed an initial commit so branches can be created from the start
+    $tmpInit = "$env:TEMP\squad-init-seed-$RepoName"
+    git clone $SquadRepo $tmpInit 2>&1 | Out-Null
+    git -C $tmpInit -c user.name="squad-init" -c user.email="squad@local" commit --allow-empty -m "Initialize squad state"
+    git -C $tmpInit push origin HEAD 2>&1 | Out-Null
+    Remove-Item $tmpInit -Recurse -Force
 }
 
-# Clone it into .squad/
-# Bash: if [ ! -d ".squad" ]; then git clone "$SQUAD_REPO" .squad; fi
 if (-not (Test-Path ".squad")) {
     git clone $SquadRepo .squad
 }
 
-# Keep .squad/ out of the main repo (no .gitignore pollution)
+# Keep .squad/ out of the main repo - no .gitignore pollution
 # Bash: grep -qxF ".squad" .git/info/exclude || echo ".squad" >> .git/info/exclude
 $ExcludeFile = ".git/info/exclude"
 if (-not (Get-Content $ExcludeFile -ErrorAction SilentlyContinue | Select-String "^\.squad$")) {
     Add-Content $ExcludeFile ".squad"
 }
 
-# Install the post-checkout hook
-# Bash: cp scripts/hooks/post-checkout .git/hooks/post-checkout && chmod +x .git/hooks/post-checkout
-Copy-Item "scripts/hooks/post-checkout.ps1" ".git/hooks/post-checkout"
+# Install hook: a bash wrapper that calls pwsh.
+# Git on Windows invokes hooks via sh - .ps1 files cannot be spawned directly.
+# Bash equivalent: cp scripts/hooks/post-checkout .git/hooks/post-checkout && chmod +x .git/hooks/post-checkout
+$hookWrapper = "#!/bin/sh`npwsh -File `"`$(git rev-parse --show-toplevel)/scripts/hooks/post-checkout.ps1`" `"`$@`""
+Set-Content ".git/hooks/post-checkout" $hookWrapper -Encoding utf8NoBOM
+if ($IsLinux -or $IsMacOS) { chmod +x ".git/hooks/post-checkout" }
 
-Write-Host "✔ Squad state initialized at $SquadRepo"
+Write-Host "Squad state initialized at $SquadRepo"
+Write-Host "Note: symlink creation in the hook requires Developer Mode or admin rights on Windows."
 ```
+
+> **Windows note:** The `post-checkout` hook creates a symbolic link. On Windows, this requires either **Developer Mode** (Settings → System → For Developers) or running PowerShell as Administrator. Most enterprise machines have neither by default — check your environment before relying on this.
 
 Run once after cloning: `./scripts/squad-init.ps1` (or `bash scripts/squad-init.sh` if you're on Linux/macOS). The `.squad/` directory appears, local to your machine, completely private, no GitHub involved. The two files that live in the main repo (`scripts/squad-init.ps1` and `scripts/hooks/post-checkout.ps1`) are the only Squad artifacts that need to be there — and they're just scripts, not state.
 
@@ -391,41 +404,40 @@ The solution is a `post-checkout` hook that runs automatically when you `git wor
 ```powershell
 # scripts/hooks/post-checkout.ps1
 # Runs after checkout. Wires up .squad/ to the right squad branch.
+# Requires: PowerShell 7+
 # Bash equivalent: scripts/hooks/post-checkout
 
-$RepoName     = Split-Path (git rev-parse --show-toplevel) -Leaf          # Bash: REPO_NAME=$(basename "$(git rev-parse --show-toplevel)")
-$SquadRepo    = "$HOME/squad-state/$RepoName.git"                         # Bash: SQUAD_REPO="$HOME/squad-state/${REPO_NAME}.git"
-$CurrentBranch = (git symbolic-ref --short HEAD 2>$null) ?? "detached"   # Bash: CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "detached")
-$WorktreeRoot = git rev-parse --show-toplevel                             # Bash: WORKTREE_ROOT=$(git rev-parse --show-toplevel)
-$SafeBranch   = $CurrentBranch -replace "/", "-"                          # Bash: SAFE_BRANCH=$(echo "$CURRENT_BRANCH" | tr '/' '-')
-$SquadWorktree = "$HOME/squad-state/$RepoName-$SafeBranch"               # Bash: SQUAD_WORKTREE="$HOME/squad-state/${REPO_NAME}-${SAFE_BRANCH}"
+$RepoName      = Split-Path (git rev-parse --show-toplevel) -Leaf
+$SquadRepo     = "$HOME/squad-state/$RepoName.git"
+$CurrentBranch = git symbolic-ref --short HEAD 2>$null
+if (-not $CurrentBranch) { $CurrentBranch = "detached" }   # PS7 compatible (no ?? operator needed in PS5.1)
+$WorktreeRoot  = git rev-parse --show-toplevel
+$SafeBranch    = $CurrentBranch -replace "/", "-"
+$SquadWorktree = "$HOME/squad-state/$RepoName-$SafeBranch"
 
 # Create a matching branch in the squad repo if it doesn't exist
-# Bash: if ! git -C "$SQUAD_REPO" rev-parse --verify "$CURRENT_BRANCH" &>/dev/null 2>&1; then ...
+# Bash: if ! git -C "$SQUAD_REPO" rev-parse --verify "$CURRENT_BRANCH" &>/dev/null; then ...
 $branchExists = git -C $SquadRepo rev-parse --verify $CurrentBranch 2>$null
 if (-not $branchExists) {
     Write-Host "Creating squad branch: $CurrentBranch"
-    # Bash: TMPDIR=$(mktemp -d); git clone "$SQUAD_REPO" "$TMPDIR/tmp-squad"; ...
     $TmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.IO.Path]::GetRandomFileName())
-    git clone $SquadRepo "$TmpDir/tmp-squad"
-    git -C "$TmpDir/tmp-squad" checkout -b $CurrentBranch
-    git -C "$TmpDir/tmp-squad" push origin $CurrentBranch
-    Remove-Item $TmpDir -Recurse -Force   # Bash: rm -rf "$TMPDIR"
+    git clone $SquadRepo "$TmpDir/tmp-squad" 2>&1 | Out-Null
+    git -C "$TmpDir/tmp-squad" checkout -b $CurrentBranch 2>&1 | Out-Null
+    git -C "$TmpDir/tmp-squad" push origin $CurrentBranch 2>&1 | Out-Null
+    Remove-Item $TmpDir -Recurse -Force
 }
 
 # Set up the matching squad worktree
-# Bash: if [ ! -d "$SQUAD_WORKTREE" ]; then git clone --branch "$CURRENT_BRANCH" "$SQUAD_REPO" "$SQUAD_WORKTREE"; fi
 if (-not (Test-Path $SquadWorktree)) {
-    git clone --branch $CurrentBranch $SquadRepo $SquadWorktree
+    git clone --branch $CurrentBranch $SquadRepo $SquadWorktree 2>&1 | Out-Null
 }
 
-# Point .squad/ at it
-# Bash: rm -f "$WORKTREE_ROOT/.squad"; ln -s "$SQUAD_WORKTREE" "$WORKTREE_ROOT/.squad"
+# Point .squad/ at the branch-specific worktree via symlink
 $SquadLink = Join-Path $WorktreeRoot ".squad"
-if (Test-Path $SquadLink) { Remove-Item $SquadLink -Force }           # Bash: rm -f "$WORKTREE_ROOT/.squad"
-New-Item -ItemType SymbolicLink -Path $SquadLink -Target $SquadWorktree | Out-Null  # Bash: ln -s ...
+if (Test-Path $SquadLink) { Remove-Item $SquadLink -Recurse -Force }   # -Recurse needed for non-empty dirs
+New-Item -ItemType SymbolicLink -Path $SquadLink -Target $SquadWorktree | Out-Null
 
-Write-Host "Squad state → $SquadWorktree ($CurrentBranch)"
+Write-Host "Squad state -> $SquadWorktree ($CurrentBranch)"
 ```
 
 About 30 lines of PowerShell (versus 20 of bash — the verbosity is real, but so is the inline documentation). When you run `git worktree add /projects/myapp-feature-x feature/auth-refactor`, the hook fires, creates a matching `feature/auth-refactor` branch in the local squad state repo, sets up a dedicated working directory for it, and symlinks `.squad/` there.
@@ -434,11 +446,11 @@ Branch names match. Squad state stays isolated per feature. No cross-contaminati
 
 ### Prior Art Worth Knowing: Gerrit
 
-While I was researching this problem, I stumbled on an article about [Gerrit](https://www.gerritcodereview.com/) — Google's open-source code review system, used by Android, Chromium, and a bunch of other large projects. I'd never heard of it before. It turns out Gerrit has been solving this exact problem for a decade. It stores all review metadata — votes, change IDs, review comments — in git notes (`refs/notes/review`). Not in a database. Not in a sidebar. In git itself, attached to commits, pushed to a separate refspec that has no branch protection. The code and the review state live in the same repo but move through completely different workflows.
+While I was researching this problem, I stumbled on an article about [Gerrit](https://www.gerritcodereview.com/) — Google's open-source code review system, used by Android, Chromium, and a bunch of other large projects. I'd never dug into it before. It turns out Gerrit has been solving this exact problem for a decade. It stores all review metadata — votes, change IDs, review comments — in git notes (`refs/notes/review`). Not in a database. Not in a sidebar. In git itself, attached to commits, pushed to a separate refspec that has no branch protection. The code and the review state live in the same repo but move through completely different workflows.
 
 That's the exact pattern we're rediscovering for squad state. Gerrit figured it out first.
 
-The lesson I took from this: separating "state that needs human review" from "state that doesn't" is a solved problem. The tooling looks different, but the architecture is the same. If your team is skeptical of the orphan-branch approach, you can point to Gerrit as a 10-year-old production example of why this works.
+The lesson I took from this: separating "state that needs human review" from "state that doesn't" is a solved problem. The tooling looks different, but the architecture is the same. If your team is skeptical of the orphan-branch approach, you can point to Gerrit as a nearly 17-year-old production example of why this works.
 
 ### When Would You Use GitHub, Then?
 
@@ -501,13 +513,14 @@ This is one of those problems where the "right" answer depends entirely on your 
 
 ---
 
-> 📚 **Series: Scaling Your AI Development Team**
+> 📚 **Series: Scaling AI-Native Software Engineering**
 > - **Part 0**: [Organized by AI — How Squad Changed My Daily Workflow](/blog/2026/03/10/organized-by-ai)
 > - **Part 1**: [Resistance is Futile — Your First AI Engineering Team](/blog/2026/03/11/scaling-ai-part1-first-team)
 > - **Part 2**: [The Collective — Organizational Knowledge for AI Teams](/blog/2026/03/12/scaling-ai-part2-collective)
 > - **Part 3**: [Unimatrix Zero — Many Teams, One Repo with SubSquads](/blog/2026/03/15/scaling-ai-part3-streams)
 > - **Part 4**: [When Eight Ralphs Fight Over One Login — Distributed Systems in AI Teams](/blog/2026/03/17/scaling-ai-part4-distributed)
 > - **Part 5**: [Knowledge is Power — How an AI Squad Learns to Evolve Itself](/blog/2026/03/18/scaling-ai-part5-evolution)
-> - **Part 6**: [9 AI Agents, One API Quota — The Rate Limiting Problem](/blog/2026/03/20/rate-limiting-multi-agent)
+> - **Part 6**: [9 AI Agents, One API Quota — The Rate Limiting Problem](/blog/2026/03/21/rate-limiting-multi-agent)
 > - **Part 7**: When Git Is Your Database — The Enterprise State Problem ← You are here
+
 
