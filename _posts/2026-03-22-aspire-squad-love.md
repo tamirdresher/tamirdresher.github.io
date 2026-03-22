@@ -5,7 +5,7 @@ date: 2026-03-22
 tags: [aspire, squad, ai-agents, github-copilot, mcp, polyglot, distributed-systems]
 ---
 
-![Aspire + Squad: A Love Story](/assets/aspire-squad-love/hero.svg)
+![Aspire + Squad: A Love Story](/assets/aspire-squad-love/hero.png)
 
 > *"Agents can't look at a screen. They need programmatic access to system state. Aspire MCP gives them exactly that."*
 > — me, after watching five agents simultaneously query different aspects of the same running AppHost
@@ -45,7 +45,7 @@ When you run an Aspire AppHost and connect Squad to the MCP server, agents get a
 - `aspire-search_docs` — search docs by keyword
 - `aspire-get_doc` — retrieve full doc pages
 
-These aren't wrappers around the Aspire CLI. They're direct integrations with the Aspire Dashboard's backend APIs. The same observability that humans get via the web UI, agents get programmatically via MCP.
+These tools are available both as MCP tools (programmatic access via `aspire mcp start`) and through the Aspire CLI (shell commands like `aspire logs`, `aspire resources`). With 13.2, the CLI has full parity — agents can use whichever approach fits their workflow.
 
 ---
 
@@ -149,7 +149,7 @@ When an MCP tool is available:
 
 When an agent loads, it checks which tools are available. If `aspire-list_resources` is present, the agent knows it can query running services. If `aspire-list_traces` is available, the agent knows it can analyze distributed traces.
 
-This is first-class integration. Not a workaround, not a script — Squad was designed to work with Aspire MCP.
+This is first-class integration. Not a workaround, not a script — Squad was designed to work with Aspire. In fact, the Squad CLI even has a dedicated `squad aspire` command that launches the Aspire Dashboard container with the right OTLP configuration, and Squad's `squad.config.ts` can include a dedicated Aspire & Observability specialist agent (named `saul` in the default config) who routes all observability concerns through Aspire's tools.
 
 ---
 
@@ -225,14 +225,19 @@ The CLI has full parity with the MCP tools — and for AI agents, this is actual
 
 | What Agents Need | Aspire CLI Command |
 |---|---|
+| Start the app | `aspire start` |
+| Start isolated (worktrees) | `aspire start --isolated` |
 | See all running services and health | `aspire resources [<resource>]` |
+| List running AppHosts | `aspire ps` |
 | Read console output | `aspire logs [<resource>]` |
-| Query structured logs | `aspire telemetry logs [<resource>]` |
-| Start/stop resources | `aspire start <resource>` / `aspire stop <resource>` |
-| Run resource commands | `aspire command <resource> <command>` |
+| Query structured logs | `aspire otel logs [<resource>]` |
+| Query traces | `aspire otel traces [<resource>]` |
+| Stop the app | `aspire stop` |
+| Add an integration | `aspire add` |
 | Browse docs | `aspire docs list` |
 | Search docs | `aspire docs search <query>` |
 | Get specific doc | `aspire docs get <slug>` |
+| Diagnose environment | `aspire doctor` |
 
 **What this looks like for Squad agents:**
 
@@ -264,17 +269,26 @@ That's it. No MCP proxy. No port allocation. No settings.json files. Just CLI co
 
 ### Why This is Better for Agents
 
-The MCP approach (what I described earlier in this post) works, but it requires setup: proxy scripts, port coordination, configuration files. If you're working with [worktrees](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html), you need the proxy to handle dynamic port allocation.
+The MCP approach (what I described earlier in this post) works great, and in 13.2 it got even better. Remember the custom MCP proxy script I wrote for [port isolation with worktrees](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html)? **That's now built into Aspire itself.** The `aspire start --isolated` flag handles port isolation out of the box — separate ports, separate dashboard, no conflicts between worktrees. No more custom proxy scripts. Just `aspire start --isolated` and your agents connect.
 
 The CLI approach is simpler: agents just run shell commands. Works in CI/CD environments. Works on teammate machines. Works on DevBoxes. No per-environment MCP configuration.
 
 The MCP server still exists and still works — if you're building custom integrations or need programmatic access from non-CLI tools, it's there. But for most Squad workflows, **the CLI is now the simpler path**.
 
-### One More Thing: `aspire mcp` is Now `aspire agent`
+### One More Thing: `aspire agent init` and the Auto-Generated Skill
 
-The Aspire CLI command was renamed from `aspire mcp` to `aspire agent` in 13.2 ([tracked here](https://github.com/dotnet/aspire/issues/14619)). This isn't just a naming change — it's a philosophical shift. The tooling is literally called "agent" now.
+In 13.2, setting up agent integration is as simple as running `aspire agent init` in your project directory. It auto-detects your agent environment (VS Code with Copilot, Copilot CLI, Claude Code, OpenCode) and creates the right config file AND generates a skill file that teaches your agent all the CLI commands. No more manually crafting JSON — the CLI handles it.
 
-When you run `aspire agent`, you're not just exposing an MCP server. You're explicitly positioning the Aspire Dashboard as something AI agents interact with. The naming makes the intent clear: **Aspire is built for agents, not just humans**.
+```bash
+aspire agent init
+# Detects VS Code → creates .vscode/mcp.json + skill file
+# Detects Copilot CLI → creates ~/.copilot/mcp-config.json + skill file
+# Detects Claude Code → creates .mcp.json + skill file
+```
+
+The generated skill teaches agents crucial workflow rules: always use `aspire start` (never `aspire run`), use `--isolated` when working in a worktree, and `aspire start` auto-stops the previous instance so you don't need explicit stop/start sequences.
+
+This is exactly the kind of "just works" setup I was hoping for. The custom proxy I wrote? Obsolete. The `--isolated` flag does what it did, but better and with official support.
 
 ### Honest Limitation: Log Filtering
 
@@ -294,7 +308,7 @@ This isn't production-ready "set it and forget it" automation. Ralph sometimes o
 
 And the Aspire MCP integration is still rough around the edges. Not every API surface is exposed yet. Some queries are slower than I'd like (retrieving 10,000 structured log entries takes ~3 seconds). The tooling is evolving.
 
-But the direction is right. Aspire gives me system-wide observability. Squad gives me autonomous agents that can act on what they see. And the MCP bridge connects them.
+But the direction is right. Aspire gives me system-wide observability. Squad gives me autonomous agents that can act on what they see. And the MCP/CLI bridge connects them.
 
 If you're running Aspire and you're curious about AI-assisted development, this is the combo I'd recommend trying. The agents go from "code readers" to "system operators," and that's transformative.
 
@@ -321,24 +335,27 @@ aspire start myservice    # Start a stopped resource
 
 No MCP configuration needed. The CLI works anywhere it's installed.
 
-**Alternative: Using the MCP Server (13.1 approach):**
+**Alternative: Using the MCP Server (recommended for programmatic agent access):**
 
-If you need programmatic access or are working with [worktrees](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html), you can still use the MCP server.
+Setting up MCP is now a one-liner. In your Aspire project directory:
+```bash
+aspire mcp init
+```
 
-In your `.copilot/mcp-config.json`:
+This auto-detects your agent environment and creates the right config. For Copilot CLI, it generates `~/.copilot/mcp-config.json`:
 ```json
 {
   "mcpServers": {
     "aspire": {
-      "command": "dotnet",
-      "args": ["aspire-mcp-proxy.cs"],
-      "description": "Aspire Dashboard MCP integration"
+      "type": "local",
+      "command": "aspire",
+      "args": ["mcp", "start"]
     }
   }
 }
 ```
 
-(See my [port isolation post](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html) for the full proxy setup and why you'd need it for parallel worktrees.)
+No custom proxy scripts needed — `aspire mcp start` handles endpoint discovery, port coordination, and session management natively. If you're working with [worktrees](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html), it handles the dynamic port allocation that I previously needed a custom proxy for.
 
 **3. Watch agents query the system:**
 
@@ -349,14 +366,15 @@ Open a GitHub issue, assign it to an agent (e.g., Data), and watch the agent use
 ## Links and Resources
 
 - [Aspire Documentation](https://learn.microsoft.com/dotnet/aspire/) — official docs
-- [Aspire MCP Server](https://aspire.dev/dashboard/mcp-server/) — how the MCP integration works
+- [Aspire MCP/CLI Configuration](https://aspire.dev/configure-the-mcp-server/) — how to set up `aspire mcp init`
+- [Aspire CLI Reference](https://aspire.dev/install-aspire-cli/) — install and use the CLI
 - [My Aspire Workshop](https://github.com/tamirdresher/aspire-workshop) — 3-day hands-on course
 - [Squad Framework](https://github.com/microsoft/squad) — open-source autonomous AI team
 - [Scaling AI Agents with Aspire: Port Isolation](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html) — my previous Aspire post (foundation for this one)
 - [Seamless Private NPM Feeds in Aspire](/2025/11/15/seamless-private-npm-feeds-in-dotnet-aspire.html) — polyglot support in practice
 - [Part 1: Your First AI Engineering Team](/blog/2026/03/11/scaling-ai-part1-first-team) — how I set up Squad
 
-If you're experimenting with Aspire + Squad, I'd love to hear what you find. Tag me on [Twitter/X](https://twitter.com/TamirDresher) or open a discussion in the Squad repo.
+If you're experimenting with Aspire + Squad, I'd love to hear what you find. Tag me on [Twitter/X](https://twitter.com/tamir_dresher) or open a discussion in the Squad repo.
 
 ---
 

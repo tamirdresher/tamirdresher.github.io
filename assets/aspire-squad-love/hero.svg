@@ -22,7 +22,7 @@
   <g transform="translate(400, 200)">
     <path d="M0,-20 C-10,-40 -40,-40 -40,-20 C-40,0 0,30 0,30 C0,30 40,0 40,-20 C40,-40 10,-40 0,-20 Z" 
           fill="#E74856" opacity="0.9"/>
-    <text x="0" y="60" font-family="Arial, sans-serif" font-size="14" fill="#666" text-anchor="middle" font-weight="600">MCP Bridge</text>
+    <text x="0" y="60" font-family="Arial, sans-serif" font-size="14" fill="#666" text-anchor="middle" font-weight="600">MCP/CLI Bridge</text>
   </g>
   
   <!-- Squad Logo (Right) -->
