@@ -1,23 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600">
   <defs>
     <style>
-      .title { font: bold 20px sans-serif; fill: #2c3e50; }
-      .label { font: 14px sans-serif; fill: #34495e; }
-      .small { font: 12px monospace; fill: #7f8c8d; }
-      .cmd { font: 12px monospace; fill: #27ae60; }
-      .code-branch { fill: #3498db; stroke: #2980b9; stroke-width: 2; }
-      .state-branch { fill: #27ae60; stroke: #229954; stroke-width: 2; }
-      .worktree { fill: #f39c12; stroke: #d68910; stroke-width: 2; }
-      .arrow { stroke: #7f8c8d; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
-      .arrow-green { stroke: #27ae60; stroke-width: 2; fill: none; marker-end: url(#arrowhead-green); }
+      .title { font: bold 20px sans-serif; fill: #e0e0e0; }
+      .label { font: 14px sans-serif; fill: #d0d0d0; }
+      .small { font: 12px monospace; fill: #a0a0a0; }
+      .cmd { font: 12px monospace; fill: #4cda6a; }
+      .code-branch { fill: #2a6db5; stroke: #4a9eed; stroke-width: 2; }
+      .state-branch { fill: #1e8a3e; stroke: #3dba5e; stroke-width: 2; }
+      .worktree { fill: #b86315; stroke: #e89035; stroke-width: 2; }
+      .arrow { stroke: #808080; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .arrow-green { stroke: #3dba5e; stroke-width: 2; fill: none; marker-end: url(#arrowhead-green); }
     </style>
     <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-      <polygon points="0 0, 10 3, 0 6" fill="#7f8c8d" />
+      <polygon points="0 0, 10 3, 0 6" fill="#808080" />
     </marker>
     <marker id="arrowhead-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-      <polygon points="0 0, 10 3, 0 6" fill="#27ae60" />
+      <polygon points="0 0, 10 3, 0 6" fill="#3dba5e" />
     </marker>
   </defs>
+
+  <!-- Dark Background -->
+  <rect width="900" height="600" fill="#1a1a2e" rx="8"/>
 
   <!-- Title -->
   <text x="450" y="30" text-anchor="middle" class="title">Orphan Branch Architecture</text>
@@ -81,10 +84,10 @@
   <path d="M 700 400 L 700 430 L 600 465" class="arrow-green" stroke-dasharray="5,5"/>
   
   <!-- Bottom explanation -->
-  <text x="450" y="560" text-anchor="middle" class="label" fill="#27ae60" font-weight="bold">
+  <text x="450" y="560" text-anchor="middle" class="label" fill="#3dba5e" font-weight="bold">
     .squad/ stays on squad/state branch when switching code branches
   </text>
-  <text x="450" y="585" text-anchor="middle" class="small">
+  <text x="450" y="585" text-anchor="middle" class="small" fill="#808080">
     Agents write state directly. Code PRs see zero .squad/ files.
   </text>
 </svg>

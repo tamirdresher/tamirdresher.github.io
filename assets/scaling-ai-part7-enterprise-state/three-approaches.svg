@@ -1,16 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700">
   <defs>
     <style>
-      .title { font: bold 18px sans-serif; fill: #2c3e50; }
-      .label { font: 14px sans-serif; fill: #34495e; }
-      .small { font: 11px sans-serif; fill: #7f8c8d; }
-      .pro { font: 12px sans-serif; fill: #27ae60; }
-      .con { font: 12px sans-serif; fill: #e74c3c; }
-      .approach1 { fill: #3498db; stroke: #2980b9; stroke-width: 2; }
-      .approach2 { fill: #9b59b6; stroke: #8e44ad; stroke-width: 2; }
-      .approach3 { fill: #e67e22; stroke: #d35400; stroke-width: 2; }
+      .title { font: bold 18px sans-serif; fill: #e0e0e0; }
+      .label { font: 14px sans-serif; fill: #d0d0d0; }
+      .small { font: 11px sans-serif; fill: #a0a0a0; }
+      .pro { font: 12px sans-serif; fill: #4cda6a; }
+      .con { font: 12px sans-serif; fill: #ff6b6b; }
+      .approach1 { fill: #2a6db5; stroke: #4a9eed; stroke-width: 2; }
+      .approach2 { fill: #7a3ea0; stroke: #b06ee0; stroke-width: 2; }
+      .approach3 { fill: #b86315; stroke: #e89035; stroke-width: 2; }
     </style>
   </defs>
+
+  <!-- Dark Background -->
+  <rect width="1000" height="700" fill="#1a1a2e" rx="8"/>
 
   <!-- Main Title -->
   <text x="500" y="35" text-anchor="middle" class="title" font-size="22">Three Approaches to Enterprise State Management</text>
@@ -22,7 +25,7 @@
     <text x="190" y="130" text-anchor="middle" class="small" fill="white">squad/state (worktree)</text>
     
     <!-- Diagram -->
-    <rect x="70" y="150" width="240" height="120" fill="white" rx="4"/>
+    <rect x="70" y="150" width="240" height="120" fill="#2a2a40" rx="4"/>
     <text x="190" y="175" text-anchor="middle" class="small">Main Repo</text>
     <rect x="85" y="185" width="90" height="30" fill="#3498db" rx="3"/>
     <text x="130" y="205" text-anchor="middle" class="small" fill="white">main</text>
@@ -61,14 +64,14 @@
     <text x="500" y="130" text-anchor="middle" class="small" fill="white">myrepo-squad</text>
     
     <!-- Diagram -->
-    <rect x="380" y="150" width="240" height="60" fill="white" rx="4"/>
+    <rect x="380" y="150" width="240" height="60" fill="#2a2a40" rx="4"/>
     <text x="500" y="175" text-anchor="middle" class="small">myrepo (code)</text>
     <rect x="395" y="185" width="90" height="20" fill="#9b59b6" rx="3"/>
     <text x="440" y="200" text-anchor="middle" class="small" fill="white">main</text>
     
     <text x="500" y="230" text-anchor="middle" class="small" font-weight="bold">+</text>
     
-    <rect x="380" y="240" width="240" height="60" fill="white" rx="4"/>
+    <rect x="380" y="240" width="240" height="60" fill="#2a2a40" rx="4"/>
     <text x="500" y="265" text-anchor="middle" class="small">myrepo-squad (state)</text>
     <rect x="395" y="275" width="105" height="20" fill="#27ae60" rx="3"/>
     <text x="447" y="290" text-anchor="middle" class="small" fill="white">main</text>
@@ -99,7 +102,7 @@
     <text x="810" y="130" text-anchor="middle" class="small" fill="white">GitHub Action</text>
     
     <!-- Diagram -->
-    <rect x="690" y="150" width="240" height="120" fill="white" rx="4"/>
+    <rect x="690" y="150" width="240" height="120" fill="#2a2a40" rx="4"/>
     <text x="810" y="175" text-anchor="middle" class="small">Main Repo (all files)</text>
     <rect x="705" y="190" width="80" height="25" fill="#e67e22" rx="3"/>
     <text x="745" y="207" text-anchor="middle" class="small" fill="white">src/*</text>
@@ -131,7 +134,7 @@
   </g>
 
   <!-- Bottom Note -->
-  <text x="500" y="680" text-anchor="middle" class="label" fill="#7f8c8d">
+  <text x="500" y="680" text-anchor="middle" class="label" fill="#808080">
     Choose based on team size, compliance requirements, and tolerance for git complexity
   </text>
 </svg>
