@@ -79,9 +79,9 @@ The rate of change is completely different. Code changes once a day. Squad state
 
 ---
 
-## The Three Approaches I'm Evaluating
+## The Four Approaches I'm Evaluating
 
-I've identified three ways to solve this. Each has tradeoffs. None is perfect. Here's what I've learned.
+I've identified four ways to solve this. Each has tradeoffs. None is perfect. Here's what I've learned.
 
 ![Three Approaches to Enterprise State](/assets/scaling-ai-part7-enterprise-state/three-approaches.svg)
 
@@ -214,6 +214,35 @@ Now squad state PRs merge automatically. Code PRs still need human review.
 - Doesn't solve the stale state problem — agents still can't see each other's state until PRs merge
 
 This works for small teams with low PR volume. At scale, the race conditions and PR overhead become a bottleneck.
+
+---
+
+### Approach 4: Self-Bootstrapping Worktree (the clever way)
+
+Here's a thought I had while writing this post: what if we could combine the elegance of the orphan branch with the simplicity of "just clone and go"?
+
+The problem with Approach 1 is the education burden. New contributors clone the repo, and `.squad/` doesn't exist. They need to know about worktrees. They need to run `git worktree add .squad squad/state`. That's a barrier.
+
+But what if the `main` branch contained a directive telling Squad to **do this setup automatically**?
+
+The idea: put a small instruction in `squad.agent.md` on `main` that says, "On first run, create the worktree for `squad/state` and mount it." The coordinator — Ralph or Picard — detects that `.squad/` is missing, sees the directive, and runs the worktree command itself.
+
+From the developer's perspective: they clone the repo, start Squad, and it just works. No manual worktree setup. No exotic Git education. The squad bootstraps its own memory.
+
+Combine this with the symlink pattern from my [earlier post on using Squad without touching your repo](/blog/2026/02/17/trying-squad-without-touching-your-repo), and you get something really slick: symlinks + git exclude can make the `.squad/` directory appear seamlessly, even in repos where you don't want Squad's state directory versioned at all.
+
+**The good:**
+- Zero setup friction — cloning the repo is enough
+- Same elegance as Approach 1 (orphan branch, clean PRs)
+- Worktrees are invisible to humans — agents handle it
+- Could support both "state in-repo" and "state external" patterns with the same mechanism
+
+**The questions:**
+- Does this make worktrees *less* confusing or *more* confusing? "Why did `.squad/` appear after I ran Squad?"
+- What happens if someone manually deletes `.squad/`? Does the coordinator re-bootstrap it? Every time?
+- Would Git hooks be better than agent logic for this?
+
+This is the "maybe we can have our cake and eat it too" option. I haven't implemented it yet, but it's the direction I'm most excited about. If Squad can automate the worktree setup, the education problem disappears. And if we can make it work transparently, it might be the best of all three worlds.
 
 ---
 
