@@ -374,7 +374,7 @@ Open a GitHub issue, assign it to an agent (e.g., Data), and watch the agent use
 - [Seamless Private NPM Feeds in Aspire](/2025/11/15/seamless-private-npm-feeds-in-dotnet-aspire.html) — polyglot support in practice
 - [Part 1: Your First AI Engineering Team](/blog/2026/03/11/scaling-ai-part1-first-team) — how I set up Squad
 
-If you're experimenting with Aspire + Squad, I'd love to hear what you find. Tag me on [Twitter/X](https://twitter.com/tamir_dresher) or open a discussion in the Squad repo.
+If you're experimenting with Aspire + Squad, I'd love to hear what you find. Tag me on [Twitter/X](https://twitter.com/tamirdresher) or [LinkedIn](https://www.linkedin.com/in/tamirdresher) or open a discussion in the Squad repo.
 
 ---
 
