@@ -49,7 +49,7 @@ That's the gap git notes fills.
 
 ## The Blog Post I Almost Skipped
 
-A couple days later I was searching for something adjacent to the problem. Not "how to fix squad state in git" — I'd already read everything on that. I was searching for "git store metadata out of band" and "attach metadata to commits without polluting history." The kind of search that surfaces weird corners of the internet.
+Later that same night I was searching for something adjacent to the problem. Not "how to fix squad state in git" — I'd already read everything on that. I was searching for "git store metadata out of band" and "attach metadata to commits without polluting history." The kind of search that surfaces weird corners of the internet.
 
 One result was a long post comparing code review systems at scale — specifically Gerrit vs. GitHub, written by someone who'd worked on both. I almost closed the tab. I've never used Gerrit in production. At Microsoft, everyone uses GitHub. Gerrit has always been that thing I vaguely knew existed because Android and Chromium use it, but that felt as relevant to my daily life as CVS.
 
