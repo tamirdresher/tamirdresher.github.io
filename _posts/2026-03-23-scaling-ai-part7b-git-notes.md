@@ -73,7 +73,7 @@ But *Gerrit* had been using it in production. For Android. For Chromium. At Goog
 
 That was the rabbit hole.
 
-[meme: "One does not simply walk past a 'refs/notes/review' mention when debugging a distributed state problem at 1am"]
+![One does not simply walk past a refs/notes/review mention when debugging a distributed state problem at 1am](/assets/scaling-ai-part7b-git-notes/meme-one-does-not-simply.png)
 
 ---
 
