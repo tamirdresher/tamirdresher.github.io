@@ -6,7 +6,7 @@ tags: [ai-agents, squad, github-copilot, git, git-notes, gerrit, distributed-sys
 series: "Scaling AI-Native Software Engineering"
 series_part: "7b"
 ---
-![The Invisible Layer](/assets/scaling-ai-part7b-git-notes/hero.svg)
+![The Invisible Layer](/assets/scaling-ai-part7b-git-notes/hero.png)
 
 
 > *"We are the Borg. Lower your shields and surrender your ships. We will add your biological and technological distinctiveness to our own. Your culture will adapt to service us. Resistance is futile."*
