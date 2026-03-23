@@ -12,7 +12,7 @@ series_part: "7b"
 
 > *(The Borg also did not pollute their commit history with agent session logs. Just saying.)*
 
-I published Part 7 earlier today. Meir's 97-file PR. The three approaches — orphan branch, separate repo, auto-bootstrap worktree. All of them defensible. None of them *satisfying*.
+I published Part 7 earlier today. The 97-file PR. The three approaches — orphan branch, separate repo, auto-bootstrap worktree. All of them defensible. None of them *satisfying*.
 
 I should have let it go. I had other things to work on.
 
@@ -23,6 +23,27 @@ At around 1am I was still mentally running the tradeoffs. Orphan branch: correct
 None of these felt like the *right* answer. They felt like compromises I could live with.
 
 I hate compromises I can live with. They have a way of becoming permanent.
+
+---
+
+## The Analogy That Unlocked It
+
+Here's the problem framed simply, because I find it helps when the solution is non-obvious.
+
+You're writing a school essay with your friends in a shared Google Doc. You also keep notes in the same doc — who said what, why you made each decision, who argued about what at 2am. Private team stuff.
+
+Your teacher asks to review the essay. You send him the doc... but it includes **all your private notes too**. He opens it and sees 97 pages — 57 of essay and 40 of "Data suggested JWT, Ralph disagreed and was outvoted, Worf flagged a security concern."
+
+That's not your teacher's problem to read. His job is to review the essay.
+
+This is exactly the issue with Squad state living in the same repo and branch as code. Every pull request dragged in decision logs, agent histories, sprint retrospectives — all the AI team's internal housekeeping — alongside the actual code changes. Two completely different workflows sharing one repo:
+
+- **Code** → slow, human-gated, needs review approval
+- **Squad state** → fast, autonomous, no human ever needs to review it
+
+The fix starts with separating those workflows. But once you separate them, you lose something: the *commit-level context*. "Why did the AI choose this algorithm for *this specific commit*?" The full reasoning lives on the orphan branch now — you'd have to go dig there.
+
+That's the gap git notes fills.
 
 ---
 
@@ -52,9 +73,11 @@ That was the rabbit hole.
 
 ## What Git Notes Actually Are
 
-Here's the short version for people who, like me, vaguely knew git notes existed but never thought hard about them.
+Back to the Google Doc analogy: imagine every commit in git is a sticky note on a wall. It has an ID, a message, and a diff. That's the commit — what changed and when.
 
-Git notes are a parallel ref namespace — `refs/notes/*`. You can attach an arbitrary blob of text or JSON to *any* git object (commits, trees, tags) without that attachment ever appearing in the working tree, in `git diff`, in PR reviews, or anywhere else in the normal code review flow.
+Git notes let you attach a **second sticky note** to any commit, without changing the commit at all. The second sticky note is invisible in `git log`, invisible in `git diff`, invisible in PR reviews. It's a parallel namespace.
+
+In essay terms: git notes are the private margin annotations your teacher can never see — but that your team can always retrieve.
 
 ```bash
 # Attach a note to the current commit
@@ -69,9 +92,9 @@ git notes --ref=squad/decisions show HEAD
 git notes --ref=squad/decisions list
 ```
 
-The note is stored as a blob, indexed by the commit SHA. It lives in `refs/notes/squad/decisions`. It does not appear in `git status`. It does not show up in pull request diffs. Your colleague opens the PR, sees 57 changed files, and none of them are squad decision logs.
+The note is stored as a blob, indexed by the commit SHA. It lives in `refs/notes/squad/decisions`. It does not appear in `git status`. It does not show up in pull request diffs. A reviewer opens the PR, sees 57 changed files, and none of them are squad decision logs.
 
-This is the property I'd been looking for. It's invisible in the places that matter to human reviewers, but it's *there* — attached to the commit that caused the decision, traveling with the repo.
+This is the property I'd been looking for. Invisible in the places that matter to human reviewers, but *there* — attached to the commit that caused the decision, traveling with the repo.
 
 There's a real gotcha, though, and Q caught it immediately when I shared the approach.
 
@@ -158,6 +181,12 @@ Squad state lives in two places, for two different purposes.
 └─────────────────────────────────────────────┘
 ```
 
+Back to the essay analogy: this is what the clean version looks like.
+
+- **The essay** (main branch) → the teacher sees only this. PRs. Human review. The actual work.
+- **The team's full diary** (squad-state orphan branch) → all decisions, histories, retrospectives. Agents read and write here directly. No PRs. No teacher ever opens this.
+- **The margin annotations** (git notes) → thin commit-scoped "why did we do THIS here" notes. Invisible in PR diffs. Attached to the exact commit that caused the decision. Retrievable by anyone who knows to look.
+
 The `.squad/` folder doesn't disappear from the main repo. It still holds everything GitHub Copilot needs to understand the team: copilot-instructions, routing config, agent charters. What changes is the addition of `upstream.json` — a pointer to where the *live* state actually lives:
 
 ```json
@@ -176,23 +205,25 @@ Ralph promotes the important ones up to `decisions.md` in the state repo. The re
 
 ---
 
-## Meir's PR, Revisited
+## The PR, Revisited
 
-Let's run Meir's scenario again, with this architecture in place.
+Let's run the original scenario again, with this architecture in place.
 
-Data picks up a feature. Works the branch. Makes some interesting choices along the way — writes git notes on the relevant commits. Opens the pull request.
+An agent picks up a feature. Works the branch. Makes some interesting choices along the way — writes git notes on the relevant commits. Opens the pull request.
 
-Meir opens the PR. What does he see?
+A reviewer opens the PR. What do they see?
 
-- Feature files changed: 57
-- Squad decision logs: 0
-- Agent histories: 0
-- `.squad/upstream.json`: 0 changes (the pointer is stable)
-- Git notes: 0 (invisible in the PR diff, by design)
+- Feature files changed: **57**
+- Squad decision logs: **0**
+- Agent histories: **0**
+- `.squad/upstream.json`: **0 changes** (the pointer is stable)
+- Git notes: **0** (invisible in the PR diff, by design)
 
-57 files. All code. Meir reviews in 15 minutes, approves, goes to lunch.
+57 files. All code. Review in 15 minutes, approve, go to lunch.
 
-Later that week, another engineer wonders why Data chose JWT for the new endpoint rather than the service's existing API key auth. They look at the commit, run:
+No private team notes. No AI diary. Just the essay.
+
+Later that week, another engineer wonders why the agent chose JWT for the new endpoint rather than the service's existing API key auth. They look at the commit, run:
 
 ```bash
 git notes --ref=squad/data show <commit-sha>
@@ -200,7 +231,7 @@ git notes --ref=squad/data show <commit-sha>
 
 And find the exact reasoning, timestamp, and agent that made the call.
 
-The context traveled with the code. It just didn't bother anyone during the review.
+The margin annotation was there the whole time. It just didn't bother anyone during the review. Exactly like it should be.
 
 ---
 
