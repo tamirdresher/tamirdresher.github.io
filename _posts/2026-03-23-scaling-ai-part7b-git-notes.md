@@ -110,7 +110,7 @@ git fetch origin 'refs/notes/*:refs/notes/*'
 git config --add remote.origin.fetch 'refs/notes/*:refs/notes/*'
 ```
 
-Ralph-watch handles this — it runs the explicit fetch before every work round. But a human developer cloning the repo fresh will not get the notes unless they know to ask for them. This is a real limitation and I'm not going to pretend it isn't.
+Ralph-watch handles this — it runs the explicit fetch before every work round. (Ralph-watch is my local PowerShell script where I run experiments and evolve new Squad behaviours in my own repo. Once things stabilise and mature there, I graduate them into the squad watch CLI command that anyone can use.) But a human developer cloning the repo fresh will not get the notes unless they know to ask for them. This is a real limitation and I'm not going to pretend it isn't.
 
 ---
 
