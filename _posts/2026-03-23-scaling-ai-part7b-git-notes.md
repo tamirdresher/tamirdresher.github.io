@@ -6,6 +6,8 @@ tags: [ai-agents, squad, github-copilot, git, git-notes, gerrit, distributed-sys
 series: "Scaling AI-Native Software Engineering"
 series_part: "7b"
 ---
+![The Invisible Layer](/assets/scaling-ai-part7b-git-notes/hero.svg)
+
 
 > *"We are the Borg. Lower your shields and surrender your ships. We will add your biological and technological distinctiveness to our own. Your culture will adapt to service us. Resistance is futile."*
 > — The Borg Collective
@@ -51,12 +53,14 @@ That's the gap git notes fills.
 
 Later that same night I was searching for something adjacent to the problem. Not "how to fix squad state in git" — I'd already read everything on that. I was searching for "git store metadata out of band" and "attach metadata to commits without polluting history." The kind of search that surfaces weird corners of the internet.
 
-One result was a long post comparing code review systems at scale — specifically Gerrit vs. GitHub, written by someone who'd worked on both. I almost closed the tab. I had never heard of Gerrit. My entire career has been GitHub and Azure DevOps — and before that Atlassian tools, Jira, Confluence, the whole stack. And before *that*, Perforce. And before *that*, things I try not to mention in polite company (VSS, Rational Team Concert — yes, really). Gerrit was a name I'd seen in passing, something I knew existed because Android uses it, but it felt as relevant to my daily work as a tool from a parallel universe.
+One result had a title that stopped me cold: *[Git notes: git's coolest, most-unloved feature](https://tylercipriani.com/blog/2022/11/19/git-notes-gits-coolest-most-unloved-feature/)* by Tyler Cipriani. I almost closed the tab anyway. I had never heard of Gerrit. My entire career has been GitHub and Azure DevOps — and before that Atlassian tools, Jira, Confluence, the whole stack. And before *that*, Perforce. And before *that*, things I try not to mention in polite company (VSS, Rational Team Concert — yes, really). Gerrit was a name I had seen in passing, something I knew existed because Android uses it, but it felt as relevant to my daily work as a tool from a parallel universe.
 
-Then I saw this line, mid-paragraph:
+Then I hit the section on Gerrit's `reviewnotes` plugin — Tyler was showing how to pull code review metadata right into your local git log:
 
-> *"Gerrit stores review state in `refs/notes/review` — a parallel ref namespace that attaches metadata to commits without ever appearing in the working tree or diff output."*
-
+```
+git fetch origin refs/notes/review:refs/notes/review
+git log --show-notes=review
+```
 I stopped.
 
 `refs/notes`.
@@ -150,6 +154,43 @@ That verdict is exactly right. And it pointed toward the architecture that actua
 
 ---
 
+## The Three Scenarios That Break Naive Solutions
+
+Before I show you the architecture, let me walk through three scenarios that kept me up far longer than the technical implementation. The real hard problem is not "where do you put the state". It is "what happens to state when a PR gets rejected?"
+
+Any solution must handle all three correctly.
+
+### Scenario 1: The Rejected Feature
+
+Data is working on `feature/auth-middleware`. He researches JWT vs session tokens, decides JWT with RS256 is the right call, writes the decision to `.squad/decisions.md`, and implements the middleware. PR goes up.
+
+The team reviews it. They want OAuth2 with PKCE instead. PR rejected. Branch deleted.
+
+But Data's decision — *"Use JWT for auth middleware"* — is already in `.squad/decisions.md`. If you naively sync that to permanent state, future agents will read it and think "we decided to use JWT." Except the team explicitly rejected that direction.
+
+**The naive result:** Agent memory contains a decision the team vetoed.
+
+### Scenario 2: The Universal Truth
+
+Seven is working on `feature/docs-overhaul`. While updating docs, she discovers the routing rules need an update — Worf should handle *all* security-related issues, not just the ones tagged `security`. She updates `.squad/routing.md`.
+
+This routing change has nothing to do with the docs feature. It is a universal truth about how the team operates. If the docs PR gets rejected for any reason, the routing update should still survive.
+
+**The naive result:** A universally correct change gets thrown out because it was committed alongside an unrelated feature.
+
+### Scenario 3: The Valuable Failure
+
+Data researches JWT vs session tokens for `feature/auth-middleware`. The feature gets rejected. But the *research itself* — the comparison of RS256 vs HS256, the security tradeoffs, the token expiration analysis — is genuinely valuable. Next time anyone works on auth, they should not have to redo it from scratch.
+
+**The naive result:** Valuable knowledge gets destroyed because the feature it was attached to did not land.
+
+Three scenarios. Three different correct answers. A simple "if PR merges keep state, if PR closes delete state" rule gets Scenario 3 wrong every time, and Scenario 2 wrong most of the time.
+
+Here is the part that made me feel clever and foolish simultaneously: **git notes plus the two-layer architecture handles all three, automatically, for free.**
+
+---
+
+
 ## The Two-Layer Architecture
 
 Squad state lives in two places, for two different purposes.
@@ -199,11 +240,15 @@ The `.squad/` folder doesn't disappear from the main repo. It still holds everyt
 }
 ```
 
+> *A small aside that made me unreasonably happy: `upstream.json` already existed in Squad — created months earlier for a completely different reason (connecting agents across machines for multi-machine coordination). When I sketched this architecture, I realised the same pointer file was already doing exactly what I needed, designed for an entirely different problem. The same abstraction solving two separate requirements is how you know a design decision was genuinely right. Go Squad.*
+
 Ralph-watch reads `upstream.json` on startup, syncs the live decisions and histories from the state repo before every work round, and — this is the part that ties the two layers together — **promotes important git notes to `decisions.md`** after a round completes.
 
 The git notes layer is the thin "why did we make this specific choice on this specific commit" layer. Commit-scoped context that travels with the code. When Data makes an interesting architectural decision while working a PR — not just "I chose JWT" but "I chose JWT *because* the existing auth middleware already uses it and adding a second strategy would require refactoring auth.go lines 47-89" — that gets written as a note on the commit. Attached to the code change that caused it. Invisible in the PR, but retrievable when you're debugging six months later.
 
 Ralph promotes the important ones up to `decisions.md` in the state repo. The rest stay as notes — cheap, commit-scoped, invisible.
+
+*(Pro tip: if you're running multiple agents in parallel — each in their own [git worktree](/blog/2025/10/20/scaling-your-ai-development-team-with-git-worktrees) — this works beautifully. Notes live in the shared `.git` directory, so every worktree sees every other agent's notes automatically. No syncing needed.)*
 
 ---
 
