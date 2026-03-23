@@ -27,7 +27,6 @@ github:
 
 twitter:
   username: tamir_dresher            # change to your twitter username
-  card: summary_large_image          # twitter card type for better social previews
 
 social:
   name: Tamir Dresher                  # it will shows as the copyright owner in Footer
@@ -66,13 +65,6 @@ google_analytics:
 disqus:
   comments: true  # boolean type, the global switch for posts comments.
   shortname: 'tamirdresher'    # Fill with your Disqus shortname. › https://help.disqus.com/en/articles/1717111-what-s-a-shortname
-# Kit (formerly ConvertKit) newsletter signup
-# Get your form UID from: app.kit.com → Forms → your form → Embed → Script
-kit:
-  form_uid: ''  # e.g. 'abc123de45' — leave empty to hide the widget
-
-# Default Open Graph / Twitter card image (used by jekyll-seo-tag when posts have no image)
-logo: /assets/img/sample/tamir_avatar.jpg
 
 
 # Prefer color scheme setting, available values:
