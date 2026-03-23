@@ -98,7 +98,7 @@ The note is stored as a blob, indexed by the commit SHA. It lives in `refs/notes
 
 This is the property I'd been looking for. Invisible in the places that matter to human reviewers, but *there* — attached to the commit that caused the decision, traveling with the repo.
 
-There's a real gotcha, though, and Q caught it immediately when I shared the approach.
+There's a real gotcha, though, and Q caught it immediately when I shared the approach (Q is my devil's advocate sub-agent — his entire job is to poke holes in ideas that seem clever at 1am).
 
 **Explicit fetch required.** Git does not fetch notes by default. When someone clones your repo and runs `git fetch`, `refs/notes/*` is not included. You need to add the refspec explicitly:
 
