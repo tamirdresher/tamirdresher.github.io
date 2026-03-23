@@ -61,7 +61,9 @@ I stopped.
 
 `refs/notes`.
 
-I knew git had a notes feature. I had used it exactly once, in 2019, to annotate a release commit, and then immediately forgotten about it because nothing in my toolchain surfaced the notes automatically. I'd filed it under "git trivia" and moved on.
+I had no idea git had a notes feature. None. I've been using git daily for over a decade — commits, branches, rebases, cherry-picks, reflog, bisect, the works — and somehow git notes had never once crossed my path. Not in a tutorial, not in a Stack Overflow answer, not in a colleague's script. It was sitting there the whole time, completely invisible to me.
+
+That was the revelation.
 
 But *Gerrit* had been using it in production. For Android. For Chromium. At Google scale. Since approximately 2009.
 
