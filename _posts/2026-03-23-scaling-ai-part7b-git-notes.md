@@ -51,7 +51,7 @@ That's the gap git notes fills.
 
 Later that same night I was searching for something adjacent to the problem. Not "how to fix squad state in git" — I'd already read everything on that. I was searching for "git store metadata out of band" and "attach metadata to commits without polluting history." The kind of search that surfaces weird corners of the internet.
 
-One result was a long post comparing code review systems at scale — specifically Gerrit vs. GitHub, written by someone who'd worked on both. I almost closed the tab. I've never used Gerrit in production. At Microsoft, everyone uses GitHub. Gerrit has always been that thing I vaguely knew existed because Android and Chromium use it, but that felt as relevant to my daily life as CVS.
+One result was a long post comparing code review systems at scale — specifically Gerrit vs. GitHub, written by someone who'd worked on both. I almost closed the tab. I had never heard of Gerrit. My entire career has been GitHub and Azure DevOps — and before that Atlassian tools, Jira, Confluence, the whole stack. And before *that*, Perforce. And before *that*, things I try not to mention in polite company (VSS, Rational Team Concert — yes, really). Gerrit was a name I'd seen in passing, something I knew existed because Android uses it, but it felt as relevant to my daily work as a tool from a parallel universe.
 
 Then I saw this line, mid-paragraph:
 
@@ -120,7 +120,7 @@ I want to be precise here, because I'm not claiming Gerrit uses git notes for *e
 
 That's what matters to me. This isn't a pattern I invented at 1am. This is a pattern that Google ran on Android for 17 years. When you're evaluating an architectural approach, "Google did this for 17 years on Android" is about as strong a validation as you're going to find short of a formal proof.
 
-I'd never used Gerrit in production (hi, Microsoft), but I recognised the pattern immediately.
+I'd never heard of Gerrit before that night. I still haven't used it. But I recognised the pattern immediately — because the problem it was solving is the same one that kept me up at 1am.
 
 ---
 
