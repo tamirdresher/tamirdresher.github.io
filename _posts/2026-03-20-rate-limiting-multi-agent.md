@@ -5,7 +5,7 @@ date: 2026-03-20
 tags: [ai-agents, squad, rate-limiting, distributed-systems, multi-agent, github-copilot, api-design]
 series: "Scaling AI-Native Software Engineering"
 ---![Rate limiting hero — AI agents competing for API access](/assets/rate-limiting-multi-ralph/rate-limit-hero.svg)
-## The StoryI've been running [Squad](https://github.com/tamirdresher/squad) — a multi-agent AI framework — for a couple of weeks now. It orchestrates a team of AI agents that handle code review, architecture decisions, infrastructure, docs, and more. A reconciliation loop runs every 5 minutes, picking up work and dispatching agents. Most of the time it works great.As I started planning to run Squad at scale — thinking about platforms like Kubernetes, cloud VMs, or similar — I realized rate limiting with multiple agents is fundamentally different from single-service rate limiting. So I went and did some research and reading, stress-tested the system, and designed 6 patterns to handle it.Here's what triggered the deep dive. I ran a V10 stress test — spinning up the full agent roster at once.Nine agents launched simultaneously. In 22 minutes they opened **10 pull requests**. Impressive — until minute 8, when GitHub started returning `429 Too Many Requests`.Every agent retried at the same time. The retry wave triggered a *second* 429 wave. That triggered a third. Within 90 seconds I'd burned through GitHub's 5,000 requests/hour limit and were locked out entirely. Meanwhile, Picard — my lead agent making critical architecture decisions — was stuck behind Ralph, a background polling agent that had eaten the remaining GitHub Copilot tokens doing low-priority issue triage.Even in just a couple of weeks of running the system, I'd already hit memory issues, resource contention, and agent crashes. But rate limiting with multiple agents sharing the same quotas? That was a different problem entirely — and one that gets worse the more you scale.The core lesson:> **Rate limiting in multi-agent systems is a coordination problem, not a retry problem.**Every tool I evaluated — Azure API Management, Resilience4j, LangGraph — treats rate limiting as something each caller handles independently. But when 9 agents share the same API quotas, independent retry logic doesn't just fail. It actively makes things worse.---## The Three Failure ModesBefore designing anything, I had to understand *why* standard retry logic breaks down. I identified three patterns from my logs and stress tests:### 1. Thundering HerdAfter a 429, all agents wait the same `Retry-After` duration and retry simultaneously. They collide again, triggering another 429. In my stress test, the `ralph-self-heal.log` showed **60+ chained failures** in a single incident. Classic distributed systems problem — except the "services" are AI agents that don't know about each other.### 2. Priority InversionRalph's background polling (checking for new GitHub issues every 5 minutes) consumed API quota that Picard needed for blocking architecture decisions. Both agents had equal retry priority. There was no way to say "Picard goes first" — so critical work waited behind background noise.### 3. Cascade AmplificationA single GitHub secondary-rate-limit hit caused multiple agents to queue their pending work. When the limit lifted, they all flushed their queues at once — immediately re-triggering the limit. One 429 became a system-wide outage that took up to 60 minutes to recover from.---## 6 Patterns I BuiltBased on the research and my stress testing, I designed a **Rate Governor** — a coordination layer that all agents con
+## The StoryI've been running [Squad](https://github.com/tamirdresher/squad) — a multi-agent AI framework — for a couple of weeks now. It orchestrates a team of AI agents that handle code review, architecture decisions, infrastructure, docs, and more. A reconciliation loop runs every 5 minutes, picking up work and dispatching agents. Most of the time it works great.As I started planning to run Squad at scale — thinking about platforms like Kubernetes, cloud VMs, or similar — I realized rate limiting with multiple agents is fundamentally different from single-service rate limiting. I started noticing this issue and found others in the community experiencing the same — see [this Reddit discussion](https://www.reddit.com/r/GithubCopilot/s/N5DH2B8YA0). So I went and did some research and reading, stress-tested the system, and designed 6 patterns to handle it.Here's what triggered the deep dive. I spun up the full agent roster at once — all nine agents running simultaneously. That organic stress test revealed the problem fast.Nine agents launched simultaneously. In 22 minutes they opened **10 pull requests**. Impressive — until minute 8, when GitHub started returning `429 Too Many Requests`.Every agent retried at the same time. The retry wave triggered a *second* 429 wave. That triggered a third. Within 90 seconds I'd burned through GitHub's 5,000 requests/hour limit and I was locked out entirely. Meanwhile, Picard — my lead agent making critical architecture decisions — was stuck behind Ralph, a background polling agent that had eaten the remaining GitHub Copilot tokens doing low-priority issue triage.Even in just a couple of weeks of running the system, I'd already hit memory issues, resource contention, and agent crashes. But rate limiting with multiple agents sharing the same quotas? That was a different problem entirely — and one that gets worse the more you scale.The core lesson:> **Rate limiting in multi-agent systems is a coordination problem, not a retry problem.**Every tool I evaluated — Azure API Management, Resilience4j, LangGraph — treats rate limiting as something each caller handles independently. But when 9 agents share the same API quotas, independent retry logic doesn't just fail. It actively makes things worse.---## The Three Failure ModesBefore designing anything, I had to understand *why* standard retry logic breaks down. I identified three patterns from my logs and stress tests:### 1. Thundering HerdAfter a 429, all agents wait the same `Retry-After` duration and retry simultaneously. They collide again, triggering another 429. In my stress test, the `ralph-self-heal.log` showed **60+ chained failures** in a single incident. Classic distributed systems problem — except the "services" are AI agents that don't know about each other.### 2. Priority InversionRalph's background polling (checking for new GitHub issues every 5 minutes) consumed API quota that Picard needed for blocking architecture decisions. Both agents had equal retry priority. There was no way to say "Picard goes first" — so critical work waited behind background noise.### 3. Cascade AmplificationA single GitHub secondary-rate-limit hit caused multiple agents to queue their pending work. When the limit lifted, they all flushed their queues at once — immediately re-triggering the limit. One 429 became a system-wide outage that took up to 60 minutes to recover from.---## 6 Patterns I BuiltBased on the research and my stress testing, I designed a **Rate Governor** — a coordination layer that all agents con
 nsult before making API calls. Here are the six patterns inside it, each one a direct response to a failure mode I obser
 rved or anticipated as the system scales.![Rate Governor Architecture — 6 components feeding into the Rate State Store](/assets/rate-limiting-multi-ralph/rate-go
 overnor-architecture.svg)```mermaid
@@ -68,8 +68,9 @@ if ($ratio -ge 0.40) {
 }
 ```
 
-> **Key insight:** Don't wait for a 429 to tell you you're out of quota. The headers tell you 10 calls in advance. Read 
- them.
+> **Key insight:** Don't wait for a 429 to tell you you're out of quota. The headers tell you 10 calls in advance. Read them.
+
+> **A note on header visibility:** `x-ratelimit-remaining` headers are available when calling the GitHub Copilot API directly — for example, via the Node.js SDK or direct HTTP requests. When using the `gh copilot` CLI with `-p`, these headers are not exposed to the caller. Ralph monitors rate limits by making direct API calls rather than through the CLI, which is what makes this header-based throttling possible.
 
 ---
 
@@ -111,8 +112,9 @@ The rules are simple:
 There's no circular wait — an agent either gets tokens immediately or yields and retries next round. No deadlocks possib
 ble.
 
-> **Key insight:** Treat your API quota like a shared bank account, not separate wallets. Idle agents should donate, cri
-itical agents should overdraw.
+> **Key insight:** Treat your API quota like a shared bank account, not separate wallets. Idle agents should donate, critical agents should overdraw.
+
+> **Multi-machine and multi-pod note:** The `rate-pool.json` approach works well on a single machine or VM. In a multi-machine or multi-pod setup — for example, running Squad on AKS — this file-based store would need to move to a shared location: Redis, Azure Blob Storage, or a shared Kubernetes volume. File-locking doesn't cross machine boundaries. This is a natural evolution path: start with the filesystem for a single-machine setup, then graduate to a shared store when you scale out to multiple nodes.
 
 ---
 
@@ -143,7 +145,7 @@ Before switching models entirely, the circuit breaker first tries **reducing loa
 kens`, compressing prompts. Only if that doesn't help does it walk down the fallback chain:
 
 ```
-claude-sonnet-4.6 → gpt-5.4-mini → gpt-5-mini → gpt-4.1
+GitHub Copilot (default) → GitHub Copilot (reduced tokens / compressed prompts) → Azure OpenAI GPT-4.1 (fallback)
 ```
 
 > **Key insight:** The difference between "locked out for 10 minutes" and "gracefully downgraded for 30 seconds" is pred
@@ -359,7 +361,7 @@ Here's what I observed during stress testing *before* designing the Rate Governo
 
 | Metric | Value |
 |--------|-------|
-| Agents running concurrently | 9 (V10 stress test) |
+| Agents running concurrently | 9 (all agents running simultaneously) |
 | PRs created in one burst | **10 in 22 minutes** |
 | GitHub API calls/hour | 4,800+ (dangerously close to 5,000 limit) |
 | 429 errors per incident | **60+ chained failures** |
@@ -434,6 +436,12 @@ part4-distributed)
 > - **Part 5**: [Knowledge is Power — How an AI Squad Learns to Evolve Itself](/blog/2026/03/18/scaling-ai-part5-evoluti
 ion)
 > - **Part 6**: 9 AI Agents, One API Quota — The Rate Limiting Problem ← You are here
+
+---
+
+## Credits
+
+This research was done with the help of my Squad — an AI agent team. Research, synthesis, and first drafts were done by Picard (lead), Seven (research), and Troi (writing). Q reviewed the final draft for accuracy.
 
 ___BEGIN___COMMAND_DONE_MARKER___0
 PS C:\Users\tamirdresher\source\repos\tamresearch1>
