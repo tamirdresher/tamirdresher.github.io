@@ -2,7 +2,7 @@
 layout: post
 title: "My Precious — How I Secure and Harden My AI Agent Squad"
 date: 2026-03-25
-tags: [ai-agents, squad, security, github-copilot, supply-chain, devsecops, hardening]
+tags: [ai-agents, squad, security, github-copilot, supply-chain, devsecops, hardening, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
 series_part: 8
 ---
@@ -196,4 +196,4 @@ That's what it actually means to run AI agents in production.
 
 ---
 
-*Part of the [Scaling AI-Native Software Engineering](/tags/scaling-ai-native-software-engineering) series. Previous: [The Invisible Layer — Git Notes and Squad State](/2026/03/23/scaling-ai-part7b-git-notes.html).*
+*Part of the [Scaling AI-Native Software Engineering](/tags/scaling-ai-native-software-engineering) series. Previous: [The Invisible Layer — Git Notes and Squad State](/blog/2026/03/23/scaling-ai-part7b-git-notes).*
