@@ -2,7 +2,7 @@
 layout: post
 title: "The Invisible Layer — Git Notes, Orphan Branches, and the Squad State Solution"
 date: 2026-03-23
-tags: [ai-agents, squad, github-copilot, git, git-notes, gerrit, distributed-systems, state-management]
+tags: [ai-agents, squad, github-copilot, git, git-notes, gerrit, distributed-systems, state-management, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
 series_part: "7b"
 ---
