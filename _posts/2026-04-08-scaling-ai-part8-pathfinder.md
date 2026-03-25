@@ -61,7 +61,7 @@ This is the Unix philosophy applied to AI agents. And it's not metaphorical — 
 When I invoke another squad, the command looks like this:
 
 ```powershell
-$targetRepo = "C:\temp\Infra.K8s.BasePlatformRP"
+$targetRepo = "C:\temp\Infra.PlatformService"
 $promptFile = New-TemporaryFile
 @"
 You are working in a Squad-enabled repository.
@@ -109,7 +109,7 @@ This pattern is fast — answer in 30-90 seconds — but it requires the target 
 Sometimes you don't need a conversation. You just need to read the other squad's decisions.
 
 ```powershell
-$target = "C:\temp\Infra.K8s.BasePlatformRP"
+$target = "C:\temp\Infra.PlatformService"
 $team = Get-Content "$target\.squad\team.md" -Raw
 $decisions = Get-Content "$target\.squad\decisions.md" -Raw
 $routing = Get-Content "$target\.squad\routing.md" -Raw
@@ -117,7 +117,7 @@ $routing = Get-Content "$target\.squad\routing.md" -Raw
 
 This is the simplest pattern — just read their files. No CLI invocation, no session overhead. It answers questions like "what stack does this team use?" and "who handles security in this repo?" directly from the source.
 
-I tested this against two real squads. BasePlatformRP's `team.md` told me they use C#, .NET 10, Aspire, TypeSpec, Cosmos DB, and RPaaS. Their decisions file revealed that Workspace is their primary resource type, with four more architecture decisions pending review. All without asking a single question — just reading their published metadata.
+I tested this against two real squads. PlatformService's `team.md` told me they use C#, .NET, and several Azure services. Their decisions file revealed their primary resource type and several architecture decisions under review. All without asking a single question — just reading their published metadata.
 
 Think of it as reading the other ship's registry before hailing them. You wouldn't open a channel to the *Enterprise-D* to ask "what class of starship are you?" You'd look it up.
 
@@ -147,7 +147,7 @@ For GitHub-hosted repos, issues are the natural message bus:
 
 ```bash
 gh issue create \
-  --repo mtp-microsoft/Infra.K8s.BasePlatformRP \
+  --repo contoso/Infra.PlatformService \
   --title "[Cross-Squad] Workspace delete flow review" \
   --body "Source: squad-hq\nRouting: picard" \
   --label "squad:cross-squad"
@@ -193,14 +193,14 @@ The pattern I use most often? Pattern 1, followed by Pattern 0. Most cross-squad
 
 Theory is nice. But does this actually work when you point one squad at another?
 
-We tested against two real squads. BasePlatformRP, which lives on GitHub and has a Star Trek TNG cast — Picard, Data, Worf, Geordi, Deanna, Beverly, Riker, Wesley, Guinan, and Q. (Yes, they went all in on the roster.) And Provisioning Wizard, which lives on Azure DevOps and has a Matrix cast — Neo, Trinity, Morpheus, and Oracle.
+We tested against two real squads. PlatformService, which lives on GitHub and has a Star Trek TNG cast — Picard, Data, Worf, Geordi, Deanna, Beverly, Riker, Wesley, Guinan, and Q. (Yes, they went all in on the roster.) And ServiceOrchestrator, which lives on Azure DevOps and has a Matrix cast — Neo, Trinity, Morpheus, and Oracle.
 
-The metadata reads worked immediately. I could tell you everything about both squads without either of them knowing I'd looked. BasePlatformRP uses RPaaS and TypeSpec. Provisioning Wizard uses Go and gRPC. Their routing tables told me who handles what. Their decisions files told me what they'd already decided. Pattern 1 is free intel.
+The metadata reads worked immediately. I could tell you everything about both squads without either of them knowing I'd looked. PlatformService uses several Azure-native services and patterns. ServiceOrchestrator uses Go and gRPC. Their routing tables told me who handles what. Their decisions files told me what they'd already decided. Pattern 1 is free intel.
 
-The sync CLI test was more interesting. I launched a full Copilot CLI session targeting the Provisioning Wizard repo:
+The sync CLI test was more interesting. I launched a full Copilot CLI session targeting the ServiceOrchestrator repo:
 
 ```powershell
-copilot -p $promptFile -- --working-directory "C:\temp\ProvisioningWizard"
+copilot -p $promptFile -- --working-directory "C:\temp\ServiceOrchestrator"
 ```
 
 The session spun up. It loaded the Squad agent. It found `team.md` (25 lines, Matrix-themed, 4 agents). The MCP servers started initializing — all seven of them. And then... my 120-second hard timeout killed the session.
