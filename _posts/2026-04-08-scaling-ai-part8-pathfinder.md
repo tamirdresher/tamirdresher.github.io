@@ -5,6 +5,8 @@ date: 2026-04-08
 tags: [ai-agents, squad, github-copilot, distributed-systems, cross-squad, unix-philosophy, pipes, communication-protocols, kubernetes, star-trek]
 series: "Scaling AI-Native Software Engineering"
 series_part: 8
+hero_image: /assets/img/part8-pathfinder.jpg
+hero_image_prompt: "A deep space communications relay — two distant star systems connected by a brilliant data stream, one blue-white, one amber-gold, relay stations bridging the gap, geometric starships at each end, cinematic sci-fi art with warm lighting"
 ---
 
 > *"I've spent the last year trying to find a way to communicate with Voyager. Everyone said it couldn't be done. They said the distance was too great, the technology didn't exist. But I knew if I could just find the right frequency..."*
@@ -18,13 +20,13 @@ I've been doing the same thing with AI squads. And it started because I realized
 
 ## The Squad HQ Problem
 
-Somewhere around Part 6, when I moved Squad to [AKS](/blog/2026/03/25/scaling-ai-part6-unicomplex), something shifted in how I work. My personal repo — this one, `tamresearch1` — stopped being the place where Squad lives and became the place from which I *control* other squads.
+Somewhere around Part 6, when I moved Squad to [AKS](/blog/2026/03/25/scaling-ai-part6-unicomplex), something shifted in how I work. My personal repo stopped being the place where Squad lives and became the place from which I *control* other squads.
 
 Here's what I mean. At work, I contribute to several repositories. Each one has its own Squad — its own team of AI agents, its own routing table, its own Ralph monitor, its own decisions log. The infrastructure repo has a Squad with agents named after the TNG bridge crew. The provisioning service has a Squad themed around The Matrix. Different crews for different missions, just like Starfleet doesn't send one ship to do everything.
 
 But I needed a home base. A bridge. The place where Captain Me sits and says "hail the other ship."
 
-That's what `tamresearch1` became. My Squad HQ. I use it to query other squads, delegate tasks across repos, and coordinate work that spans multiple codebases. One squad orchestrating others. A fleet command pattern.
+That's what my personal repo became. My Squad HQ. I use it to query other squads, delegate tasks across repos, and coordinate work that spans multiple codebases. One squad orchestrating others. A fleet command pattern.
 
 And the moment I started doing this — talking to other squads from my home base — a higher-level pattern emerged that I genuinely didn't expect.
 
@@ -66,16 +68,16 @@ You are working in a Squad-enabled repository.
 Read .squad/team.md and .squad/decisions.md first.
 
 [CROSS-SQUAD REQUEST]
-From: tamresearch1
+From: squad-hq
 Request Type: knowledge_query
 Query: What is the current architecture of the ARM RP?
 Response Format: Brief structured summary
 "@ | Out-File $promptFile -Encoding utf8
 
-ghcs -p $promptFile -- --working-directory $targetRepo
+copilot -p $promptFile -- --working-directory $targetRepo
 ```
 
-Text in (the prompt file), text out (the response). The Squad on the other side reads its own `.squad/team.md`, loads its own context, and answers the question using its own codebase. I never touch their code. I never configure their agents. I just... ask.
+Text in (the prompt file), text out (the response).The Squad on the other side reads its own `.squad/team.md`, loads its own context, and answers the question using its own codebase. I never touch their code. I never configure their agents. I just... ask.
 
 This is `cat | grep` for organizational knowledge. The prompt is stdin. The response is stdout. The Squad is the tool.
 
@@ -95,7 +97,7 @@ This is the one I showed above. Spawn a Copilot CLI session with the working dir
 
 ```powershell
 # Quick knowledge query — synchronous, immediate response
-ghcs -p $promptFile -- --working-directory $targetRepo
+copilot -p $promptFile -- --working-directory $targetRepo
 ```
 
 We write the prompt to a temp file instead of passing it inline. This was a lesson from `ralph-watch.ps1` — when you pass multi-line prompts as command arguments, PowerShell's argument splitting turns your carefully crafted question into word salad. The temp file approach came from debugging Ralph rounds where prompts containing flags like `-R` were being interpreted as CLI arguments. Two hours of "why is Ralph ignoring my prompt?" answered by "because Start-Process thought your prompt was a parameter."
@@ -126,7 +128,7 @@ For work that takes longer than a quick question — PR reviews, multi-step anal
 ```yaml
 # .squad/cross-squad/requests/2026-07-11-baseplatformrp-arch-review.yaml
 id: req-2026-07-11-001
-source_squad: tamresearch1
+source_squad: squad-hq
 target_squad: baseplatformrp
 request_type: knowledge_query
 priority: normal
@@ -147,7 +149,7 @@ For GitHub-hosted repos, issues are the natural message bus:
 gh issue create \
   --repo mtp-microsoft/Infra.K8s.BasePlatformRP \
   --title "[Cross-Squad] Workspace delete flow review" \
-  --body "Source: tamresearch1\nRouting: picard" \
+  --body "Source: squad-hq\nRouting: picard" \
   --label "squad:cross-squad"
 ```
 
@@ -198,7 +200,7 @@ The metadata reads worked immediately. I could tell you everything about both sq
 The sync CLI test was more interesting. I launched a full Copilot CLI session targeting the Provisioning Wizard repo:
 
 ```powershell
-ghcs -p $promptFile -- --working-directory "C:\temp\ProvisioningWizard"
+copilot -p $promptFile -- --working-directory "C:\temp\ProvisioningWizard"
 ```
 
 The session spun up. It loaded the Squad agent. It found `team.md` (25 lines, Matrix-themed, 4 agents). The MCP servers started initializing — all seven of them. And then... my 120-second hard timeout killed the session.
@@ -267,7 +269,7 @@ The progression looks like this:
 | **Part 8** | **Multiple repos, one machine** | **CLI + metadata + git-async** |
 | Next | **Multiple clusters** | **Network protocols (S2S)** |
 
-The Star Trek parallel writes itself. In "Pathfinder," Barclay doesn't just make contact with Voyager — he establishes a *repeatable communication protocol*. A monthly data stream. Regular check-ins. What starts as a desperate one-time hack becomes institutional infrastructure. That's exactly the path from "I manually ran `ghcs` targeting another repo" to "squads discover and communicate with each other as cloud-native services."
+The Star Trek parallel writes itself. In "Pathfinder," Barclay doesn't just make contact with Voyager — he establishes a *repeatable communication protocol*. A monthly data stream. Regular check-ins. What starts as a desperate one-time hack becomes institutional infrastructure. That's exactly the path from "I manually ran `copilot` targeting another repo" to "squads discover and communicate with each other as cloud-native services."
 
 We're somewhere between rows 4 and 5 in that table. The patterns are proven. The protocol is documented. The foundation (AKS, Part 6) is running. What's missing is the network transport — and that's an engineering problem, not a research problem.
 
@@ -302,4 +304,4 @@ Barclay would approve.
 > - **Part 7**: [The Cooperative — Four More Distributed Systems Patterns Hiding in Your AI Team](/blog/2026/04/02/scaling-ai-part7-cooperative)
 > - **Part 8**: Pathfinder — When AI Squads Learn to Talk to Each Other ← You are here
 
-*The cross-squad communication patterns described here were designed and tested in a live session on July 11-12, 2026, against two real squad-enabled repositories. The session died of context overflow before this post could be written — which is itself a distributed systems failure mode I should probably cover in Part 9. Code examples from [tamirdresher_microsoft/tamresearch1](https://github.com/tamirdresher_microsoft/tamresearch1). Doug McIlroy's Unix philosophy is from 1978. Barclay's Pathfinder protocol is from 2376. Both still work.*
+*The cross-squad communication patterns described here were designed and tested in a live session on July 11-12, 2026, against two real squad-enabled repositories. The session died of context overflow before this post could be written — which is itself a distributed systems failure mode I should probably cover in Part 9. Code examples from production Squad scripts. Doug McIlroy's Unix philosophy is from 1978. Barclay's Pathfinder protocol is from 2376. Both still work.*
