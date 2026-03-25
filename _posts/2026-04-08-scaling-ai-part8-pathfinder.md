@@ -36,7 +36,7 @@ And the moment I started doing this — talking to other squads from my home bas
 
 Bear with me for a second while I talk about pipes.
 
-The Unix philosophy, as articulated by Doug McIlroy in 1978, goes like this: *Write programs that do one thing and do it well. Write programs to work together. Write programs to handle text streams, because that is a universal interface.*
+The [Unix philosophy](https://cscie2x.dce.harvard.edu/hw/ch01s06.html), as articulated by Doug McIlroy in 1978, goes like this: *Write programs that do one thing and do it well. Write programs to work together. Write programs to handle text streams, because that is a universal interface.*
 
 Small composable tools. Connected by `stdin` and `stdout`. Each tool is ignorant of the others — it just reads input, does its thing, and writes output. The magic is in the composition.
 
