@@ -74,7 +74,7 @@ Query: What is the current architecture of the ARM RP?
 Response Format: Brief structured summary
 "@ | Out-File $promptFile -Encoding utf8
 
-copilot -p $promptFile -- --working-directory $targetRepo
+copilot --yolo --agent squad -p $promptFile -- --working-directory $targetRepo
 ```
 
 Text in (the prompt file), text out (the response).The Squad on the other side reads its own `.squad/team.md`, loads its own context, and answers the question using its own codebase. I never touch their code. I never configure their agents. I just... ask.
