@@ -2,7 +2,7 @@
 layout: post
 title: "Knowledge is Power — How an AI Squad Learns to Evolve Itself"
 date: 2026-03-18
-tags: [ai-agents, squad, github-copilot, learning, research, knowledge-management, star-trek, seven-of-nine]
+tags: [ai-agents, squad, github-copilot, learning, research, knowledge-management, star-trek, seven-of-nine, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
 series_part: 5
 ---
