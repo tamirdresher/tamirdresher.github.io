@@ -141,6 +141,8 @@ The target squad's Ralph picks this up on its next cycle, routes it to the appro
 
 This is the git-based async pattern — your version control system is the message bus. Durable, auditable, and it works even when the target squad isn't currently running. The message waits until someone processes it.
 
+**Important:** The `cross-squad/requests/` directory should be added to `.gitignore` — these are transient messages, not permanent state. You don't want request files cluttering your commit history after they've been processed.
+
 ### Pattern 3: The Issue Delegation (The Work Order)
 
 For GitHub-hosted repos, issues are the natural message bus:
@@ -154,20 +156,6 @@ gh issue create \
 ```
 
 The `squad:cross-squad` label triggers the target squad's routing system. Picard picks it up, does the analysis, posts the findings as a comment, and closes the issue. It's the same workflow as a human creating a bug report — the Squad just happens to be the one reading the inbox.
-
-### Pattern 4: The Dependency Scan (The Radar Sweep)
-
-Before you talk to another squad, you should know *how* you relate to them. Pattern 4 is about discovery — scanning for shared dependencies, mutual references, common packages:
-
-```powershell
-# What do these two repos share?
-Select-String -Path (Get-ChildItem $repoA -Recurse -Include "*.csproj") `
-  -Pattern $repoB_name
-Select-String -Path (Get-ChildItem $repoB -Recurse -Include "*.csproj") `
-  -Pattern $repoA_name
-```
-
-This found things I didn't know about. Shared NuGet packages. Mutual ADO project references. Infrastructure modules that both repos depend on. You can't have a meaningful cross-squad conversation if you don't know what you have in common.
 
 ### The Decision Tree
 
