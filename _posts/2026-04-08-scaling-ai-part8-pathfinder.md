@@ -20,7 +20,7 @@ I've been doing the same thing with AI squads. And it started because I realized
 
 ## The Squad HQ Problem
 
-Somewhere around Part 6, when I moved Squad to [AKS](/blog/2026/03/25/scaling-ai-part6-unicomplex), something shifted in how I work. My personal repo stopped being the place where Squad lives and became the place from which I *control* other squads.
+Somewhere around when I moved Squad to AKS, something shifted in how I work. My personal repo stopped being the place where Squad lives and became the place from which I *control* other squads.
 
 Here's what I mean. At work, I contribute to several repositories. Each one has its own Squad — its own team of AI agents, its own routing table, its own Ralph monitor, its own decisions log. The infrastructure repo has a Squad with agents named after the TNG bridge crew. The provisioning service has a Squad themed around The Matrix. Different crews for different missions, just like Starfleet doesn't send one ship to do everything.
 
@@ -249,7 +249,7 @@ Right now, cross-squad communication works because all the repos are cloned on m
 
 That works for one person managing a few squads. It doesn't work for an organization where fifty teams each have their own squad, running on their own infrastructure, potentially in different clouds.
 
-In [Part 6](/blog/2026/03/25/scaling-ai-part6-unicomplex), I moved Squad to AKS — Kubernetes CronJobs, KEDA autoscaling, workload identity, zero credentials in the pod. The squad went from "a PowerShell loop on my laptop" to "a cloud-native service that scales and self-heals." That was the foundation.
+When I moved Squad to AKS — Kubernetes CronJobs, KEDA autoscaling, workload identity, zero credentials in the pod — the squad went from "a PowerShell loop on my laptop" to "a cloud-native service that scales and self-heals." That was the foundation.
 
 This post is what you build on that foundation.
 
@@ -257,7 +257,7 @@ If squads run on AKS (or any agentic host runtime), they could discover each oth
 
 Imagine this: a squad running in one cluster needs a security review of a package. It doesn't file a GitHub issue. It sends a request to the security squad's API endpoint. The security squad's Worf picks it up, does the analysis, and sends the response back. All automated. All over the network. No human filing tickets. No human checking inboxes.
 
-The protocol could be A2A (Google's Agent-to-Agent protocol), or MCP over HTTP, or something we haven't named yet. I've been thinking of it as **S2S — Squad to Squad.** Same patterns as above, but over the network instead of the filesystem. Discovery becomes DNS or a service registry. Health checks become actual HTTP liveness probes. The gossip protocol from [Part 7](/blog/2026/04/02/scaling-ai-part7-cooperative) becomes a real pub/sub system.
+The protocol could be A2A (Google's Agent-to-Agent protocol), or MCP over HTTP, or something we haven't named yet. I've been thinking of it as **S2S — Squad to Squad.** Same patterns as above, but over the network instead of the filesystem. Discovery becomes DNS or a service registry. Health checks become actual HTTP liveness probes. The gossip protocol from [Part 7](/blog/2026/03/22/scaling-ai-part7-enterprise-state) (and [Part 7b](/blog/2026/03/23/scaling-ai-part7b-git-notes)) becomes a real pub/sub system.
 
 The progression looks like this:
 
@@ -265,13 +265,13 @@ The progression looks like this:
 |-------|-------------------|---------------|
 | Part 1 | One laptop | They don't — it's one squad |
 | Part 3 | Two machines | Git push as consensus |
-| Part 6 | AKS cluster | CronJobs + KEDA |
+| AKS | AKS cluster | CronJobs + KEDA |
 | **Part 8** | **Multiple repos, one machine** | **CLI + metadata + git-async** |
 | Next | **Multiple clusters** | **Network protocols (S2S)** |
 
 The Star Trek parallel writes itself. In "Pathfinder," Barclay doesn't just make contact with Voyager — he establishes a *repeatable communication protocol*. A monthly data stream. Regular check-ins. What starts as a desperate one-time hack becomes institutional infrastructure. That's exactly the path from "I manually ran `copilot` targeting another repo" to "squads discover and communicate with each other as cloud-native services."
 
-We're somewhere between rows 4 and 5 in that table. The patterns are proven. The protocol is documented. The foundation (AKS, Part 6) is running. What's missing is the network transport — and that's an engineering problem, not a research problem.
+We're somewhere between rows 4 and 5 in that table. The patterns are proven. The protocol is documented. The foundation (AKS deployment) is running. What's missing is the network transport — and that's an engineering problem, not a research problem.
 
 ---
 
@@ -294,14 +294,16 @@ Barclay would approve.
 ---
 
 > 📚 **Series: Scaling AI-Native Software Engineering**
-> - **Part 0**: [Organized by AI — How Squad Changed My Daily Workflow](/blog/2026/03/10/organized-by-ai)
-> - **Part 1**: [Resistance is Futile — Your First AI Engineering Team](/blog/2026/03/11/scaling-ai-part1-first-team)
-> - **Part 2**: [When the Collective Meets Enterprise](/blog/2026/03/12/scaling-ai-part2-collective)
-> - **Part 3**: [Unimatrix Zero — When Your AI Squad Becomes a Distributed System](/blog/2026/03/18/scaling-ai-part3-distributed)
-> - **Part 4**: [When Eight Ralphs Fight Over One Login](/blog/2026/03/17/scaling-ai-part4-race-conditions)
-> - **Part 5**: [The Vinculum — Eight Distributed Systems Lessons My AI Team Taught Me the Hard Way](/blog/2026/03/24/scaling-ai-part5-vinculum)
-> - **Part 6**: [The Unicomplex — AI Squads as Cloud-Native Kubernetes Citizens](/blog/2026/03/25/scaling-ai-part6-unicomplex)
-> - **Part 7**: [The Cooperative — Four More Distributed Systems Patterns Hiding in Your AI Team](/blog/2026/04/02/scaling-ai-part7-cooperative)
+> - **Part 1**: [From Personal Repo to Work Team](/blog/2026/03/11/scaling-ai-part1-first-team)
+> - **Part 2**: [The Collective — Organizational Knowledge](/blog/2026/03/12/scaling-ai-part2-collective)
+> - **Part 3**: [Unimatrix Zero — SubSquads](/blog/2026/03/15/scaling-ai-part3-streams)
+> - **Part 4**: [When Eight Ralphs Fight Over One Login](/blog/2026/03/17/scaling-ai-part4-distributed)
+> - **Part 5**: [Knowledge is Power — Squad Learns to Evolve](/blog/2026/03/18/scaling-ai-part5-evolution)
+> - **Standalone**: [9 AI Agents, One API Quota — Rate Limiting](/blog/2026/03/21/rate-limiting-multi-agent)
+> - **Standalone**: [Aspire + Squad = ❤️](/blog/2026/03/22/aspire-squad-love)
+> - **Part 7**: [When Git Is Your Database](/blog/2026/03/22/scaling-ai-part7-enterprise-state)
+> - **Part 7b**: [The Invisible Layer — Git Notes](/blog/2026/03/23/scaling-ai-part7b-git-notes)
+> - **Standalone**: [My Precious — Securing AI Squad](/blog/2026/03/25/securing-hardening-ai-agent-squad)
 > - **Part 8**: Pathfinder — When AI Squads Learn to Talk to Each Other ← You are here
 
 *The cross-squad communication patterns described here were designed and tested in a live session on July 11-12, 2026, against two real squad-enabled repositories. The session died of context overflow before this post could be written — which is itself a distributed systems failure mode I should probably cover in Part 9. Code examples from production Squad scripts. Doug McIlroy's Unix philosophy is from 1978. Barclay's Pathfinder protocol is from 2376. Both still work.*
