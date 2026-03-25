@@ -2,7 +2,7 @@
 layout: post
 title: "When Eight Ralphs Fight Over One Login — Real Distributed Systems Problems in AI Agent Teams"
 date: 2026-03-17
-tags: [ai-agents, squad, github-copilot, distributed-systems, auth-race, rate-limiting, star-trek, borg]
+tags: [ai-agents, squad, github-copilot, distributed-systems, auth-race, rate-limiting, star-trek, borg, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
 series_part: 4
 ---
