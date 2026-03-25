@@ -2,7 +2,7 @@
 layout: post
 title: "When Git Is Your Database — The Enterprise State Problem Nobody Warned Me About"
 date: 2026-03-22
-tags: [ai-agents, squad, github-copilot, enterprise, git, distributed-systems, state-management]
+tags: [ai-agents, squad, github-copilot, enterprise, git, distributed-systems, state-management, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
 series_part: 7
 ---
