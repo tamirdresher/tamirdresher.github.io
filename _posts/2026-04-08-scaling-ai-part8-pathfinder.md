@@ -97,7 +97,7 @@ This is the one I showed above. Spawn a Copilot CLI session with the working dir
 
 ```powershell
 # Quick knowledge query — synchronous, immediate response
-copilot -p $promptFile -- --working-directory $targetRepo
+copilot --yolo --agent squad -p $promptFile -- --working-directory $targetRepo
 ```
 
 We write the prompt to a temp file instead of passing it inline. This was a lesson from `ralph-watch.ps1` — when you pass multi-line prompts as command arguments, PowerShell's argument splitting turns your carefully crafted question into word salad. The temp file approach came from debugging Ralph rounds where prompts containing flags like `-R` were being interpreted as CLI arguments. Two hours of "why is Ralph ignoring my prompt?" answered by "because Start-Process thought your prompt was a parameter."
@@ -200,7 +200,7 @@ The metadata reads worked immediately. I could tell you everything about both sq
 The sync CLI test was more interesting. I launched a full Copilot CLI session targeting the ServiceOrchestrator repo:
 
 ```powershell
-copilot -p $promptFile -- --working-directory "C:\temp\ServiceOrchestrator"
+copilot --yolo --agent squad -p $promptFile -- --working-directory "C:\temp\ServiceOrchestrator"
 ```
 
 The session spun up. It loaded the Squad agent. It found `team.md` (25 lines, Matrix-themed, 4 agents). The MCP servers started initializing — all seven of them. And then... my 120-second hard timeout killed the session.
