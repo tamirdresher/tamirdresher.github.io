@@ -12,6 +12,8 @@ series_part: 8
 > *"If you want AI agents to act like team members, you have to treat them like team members — including giving them the right access controls, onboarding them with least privilege, and holding them accountable."*
 > — paraphrased from [Harvard Business Review, March 2026](https://hbr.org/2026/03/to-scale-ai-agents-successfully-think-of-them-like-team-members)
 
+*(Thanks to [Eric Laan](https://www.linkedin.com/feed/update/urn:li:activity:7441913659414544384?commentUrn=urn%3Ali%3Acomment%3A%28activity%3A7441913659414544384%2C7442153169427578881%29&dashCommentUrn=urn%3Ali%3Afsd_comment%3A%287442153169427578881%2Curn%3Ali%3Aactivity%3A7441913659414544384%29) for the pointer.)*
+
 There's a paper in HBR right now about scaling AI agents. The core argument is deceptively simple: **treat your AI agents like team members**. Give them roles. Give them accountability. Define what they can and can't touch. Bring them into your processes the same way you'd onboard a new engineer.
 
 I read it and immediately thought: *I've been doing this backwards.*
@@ -32,7 +34,7 @@ It started with a routine code scan.
 
 A few weeks into running Squad at full capacity — 8+ agents, multiple machines, 10-15 PRs per day — Worf (our security guardian) flagged something: a Google API key was sitting in a file that had been committed to the repo. Not a production key, but a real key, one that could be abused.
 
-GitHub immediately notified us via secret scanning. The key was revoked. I cleaned up the file. Closed in two PRs: [#1420](https://github.com/tamirdresher_microsoft/tamresearch1/pull/1420) and [#1437](https://github.com/tamirdresher_microsoft/tamresearch1/pull/1437).
+GitHub immediately notified us via secret scanning. The key was revoked. I cleaned up the file and closed out the remediation.
 
 But I wasn't satisfied with just fixing the symptom. The real question was: *how did a live API key end up in a committed file in the first place?*
 
@@ -50,11 +52,11 @@ Before you can defend against anything, you have to name what you're defending a
 
 **Supply chain attacks.** Our CI/CD runs on GitHub Actions. If an action we depend on is compromised — or if we're referencing a moving tag like `actions/checkout@v4` instead of a pinned SHA — a malicious update could execute arbitrary code in our pipelines. The agent squad uses CI extensively. A supply chain compromise would be catastrophic.
 
-**Command injection.** Agents often construct shell commands programmatically. If they interpolate unsanitized input into a command string, an attacker who controls that input can execute arbitrary code. We hit exactly this bug in our Bitwarden client integration, fixed in [commit b9a828e](https://github.com/tamirdresher_microsoft/tamresearch1/commit/b9a828e).
+**Command injection.** Agents often construct shell commands programmatically. If they interpolate unsanitized input into a command string, an attacker who controls that input can execute arbitrary code. We've hit exactly this class of bug in agent-generated code — and caught it before it could be exploited.
 
 **Capability creep.** Without explicit restrictions, agents tend to use whatever tools are available. An agent with a browser shouldn't necessarily be allowed to authenticate to new services. An agent with git access shouldn't be able to push to production branches. The capabilities exist; they just need to be constrained.
 
-**Prompt injection.** A more exotic threat, but a real one: if an agent reads content from untrusted sources (GitHub comments, issue bodies, external APIs) and that content contains instructions crafted to manipulate the agent's behavior, you have a prompt injection. This is a real concern I've been researching deeply. My research squad produced a detailed adversarial security review ([issue #376](https://github.com/tamirdresher_microsoft/tamresearch1/issues/376)) that analyzed the landscape. The findings were sobering: studies show AI-generated code carries 1.57x more security vulnerabilities than human-written code. Standard SAST scanners catch surface-level issues but miss multi-step exploit chains and business logic flaws that are characteristic of AI-generated code. I haven't built dedicated prompt injection defenses yet, but the research is shaping my roadmap — more on that below.
+**Prompt injection.** A more exotic threat, but a real one: if an agent reads content from untrusted sources (GitHub comments, issue bodies, external APIs) and that content contains instructions crafted to manipulate the agent's behavior, you have a prompt injection. This is a real concern I've been researching deeply. My research squad produced a detailed adversarial security review that analyzed the landscape. The findings were sobering: studies show AI-generated code carries 1.57x more security vulnerabilities than human-written code. Standard SAST scanners catch surface-level issues but miss multi-step exploit chains and business logic flaws that are characteristic of AI-generated code. I haven't built dedicated prompt injection defenses yet, but the research is shaping my roadmap — more on that below.
 
 ---
 
@@ -66,7 +68,7 @@ Every squad has a role definition that says what each agent owns. Worf owns secu
 
 > *"Paranoid by design. Assumes every input is hostile until proven otherwise."*
 
-Worf reviews security-sensitive PRs before they merge. He runs periodic CodeQL analysis. He was the one who caught and fixed 6 high-severity vulnerabilities in our Learn MCP server in a single pass. The fix went in as a batch: [PR #1199](https://github.com/tamirdresher_microsoft/tamresearch1/pull/1199).
+Worf reviews security-sensitive PRs before they merge. He runs periodic CodeQL analysis. He was the one who caught and fixed 6 high-severity vulnerabilities in our Learn MCP server in a single pass.
 
 Having a dedicated security role means security isn't an afterthought that gets bolted on at the end of a sprint. It's part of the team, showing up the same way an engineer shows up.
 
@@ -88,7 +90,7 @@ After:
 
 When you reference a tag, GitHub resolves it at runtime. Someone compromises the upstream action, updates the tag — your pipeline runs their code. When you pin to a SHA, you're running exactly what you audited. It can't change without your PR.
 
-I automated this with Dependabot. New SHA-pinned versions get automatically submitted as PRs for review. I don't have to chase it manually. [PR #1433](https://github.com/tamirdresher_microsoft/tamresearch1/pull/1433) pinned everything; Dependabot keeps it current.
+I automated this with Dependabot. New SHA-pinned versions get automatically submitted as PRs for review. I don't have to chase it manually. Dependabot keeps it current.
 
 ### 3. Capability Restrictions via `machine-capabilities.json`
 
@@ -119,7 +121,7 @@ This is the fallback. The goal is never to commit secrets. But humans (and agent
 
 ### 5. CodeQL in the Pipeline
 
-Our CI runs CodeQL analysis on every PR. It catches a class of bugs that code review often misses: command injection, SQL injection, path traversal, improper input handling. When the Bitwarden aac-client had a command injection vulnerability, CodeQL caught it in a PR. The fix was straightforward once the issue was named.
+Our CI runs CodeQL analysis on every PR. It catches a class of bugs that code review often misses: command injection, SQL injection, path traversal, improper input handling. When agent-generated code introduced a command injection vulnerability, CodeQL caught it in a PR before it could merge. The fix was straightforward once the issue was named.
 
 The key insight: code review scales to humans, but agents submit PRs faster than humans review. Automated static analysis scales with the number of PRs. You can't review 15 PRs per day manually with the same rigor as 2. But CodeQL doesn't slow down.
 
@@ -159,7 +161,7 @@ The goal is to make Squad secure by default — so when someone installs it, the
 
 ## What's Coming
 
-I'm working on per-agent scoping for AKS workload identity — each agent gets its own managed identity with only the Azure resources it needs. No shared credentials. No "one compromise exposes everything." The spike landed in [#1399](https://github.com/tamirdresher_microsoft/tamresearch1/pull/1402).
+I'm working on per-agent scoping for AKS workload identity — each agent gets its own managed identity with only the Azure resources it needs. No shared credentials. No "one compromise exposes everything."
 
 I'm also building a formal security review gate into the squad's PR process. Worf reviews security-relevant changes before merge. The criteria are explicit: anything touching credentials, CI configuration, network policies, or external API calls gets routed through him.
 
