@@ -2,11 +2,10 @@
 layout: post
 title: "Pathfinder — When AI Squads Learn to Talk to Each Other"
 date: 2026-03-26
+image: /assets/img/part8-pathfinder.png
 tags: [ai-agents, squad, github-copilot, distributed-systems, cross-squad, unix-philosophy, pipes, communication-protocols, kubernetes, star-trek]
 series: "Scaling AI-Native Software Engineering"
 series_part: 8
-hero_image: /assets/img/part8-pathfinder.jpg
-hero_image_prompt: "A deep space communications relay — two distant star systems connected by a brilliant data stream, one blue-white, one amber-gold, relay stations bridging the gap, geometric starships at each end, cinematic sci-fi art with warm lighting"
 ---
 
 > *"I've spent the last year trying to find a way to communicate with Voyager. Everyone said it couldn't be done. They said the distance was too great, the technology didn't exist. But I knew if I could just find the right frequency..."*
