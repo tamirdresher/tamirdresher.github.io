@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Pathfinder — When AI Squads Learn to Talk to Each Other"
-date: 2026-04-08
+date: 2026-03-26
 tags: [ai-agents, squad, github-copilot, distributed-systems, cross-squad, unix-philosophy, pipes, communication-protocols, kubernetes, star-trek]
 series: "Scaling AI-Native Software Engineering"
 series_part: 8
@@ -294,4 +294,4 @@ Barclay would approve.
 > - **Standalone**: [My Precious — Securing AI Squad](/blog/2026/03/25/securing-hardening-ai-agent-squad)
 > - **Part 8**: Pathfinder — When AI Squads Learn to Talk to Each Other ← You are here
 
-*The cross-squad communication patterns described here were designed and tested in a live session on July 11-12, 2026, against two real squad-enabled repositories. The session died of context overflow before this post could be written — which is itself a distributed systems failure mode I should probably cover in Part 9. Code examples from production Squad scripts. Doug McIlroy's Unix philosophy is from 1978. Barclay's Pathfinder protocol is from 2376. Both still work.*
+
