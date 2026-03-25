@@ -2,7 +2,7 @@
 layout: post
 title: "Organized by AI — How Squad Changed My Daily Workflow"
 date: 2026-03-10
-tags: [ai-agents, squad, github-copilot, productivity, star-trek, voyager, workflow]
+tags: [ai-agents, squad, github-copilot, productivity, star-trek, voyager, workflow, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
 series_part: 0
 ---
