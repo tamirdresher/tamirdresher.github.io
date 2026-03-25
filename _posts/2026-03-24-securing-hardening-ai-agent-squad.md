@@ -1,11 +1,13 @@
 ---
 layout: post
-title: "How I Secure and Harden My AI Agent Squad"
+title: "My Precious — How I Secure and Harden My AI Agent Squad"
 date: 2026-03-24
 tags: [ai-agents, squad, security, github-copilot, supply-chain, devsecops, hardening]
 series: "Scaling AI-Native Software Engineering"
 series_part: 8
 ---
+
+![My Precious — Gollum guards the SQUAD ring](/assets/securing-hardening-ai-agent-squad/hero.png)
 
 > *"If you want AI agents to act like team members, you have to treat them like team members — including giving them the right access controls, onboarding them with least privilege, and holding them accountable."*
 > — paraphrased from [Harvard Business Review, March 2026](https://hbr.org/2026/03/to-scale-ai-agents-successfully-think-of-them-like-team-members)
