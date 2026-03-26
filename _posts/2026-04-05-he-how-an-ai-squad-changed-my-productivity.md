@@ -78,8 +78,9 @@ Seven פרסמה מתווה. נתתי פידבק. היא כתבה טיוטה. ה
 ```powershell
 while ($true) {
     git fetch && git pull
-    agency copilot --agent squad \
-      -p 'Ralph: Check all open issues, review PR queue, merge when tests pass, handle new comments, open issues for discovered work, update status labels.'
+    agency copilot \
+      -p 'Ralph: Check all open issues, review PR queue, merge when tests pass, handle new comments, open issues for discovered work, update status labels.' \
+      -- --agent squad
     Start-Sleep -Seconds 300
 }
 ```
