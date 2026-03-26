@@ -2,7 +2,7 @@
 
 > Tips, tools, and insights from a Principal Engineer.
 
-**Live site:** [tamirdresher.com](https://tamirdresher.com)
+**Live site:** [tamirdresher.com](https://www.tamirdresher.com)
 
 ---
 
