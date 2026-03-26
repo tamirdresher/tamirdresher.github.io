@@ -1,9 +1,10 @@
----
+﻿---
 layout: post
 title: "The Language Doesn't Matter Anymore — Aspire Polyglot and the AI Team That Actually Runs"
 date: 2026-04-15
-tags: [aspire, polyglot, ai-agents, squad, github-copilot, python, nodejs, distributed-systems, autonomy]
+tags: [aspire, polyglot, ai-agents, squad, github-copilot, python, nodejs, distributed-systems, autonomy, kubernetes, platform-engineering]
 series: "Scaling AI-Native Software Engineering"
+published: false
 ---
 
 ## A Problem I Didn't Know I Had
@@ -191,7 +192,61 @@ Seven isn't "the agent I ask to do research" — she's a knowledge service with 
 
 That's the AI team I actually want. Not a collection of prompts I have to invoke. A running system that works.
 
+
 ---
+
+## Aspire 13.2: The `kind` Resource and the Platform Engineer Finally Gets a Seat at the Table
+
+Since I first drafted this post, Aspire 13.2 shipped — and there are a few things worth calling out specifically, because they change the target audience in an important way.
+
+**First: the TypeScript AppHost is here.** You can now write your Aspire AppHost in TypeScript. Full orchestration, dashboard, service discovery — the whole Aspire experience, in TypeScript. For teams where the operational configuration is TypeScript-first, or where the people owning the AppHost are frontend-leaning engineers, this is real. The polyglot story isn't just "my services run in Python." It's now "my entire platform definition can run in the language my team already knows."
+
+**But the bigger unlock in 13.2, for me, is the `kind` resource and what it means for platform engineers.**
+
+If you've spent time in Kubernetes, you know what `kind` means. Every manifest has one: `kind: Deployment`, `kind: Service`, `kind: ConfigMap`. And if you've ever built custom Kubernetes tooling — controllers, operators, admission webhooks — you've written your own: `kind: TenantConfig`, `kind: RedisCluster`, `kind: PlatformPolicy`. These are Custom Resource Definitions (CRDs), and they're the primitive that lets you extend Kubernetes itself.
+
+The people who build these things are platform engineers. And their local development story has always been painful.
+
+When you're building a Kubernetes operator — something that watches a `TenantConfig` resource and provisions per-tenant infrastructure, or a controller that manages certificate rotation across a fleet, or a webhook that validates platform policy before any resource is admitted — testing it end-to-end has historically required either:
+
+- A real cluster with your CRDs applied and your controller running, or
+- A local `kind` cluster (the tool, not the concept — confusingly), with all the same setup friction
+
+Neither is fast. Neither gives you the observability you actually want. And neither integrates with the rest of your local dev workflow.
+
+Aspire 13.2 changes this by exposing Kubernetes resource modeling as a first-class concept in the app model. Your custom `kind` resources can be defined in the AppHost, run locally alongside your controller, and appear in the Aspire Dashboard with full telemetry, health tracking, and event streams. Your operator reconcile loop becomes just another observable Aspire service.
+
+```csharp
+var builder = DistributedApplication.CreateBuilder(args);
+
+// Define the Kubernetes environment your operator targets
+var k8sEnv = builder.AddKubernetesEnvironment("k8s-local");
+
+// Your operator controller — runs as an Aspire-orchestrated service
+var tenantController = builder.AddProject<Projects.TenantController>("tenant-controller")
+    .WithReference(k8sEnv);
+
+builder.Build().Run();
+```
+
+What this gives you:
+
+- **Dashboard visibility** into your controller lifecycle and Kubernetes resource states
+- **Health checks** that reflect actual CRD reconcile status
+- **Distributed tracing** across the operator's reconcile calls and the services it depends on
+- **`aspire resource tenant-controller restart`** for rapid iteration without tearing everything down
+- **`aspire wait tenant-controller --status healthy`** for scripted integration tests that wait for convergence
+
+And here's where it reconnects with the AI team story: if you're using coding agents (like Squad) to help build platform tooling, those agents can now run `aspire describe` to inspect live resource states, stream controller logs in real time, and build structured automation around CRD state transitions — all through the same CLI primitives that app developers use.
+
+The 13.2 moment, for me, is this: **Aspire isn't just for building distributed apps. It's for building the platforms those apps run on.**
+
+The original audience was developers writing microservices. But platform engineers — the people building the infrastructure that microservice teams rely on — have always had a harder time. They live in YAML, kubeconfig, and `kubectl apply`. Their dev loop has always been a cluster away.
+
+Now it doesn't have to be. The same `aspire agent init`, the same dashboard, the same polyglot orchestration — pointed at the primitives platform engineers actually work with. CRDs as Aspire resources. Controllers as Aspire projects. Operators as observable, testable, locally-runnable services.
+
+I spend a lot of my time on infrastructure platform work. This is the direction I've wanted Aspire to go for a long time. 13.2 is the first clear signal that the team sees platform engineering as part of the mission — not just an afterthought for the ops teams who inherit whatever the developers shipped.
+
 
 ## Getting Started
 
