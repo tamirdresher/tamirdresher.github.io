@@ -3,7 +3,7 @@ layout: post
 title: "Pathfinder — When AI Squads Learn to Talk to Each Other"
 date: 2026-03-26
 image: /assets/img/part8-pathfinder.png
-tags: [ai-agents, squad, github-copilot, distributed-systems, cross-squad, unix-philosophy, pipes, communication-protocols, kubernetes, star-trek]
+tags: [ai-agents, squad, github-copilot, distributed-systems, cross-squad, unix-philosophy, pipes, communication-protocols, kubernetes, star-trek, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
 series_part: 8
 ---
