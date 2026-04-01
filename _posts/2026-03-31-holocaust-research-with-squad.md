@@ -51,7 +51,7 @@ I needed a different approach.
 
 ## Enter Squad
 
-[Squad](https://bradygaster.github.io/squad/) is a framework I built for creating specialized AI teams on top of GitHub Copilot. Each agent has a charter — a strict set of rules about what it does, what it doesn't do, and what standards it has to meet.
+[Squad](https://bradygaster.github.io/squad/) is an open-source framework created by [Brady Gaster](https://github.com/bradygaster) for building specialized AI teams on top of GitHub Copilot. I joined Brady as CTO, and together we've been pushing it forward. Each agent has a charter — a strict set of rules about what it does, what it doesn't do, and what standards it has to meet.
 
 For this research, I assembled a team of nine agents:
 
