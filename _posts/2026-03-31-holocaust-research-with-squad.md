@@ -209,6 +209,11 @@ The books follow the same dignity-preserving rules as the rest of the research: 
 
 The final output: six HTML books, six PDFs, three styled research reports, and a comprehensive fact-check audit.
 
+📥 **Download the memorial books:**
+- [**English** (PDF)](https://drive.google.com/file/d/1lQef3b0CL2xna9LfmK_kyWs5CKebgRbU/view?usp=sharing)
+- [**Hebrew / עברית** (PDF)](https://drive.google.com/file/d/1AOt6Tl7H3BXtI8dVwf_lJLn7RQ_ZCL-b/view?usp=drive_link)
+- [**Spanish / Español** (PDF)](https://drive.google.com/file/d/1FkypokrhcraRcrC8xJa9r3DIb7Xrqrqd/view?usp=sharing)
+
 ![Illustrated book](/assets/img/posts/holocaust-research/book-cover.png)
 
 *The generated memorial book — navy and gold design with embedded archival images and custom maps*
