@@ -28,8 +28,8 @@ This page is the single-source-of-truth for my tool recommendations. If it's not
 
 | Tool | What I Use It For | Cost | Link |
 |------|-------------------|------|------|
-| **JetBrains Rider** | .NET IDE — debugging, profiling, decompiling. Recommended especially for Mac users. | $149/yr | [AFFILIATE:jetbrains:Rider](https://www.jetbrains.com/rider/?JETBRAINS_AID) |
-| **JetBrains ReSharper** | Code analysis when in Visual Studio | $149/yr | [AFFILIATE:jetbrains:ReSharper](https://www.jetbrains.com/resharper/?JETBRAINS_AID) |
+| **JetBrains Rider** | .NET IDE — debugging, profiling, decompiling. Recommended especially for Mac users. | $149/yr | [Rider](https://www.jetbrains.com/rider/) |
+| **JetBrains ReSharper** | Code analysis when in Visual Studio | $149/yr | [ReSharper](https://www.jetbrains.com/resharper/) |
 | **Visual Studio Code** | Lightweight editing, markdown, extensions | Free | [VS Code](https://code.visualstudio.com/) |
 
 ---
@@ -52,23 +52,23 @@ This page is the single-source-of-truth for my tool recommendations. If it's not
 
 | Book | Author | Why I Recommend It | Link |
 |------|--------|-------------------|------|
-| **Designing Data-Intensive Applications** | Martin Kleppmann | The distributed systems bible. Essential for multi-agent coordination. | [AFFILIATE:amazon:DDIA](https://www.amazon.com/dp/1449373321?tag=AMAZON_TAG) |
-| **Building Microservices** | Sam Newman | Agent teams follow microservice patterns. Required reading. | [AFFILIATE:amazon:Building Microservices](https://www.amazon.com/dp/1492034029?tag=AMAZON_TAG) |
-| **Site Reliability Engineering** | Google (Beyer et al.) | Reliability patterns for autonomous systems. | [AFFILIATE:amazon:SRE](https://www.amazon.com/dp/1491929124?tag=AMAZON_TAG) |
+| **Designing Data-Intensive Applications** | Martin Kleppmann | The distributed systems bible. Essential for multi-agent coordination. | [DDIA on Amazon](https://www.amazon.com/dp/1449373321?tag=tamirdresher2-20) |
+| **Building Microservices** | Sam Newman | Agent teams follow microservice patterns. Required reading. | [Building Microservices on Amazon](https://www.amazon.com/dp/1492034029?tag=tamirdresher2-20) |
+| **Site Reliability Engineering** | Google (Beyer et al.) | Reliability patterns for autonomous systems. | [SRE on Amazon](https://www.amazon.com/dp/1491929124?tag=tamirdresher2-20) |
 
 ### Programming & Software Craft
 
 | Book | Author | Why I Recommend It | Link |
 |------|--------|-------------------|------|
-| **The Pragmatic Programmer** | Thomas & Hunt | Timeless software craftsmanship. Every principle applies to agent design. | [AFFILIATE:amazon:Pragmatic Programmer](https://www.amazon.com/dp/0135957052?tag=AMAZON_TAG) |
-| **Rx.NET in Action** | Tamir Dresher (me) | Reactive patterns for event-driven agent systems. (Yes, I'm recommending my own book.) | [AFFILIATE:manning:Rx.NET in Action](https://www.manning.com/books/rx-dot-net-in-action?a_aid=8ec75026&a_bid=BANNER_ID) |
+| **The Pragmatic Programmer** | Thomas & Hunt | Timeless software craftsmanship. Every principle applies to agent design. | [Pragmatic Programmer on Amazon](https://www.amazon.com/dp/0135957052?tag=tamirdresher2-20) |
+| **Rx.NET in Action** | Tamir Dresher (me) | Reactive patterns for event-driven agent systems. (Yes, I'm recommending my own book.) | [Rx.NET in Action on Manning](https://www.manning.com/books/rx-dot-net-in-action?a_aid=8ec75026) |
 
 ### AI & Machine Learning
 
 | Book | Author | Why I Recommend It | Link |
 |------|--------|-------------------|------|
-| **AI Engineering** | Chip Huyen | Production AI systems — the bridge from demo to deployment. | [AFFILIATE:amazon:AI Engineering](https://www.amazon.com/dp/1098166302?tag=AMAZON_TAG) |
-| **Hands-On Machine Learning** | Aurélien Géron | Most practical ML introduction available. Heavy on code, light on fluff. | [AFFILIATE:amazon:Hands-On ML](https://www.amazon.com/dp/1098125975?tag=AMAZON_TAG) |
+| **AI Engineering** | Chip Huyen | Production AI systems — the bridge from demo to deployment. | [AI Engineering on Amazon](https://www.amazon.com/dp/1098166302?tag=tamirdresher2-20) |
+| **Hands-On Machine Learning** | Aurélien Géron | Most practical ML introduction available. Heavy on code, light on fluff. | [Hands-On ML on Amazon](https://www.amazon.com/dp/1098125975?tag=tamirdresher2-20) |
 
 ### Enterprise Architecture & Refactoring
 
@@ -85,7 +85,7 @@ This page is the single-source-of-truth for my tool recommendations. If it's not
 
 | Platform | What I Use It For | Cost | Link |
 |----------|-------------------|------|------|
-| **Pluralsight** | Structured .NET, Azure, and DevOps learning paths | $199-449/yr | [AFFILIATE:cj:Pluralsight](https://www.pluralsight.com/?clickid=CJ_AID) |
+| **Pluralsight** | Structured .NET, Azure, and DevOps learning paths | $199-449/yr | [Pluralsight](https://www.pluralsight.com/) |
 | **Microsoft Learn** | Azure certifications, free hands-on labs | Free | [Microsoft Learn](https://learn.microsoft.com/) |
 
 ---

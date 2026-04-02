@@ -20,8 +20,8 @@ The tools, services, and platforms I rely on daily. Only things I actually use â
 | **Visual Studio Code** | Lightweight editor, extensions, Copilot integration | [VS Code](https://code.visualstudio.com/) |
 | **GitHub Copilot** | AI pair programming, code completion, CLI agent | [GitHub Copilot](https://github.com/features/copilot) |
 | **.NET SDK** | Building APIs, services, and distributed systems | [.NET](https://dotnet.microsoft.com/) |
-| **JetBrains Rider** | Full .NET IDE for debugging and profiling | [Rider](https://www.jetbrains.com/rider/?JETBRAINS_AID) |
-| **JetBrains ReSharper** | Code analysis in Visual Studio | [ReSharper](https://www.jetbrains.com/resharper/?JETBRAINS_AID) |
+| **JetBrains Rider** | Full .NET IDE for debugging and profiling | [Rider](https://www.jetbrains.com/rider/) |
+| **JetBrains ReSharper** | Code analysis in Visual Studio | [ReSharper](https://www.jetbrains.com/resharper/) |
 | **BenchmarkDotNet** | .NET microbenchmarking and performance testing | [BenchmarkDotNet](https://benchmarkdotnet.org/) |
 
 
@@ -79,7 +79,7 @@ The tools, services, and platforms I rely on daily. Only things I actually use â
 
 | Platform | What I Use It For | Link |
 |----------|-------------------|------|
-| **Pluralsight** | Structured .NET and Azure learning paths | [Pluralsight](https://www.pluralsight.com/?clickid=CJ_AID) |
+| **Pluralsight** | Structured .NET and Azure learning paths | [Pluralsight](https://www.pluralsight.com/) |
 | **Microsoft Learn** | Azure certifications and hands-on labs | [Microsoft Learn](https://learn.microsoft.com/) |
 
 
