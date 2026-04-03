@@ -29,6 +29,8 @@ This is the pattern I'm most proud of, because it solves the "AI approves AI" pr
 
 Here's the problem it solves. In a normal code review cycle, if a reviewer rejects your PR, you fix it and resubmit. That's fine for humans — we learn from feedback and genuinely improve the code. But AI agents optimize for one thing: **passing the check.** Without guardrails, an agent will make the minimum change to satisfy the reviewer, even if the underlying design problem is still there.
 
+And the reviewer itself matters. A recent addition to the framework ([PR #766](https://github.com/bradygaster/squad/pull/766)) added structured **security review** and **architectural review** skills that Copilot reads on every PR. These aren't vague suggestions — they're concrete checklists covering credentials leakage, shell injection via `child_process`, GitHub Actions workflow security (is that `pull_request_target` safe?), dependency supply chain risks, module boundary violations, and export surface changes. The reviewer now has a playbook, not just instinct.
+
 So the squad enforces a **lockout rule:**
 
 > **If a reviewer rejects an artifact, the original author cannot self-revise it.**
@@ -216,6 +218,32 @@ concurrency:
 
 The `cancel-in-progress: true` means if a newer push arrives while a workflow is running, the old run is cancelled. For issue-driven workflows, the concurrency group uses the issue number, so two agents working on different issues run in parallel, but two agents touching the *same* issue queue up.
 
+### PR Readiness Checks
+
+> *[PR #752](https://github.com/bradygaster/squad/pull/752) — "Automated PR readiness checks — contributor feedback before review"*
+
+This one makes me happy because it solves a problem I didn't even realize I had. Before this, Brady (the framework maintainer) had to manually check every PR for basic readiness: is it still in draft? Is the branch stale? Is a changeset included? Is the commit history clean?
+
+The workflow runs 7 automated checks on every PR and posts a checklist comment — not blocking, but impossible to ignore:
+
+1. ✅ Single commit (or squashable)
+2. ✅ Not in draft
+3. ✅ Branch up to date with target
+4. ✅ Copilot review present (yes — it checks that an AI reviewed it!)
+5. ✅ Changeset present
+6. ✅ No merge conflicts
+7. ✅ CI passing
+
+Check #4 is the sneaky-brilliant one: it verifies that a Copilot review exists on the PR. That means a human can't merge something that the AI reviewer hasn't looked at, and an AI can't merge something the human hasn't approved. Two-key launch system.
+
+### Squad Leakage Detector
+
+> *[PR #769](https://github.com/bradygaster/squad/pull/769) — "Repo health checks" (draft)*
+
+This one is still in draft, but the concept is exactly what I described in Threat 2 of Part I. Remember directive drift — the slow erosion of security controls through innocent-looking changes? One of the four health checks in this PR is a **`.squad/` leakage detector**: if a feature PR modifies any file inside `.squad/`, the workflow posts a warning. Because `.squad/` changes in a feature branch are a code smell — they should be deliberate, not incidental.
+
+Even better: the `check-bootstrap-deps.mjs` script validates that the framework's 5 core bootstrap files use **only `node:*` built-in imports**. Zero npm dependencies in the boot path. Why? Because if the framework itself depends on npm packages during initialization, a supply chain attack could compromise the very tool that's supposed to protect you. It's like making sure the lock on your front door wasn't manufactured by the burglar.
+
 ```
   ┌──────────────────────────────────────────────────────┐
   │  CI Gate Stack                                        │
@@ -231,6 +259,12 @@ The `cancel-in-progress: true` means if a newer push arrives while a workflow is
   │  ✅ Public API surface unchanged?                     │
   │    ↓                                                  │
   │  ✅ Archival completed (hard gate)?                   │
+  │    ↓                                                  │
+  │  ✅ No .squad/ leakage in feature PRs?                │
+  │    ↓                                                  │
+  │  ✅ Bootstrap deps = node:* only?                     │
+  │    ↓                                                  │
+  │  ✅ PR readiness checklist (7 checks)?                │
   │    ↓                                                  │
   │  ✅ Concurrency slot available?                       │
   │    ↓                                                  │
@@ -460,6 +494,8 @@ Here's the full defense stack, layer by layer:
 │  Test count guard · Hard-gate archival               │
 │  Workspace integrity · Prerelease guard              │
 │  Export smoke test · Concurrency controls            │
+│  .squad/ leakage detector · Bootstrap dep guard      │
+│  PR readiness checks (7 automated gates)             │
 ├─────────────────────────────────────────────────────┤
 │  Layer 2: Immutable Guard Rails                      │
 │  CODEOWNERS · Branch protection                      │
@@ -468,6 +504,7 @@ Here's the full defense stack, layer by layer:
 │  Layer 1: Reviewer Lockout Protocol                  │
 │  Rejected? Different agent must revise.              │
 │  Rejected again? Third agent. No self-approval.      │
+│  Security + architecture review checklists enforced  │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -488,6 +525,7 @@ I promised to be honest about what's deployed versus what's designed. Here's the
 | Component | Status |
 |-----------|--------|
 | Reviewer lockout protocol | ✅ Enforced in orchestration pipeline |
+| Security + architecture review skills | ✅ Added to framework ([PR #766](https://github.com/bradygaster/squad/pull/766)) |
 | CODEOWNERS for `.squad/` | ⚠️ Designed, not yet applied to all repos |
 | Branch protection on `main` | ✅ Active on production repos |
 | ADO pipeline policies | ✅ Active (enterprise repos only) |
@@ -495,6 +533,9 @@ I promised to be honest about what's deployed versus what's designed. Here's the
 | Hard-gate archival | ✅ Merged in Squad framework ([PR #637](https://github.com/bradygaster/squad/pull/637)) |
 | Workspace integrity check | ✅ Merged in Squad framework ([PR #691](https://github.com/bradygaster/squad/pull/691)) |
 | Concurrency controls | ✅ Merged in Squad framework ([PR #705](https://github.com/bradygaster/squad/pull/705)) |
+| PR readiness checks (7 gates) | 🔄 PR open ([PR #752](https://github.com/bradygaster/squad/pull/752)) |
+| `.squad/` leakage detector | 🔶 Draft ([PR #769](https://github.com/bradygaster/squad/pull/769)) |
+| Zero-dependency bootstrap guard | 🔶 Draft ([PR #769](https://github.com/bradygaster/squad/pull/769)) |
 | AX approval gate workflow | ⚠️ Designed, deploying to tamirdresher.github.io this week |
 | Synchronous approval gate | ⚠️ PowerShell helper exists, not CI-enforced |
 | Separation of duties | ✅ Enforced in pipeline phases |
