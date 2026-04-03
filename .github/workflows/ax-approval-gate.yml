@@ -1,0 +1,196 @@
+name: AX Approval Gate — Auto-Merge on approved:ship
+
+on:
+  pull_request_target:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    # Only fire when the approved:ship label is the one being added right now
+    if: github.event.label.name == 'approved:ship'
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 0. Skip draft PRs ────────────────────────────────────────────────
+      - name: Skip if PR is a draft
+        id: draft-check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          IS_DRAFT=$(gh pr view "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --json isDraft -q .isDraft)
+
+          if [ "$IS_DRAFT" = "true" ]; then
+            echo "PR is in draft state — auto-merge skipped."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── 1. Verify required CI checks have passed ─────────────────────────
+      - name: Check required CI status
+        if: steps.draft-check.outputs.skip == 'false'
+        id: ci-check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          REPO="${{ github.repository }}"
+
+          # gh pr checks: tab-separated output — name, state, duration, url
+          CHECK_OUTPUT=$(gh pr checks "$PR_NUMBER" --repo "$REPO" 2>&1 || true)
+
+          FAIL_COUNT=$(echo "$CHECK_OUTPUT" | grep -cE $'\t(fail|error)\t' 2>/dev/null || echo "0")
+          PENDING_COUNT=$(echo "$CHECK_OUTPUT" | grep -cE $'\t(pending|in_progress)\t' 2>/dev/null || echo "0")
+
+          echo "Failing checks : $FAIL_COUNT"
+          echo "Pending checks : $PENDING_COUNT"
+
+          if [ "$FAIL_COUNT" -gt "0" ]; then
+            echo "ci_ok=false" >> "$GITHUB_OUTPUT"
+            echo "ci_message=❌ **${FAIL_COUNT} CI check(s) are failing.** Fix the failures and re-add \`approved:ship\` to retry." >> "$GITHUB_OUTPUT"
+          elif [ "$PENDING_COUNT" -gt "0" ]; then
+            echo "ci_ok=false" >> "$GITHUB_OUTPUT"
+            echo "ci_message=⏳ **${PENDING_COUNT} CI check(s) are still pending.** Re-add \`approved:ship\` once all checks complete." >> "$GITHUB_OUTPUT"
+          else
+            echo "ci_ok=true" >> "$GITHUB_OUTPUT"
+            echo "ci_message=✅ All CI checks passed." >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── 2. Block and comment if CI is not green ──────────────────────────
+      - name: Comment and block on CI failure
+        if: |
+          steps.draft-check.outputs.skip == 'false' &&
+          steps.ci-check.outputs.ci_ok == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --body "🚦 **AX Approval Gate — merge blocked**
+
+          ${{ steps.ci-check.outputs.ci_message }}
+
+          _Auto-merge was not triggered. Investigate the failing checks, then re-add the \`approved:ship\` label to retry._"
+          exit 1
+
+      # ── 3. Squash-merge the PR ───────────────────────────────────────────
+      - name: Squash-merge PR
+        if: |
+          steps.draft-check.outputs.skip == 'false' &&
+          steps.ci-check.outputs.ci_ok == 'true'
+        id: merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          REPO="${{ github.repository }}"
+
+          PR_TITLE=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json title -q .title)
+          echo "Merging PR #${PR_NUMBER}: ${PR_TITLE}"
+
+          if gh pr merge "$PR_NUMBER" \
+               --repo "$REPO" \
+               --squash \
+               --delete-branch \
+               --subject "${PR_TITLE} [auto-merged]"; then
+            echo "merged=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "merged=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── 4. Post confirmation comment ─────────────────────────────────────
+      - name: Comment — merge confirmed
+        if: |
+          steps.draft-check.outputs.skip == 'false' &&
+          steps.merge.outputs.merged == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --body "✅ **AX Approval Gate — auto-merge triggered**
+
+          This PR was squash-merged after the \`approved:ship\` label was applied.
+
+          | Field | Value |
+          |-------|-------|
+          | Strategy | squash + delete branch |
+          | Triggered by | AX Approval Gate workflow |
+          | Deployment | GitHub Pages rebuilds automatically on merge to master |
+
+          _Any issues referenced with \`Closes #N\` in the PR body will be auto-closed._"
+
+      # ── 5. Remove waiting-approval label ────────────────────────────────
+      - name: Remove waiting-approval label
+        if: |
+          steps.draft-check.outputs.skip == 'false' &&
+          steps.merge.outputs.merged == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          REPO="${{ github.repository }}"
+
+          HAS_LABEL=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json labels \
+            --jq '[.labels[].name] | contains(["waiting-approval"])')
+
+          if [ "$HAS_LABEL" = "true" ]; then
+            gh pr edit "$PR_NUMBER" --repo "$REPO" --remove-label "waiting-approval"
+            echo "Removed waiting-approval label from PR #${PR_NUMBER}"
+          else
+            echo "No waiting-approval label present — nothing to remove"
+          fi
+
+      # ── 6. GitHub Pages deploys automatically on push to master ─────────
+      # No explicit CD trigger needed: GitHub Pages rebuilds whenever a
+      # commit lands on the default branch. If a custom cd.yml is added
+      # later, this step will trigger it automatically.
+      - name: Trigger CD pipeline (if cd.yml exists)
+        if: |
+          steps.draft-check.outputs.skip == 'false' &&
+          steps.merge.outputs.merged == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+
+          if gh api "repos/${REPO}/contents/.github/workflows/cd.yml" \
+               --silent 2>/dev/null; then
+            echo "cd.yml found — triggering CD pipeline"
+            gh workflow run cd.yml \
+              --repo "$REPO" \
+              --ref master \
+              -f triggered_by="ax-approval-gate" \
+              -f pr_number="$PR_NUMBER"
+          else
+            echo "No cd.yml — GitHub Pages will rebuild automatically from the merged commit."
+          fi
+
+      # ── 7. Error handling — comment if merge failed ──────────────────────
+      - name: Comment — merge failed
+        if: |
+          steps.draft-check.outputs.skip == 'false' &&
+          steps.merge.outputs.merged == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --body "❌ **AX Approval Gate — auto-merge failed**
+
+          The \`approved:ship\` label was applied but the merge did not complete. Common causes:
+
+          - **Merge conflicts** — resolve conflicts and re-add the label
+          - **Branch protection rules** — required reviewers or status checks may not be satisfied
+          - **Auto-merge disabled** — enable in *Settings → General → Pull Requests → Allow auto-merge*
+          - **PR already merged or closed** — no further action needed
+
+          Check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details."
+          exit 1
