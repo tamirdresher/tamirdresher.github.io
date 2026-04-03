@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "The Prime Directive, Part I — When Your AI Squad Becomes the Threat Model"
-date: 2026-04-02
+date: 2026-04-03
 image: /assets/img/part9a-prime-directive.png
 tags: [ai-agents, squad, github-copilot, approval-gates, governance, security, trust, supply-chain, confused-deputy, star-trek, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
