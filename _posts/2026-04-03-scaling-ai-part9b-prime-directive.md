@@ -23,7 +23,7 @@ Let's go layer by layer.
 
 ---
 
-## Layer 1: The Reviewer Lockout Protocol
+## Layer 1: No Second Chances — The Reviewer Lockout
 
 This is the pattern I'm most proud of, because it solves the "AI approves AI" problem structurally — not with policy, but with code. (Full documentation: [Reviewer Protocol](https://bradygaster.github.io/squad/features/reviewer-protocol/))
 
@@ -81,7 +81,7 @@ Why does this matter? Because without lockout, you get an infinite fix-reject lo
 
 ---
 
-## Layer 2: Immutable Guard Rails — Things the Squad Can't Touch
+## Layer 2: The Constitution Is Not a Pull Request
 
 Remember Threat 2 from Part I — "what if the squad changes its own rules?" The answer is: **make some rules immutable.**
 
@@ -151,17 +151,19 @@ The combination of GitHub branch protection + ADO pipeline policies creates a **
 
 ---
 
-## Layer 3: CI Gates That Catch Directive Drift
+## Layer 3: The Boiling Frog Detector
 
-This is where the Squad framework's CI gates become critical. Several contributors have been building gates that specifically target the "slow erosion" problem: changes that individually look innocent but cumulatively weaken the system. It's like watching someone remove one screw at a time from an IKEA bookshelf. Each one seems fine. Then you lean on it.
+This is the layer that catches the stuff that *looks fine* but isn't. The slow drift. The helpful refactoring that quietly deletes three test files. The dependency update that sneaks in a pre-release. The "cleanup" PR that touches files it has no business touching.
 
-Researchers call this the "boiling frog" of agentic security. A recent systematization paper ([Shi et al., 2025](https://arxiv.org/abs/2512.06914)) frames it as the **Trust-Authorization Mismatch**: static permissions can't track an agent's fluctuating runtime trustworthiness. Your CI gates are the runtime check that compensates for that gap.
+I'll be honest — I didn't build most of these gates. The Squad community did, after hitting exactly these problems in their own deployments. Researchers call it the **Trust-Authorization Mismatch** ([Shi et al., 2025](https://arxiv.org/abs/2512.06914)): static permissions can't track an agent's fluctuating runtime trustworthiness. Your CI gates are the runtime check that compensates for that gap.
 
-### Test Count Guard
+Let me walk you through the ones that keep me sleeping at night. Well, sleeping *slightly better* at night.
 
-The problem: an AI agent refactoring code might "clean up" test files it considers redundant. Each deletion is small. The PR looks tidy. The commit message says something reassuring like "remove obsolete tests." But over time, your test coverage drops to nothing — and nobody noticed because each individual PR was fine. Death by a thousand tidy commits.
+### The Cookie Jar Check — Test Count Guard
 
-The fix: a CI step that records the baseline test count and **fails the build if the count drops.**
+Here's a story. Data was refactoring a module, saw three test files that tested "legacy behavior," and helpfully deleted them. The PR was clean. The commit message was beautiful. The tests passed — because there were fewer of them. I didn't notice for two days. Death by a thousand tidy commits.
+
+The fix is embarrassingly simple: record how many tests you have, and **fail the build if the count drops.**
 
 ```yaml
 - name: Test count guard
@@ -175,74 +177,41 @@ The fix: a CI step that records the baseline test count and **fails the build if
     fi
 ```
 
-The agent can't silently reduce your test suite. If it needs to remove tests, it has to explicitly update the baseline — which shows up as a diff in the PR for a human to review. It's the engineering equivalent of "I see you moved that cookie jar. Put it back."
+If the agent needs to remove tests, it has to explicitly update the baseline — which shows up as a diff in the PR for a human to review. It's the engineering equivalent of "I see you moved that cookie jar. Put it back."
 
-This isn't hypothetical paranoia, by the way — research shows LLMs routinely hallucinate package names at [5.2% for commercial models](https://arxiv.org/abs/2406.10279). The same optimization instinct that invents a dependency will happily delete a test that "isn't needed."
+This isn't hypothetical paranoia — research shows LLMs routinely hallucinate package names at [5.2% for commercial models](https://arxiv.org/abs/2406.10279). The same optimization instinct that invents a dependency will happily delete a test that "isn't needed."
 
-### Hard-Gate Archival Enforcement
-
-> *[PR #637](https://github.com/bradygaster/squad/pull/637) — "Reorder tasks — archival first with HARD GATE enforcement"* (merged)
-
-The problem: Scribe's archival process was running as a soft step — if it failed silently, the agent continued without archiving. Over time, history files bloated, context windows filled with stale data, and agents made decisions based on outdated information.
-
-The fix: archival runs *first* and is a **hard gate** — if it fails, the entire task fails. No silent "oh well, we'll archive next time." This matters because an agent's belief state (what it "knows") directly affects its decisions. Stale context = bad decisions = drift.
-
-### Workspace Integrity + Prerelease Guard
+### The Lockfile Detective — Workspace Integrity + Prerelease Guard
 
 > *[PR #691](https://github.com/bradygaster/squad/pull/691) — "Add workspace integrity, prerelease guard, and export smoke gates"* (merged)
 
-Three CI gates in one (because apparently we were having a "buy one get two free" sale on security):
-1. **Workspace integrity** — catches stale npm workspace resolution (you'd be surprised how often agents run `npm install` and don't commit the lockfile changes — or maybe you wouldn't, if you've ever worked with a junior developer at 4 AM)
-2. **Prerelease guard** — blocks packages with `-alpha` or `-beta` version suffixes from reaching production
+Three gates in one PR, because apparently we were having a "buy one get two free" sale on security:
+
+1. **Workspace integrity** — catches stale npm workspace resolution. You'd be surprised how often agents run `npm install` and don't commit the lockfile changes. (Actually, you probably wouldn't be. We've all been that person at 4 AM.)
+2. **Prerelease guard** — blocks `-alpha` and `-beta` version suffixes from reaching production. AI agents are aggressive optimizers. Newer version? Must be better! No, sometimes newer means "an attacker pushed a beta with a RAT."
 3. **Export smoke test** — verifies the package's public API surface hasn't changed unexpectedly
 
-Why does the prerelease guard matter? Because AI agents are aggressive optimizers. When an agent sees a newer version of a package, it wants to use it — even if that version is a pre-release. This is a concrete supply chain risk: attackers can publish a `-beta` version with malicious code, knowing that an AI coding agent might eagerly adopt it.
+Here's the sobering part — and I had to rewrite this paragraph after the axios incident happened while I was *literally writing this post*: the prerelease guard wouldn't have caught it. The poisoned `axios@1.14.1` was a full release, not a prerelease. But the **workspace integrity check** would have. The attack injected `plain-crypto-js@4.2.1` — a brand new dependency that never existed in the legitimate codebase. A lockfile diff check would have screamed: "A *new* dependency appeared that nobody imported anywhere in the source code!" *(Recall the full axios forensics from [Part I](/posts/scaling-ai-part9-prime-directive/#threat-3-the-supply-chain-is-the-new-attack-surface) — compromised maintainer creds, self-destructing RAT, OIDC provenance bypass.)*
 
-But here's the sobering reality check — and I had to rewrite this paragraph after the axios incident happened while I was drafting this post: **the prerelease guard wouldn't have caught the axios attack.** The poisoned `axios@1.14.1` was a full release version, not a prerelease — it sailed past every version-based heuristic like it owned the place. What *would* have caught it? The **workspace integrity check**. The attack injected `plain-crypto-js@4.2.1` as a new dependency that never existed in the legitimate codebase. A lockfile diff check would have screamed "Hey! A *brand new* dependency appeared — one that's never been imported anywhere in the source code!" That's why you need the full CI gate stack, not just one check. Each gate catches a different failure mode. Security is a team sport, even when the team is made of YAML files.
+That's why you need the full gate stack. Each gate catches a different failure mode. Security is a team sport, even when the team is made of YAML files.
 
-The axios incident ([March 2026](https://www.stepsecurity.io/blog/axios-compromised-on-npm-malicious-versions-drop-remote-access-trojan)) is a case study in why. The attacker compromised a maintainer's credentials, published two poisoned versions that injected a self-destructing RAT via `postinstall`, and the malicious versions didn't even appear in GitHub tags. The forensic signal? The legitimate releases used npm's OIDC Trusted Publisher (published by GitHub Actions), but the malicious ones were published manually — no `trustedPublisher` field, no `gitHead`. If your CI pipeline checks for OIDC provenance on critical dependencies, you'd catch it. If not... you're running `npm install` and hoping for the best.
-
-### Concurrency Controls
-
-> *[PR #705](https://github.com/bradygaster/squad/pull/705) — "Concurrency controls for 5 workflows"* (merged)
-
-The problem: multiple squad agents can trigger GitHub Actions workflows simultaneously. Without concurrency controls, you get race conditions — two agents trying to merge to `main` at the same time, or two deployments overlapping.
-
-The fix: GitHub Actions `concurrency` groups that ensure only one instance of each workflow runs at a time:
-
-```yaml
-concurrency:
-  group: squad-deploy-${{ github.ref }}
-  cancel-in-progress: true  # Latest run wins — stale runs are cancelled
-```
-
-The `cancel-in-progress: true` means if a newer push arrives while a workflow is running, the old run is cancelled. For issue-driven workflows, the concurrency group uses the issue number, so two agents working on different issues run in parallel, but two agents touching the *same* issue queue up.
-
-### PR Readiness Checks
-
-> *[PR #752](https://github.com/bradygaster/squad/pull/752) — "Automated PR readiness checks — contributor feedback before review"*
-
-This one makes me happy because it solves a problem I didn't even realize I had. Before this, Brady (the framework maintainer) had to manually check every PR for basic readiness: is it still in draft? Is the branch stale? Is a changeset included? Is the commit history clean?
-
-The workflow runs 7 automated checks on every PR and posts a checklist comment — not blocking, but impossible to ignore:
-
-1. ✅ Single commit (or squashable)
-2. ✅ Not in draft
-3. ✅ Branch up to date with target
-4. ✅ Copilot review present (yes — it checks that an AI reviewed it!)
-5. ✅ Changeset present
-6. ✅ No merge conflicts
-7. ✅ CI passing
-
-Check #4 is the sneaky-brilliant one: it verifies that a Copilot review exists on the PR. That means a human can't merge something that the AI reviewer hasn't looked at, and an AI can't merge something the human hasn't approved. Two-key launch system.
-
-### Squad Leakage Detector
+### The Burglar-Proof Lock — Squad Leakage Detector
 
 > *[PR #769](https://github.com/bradygaster/squad/pull/769) — "Repo health checks" (draft)*
 
-This one is still in draft, but the concept is exactly what I described in Threat 2 of Part I. Remember directive drift — the slow erosion of security controls through innocent-looking changes? One of the four health checks in this PR is a **`.squad/` leakage detector**: if a feature PR modifies any file inside `.squad/`, the workflow posts a warning. Because `.squad/` changes in a feature branch are a code smell — they should be deliberate, not incidental.
+This one's still in draft, but the concept is *exactly* what I described in Threat 2 of Part I. Remember directive drift — the slow erosion of security controls through innocent-looking changes? One of the four health checks in this PR is a **`.squad/` leakage detector**: if a feature PR modifies any file inside `.squad/`, the workflow posts a warning. Because `.squad/` changes in a feature branch are a code smell — they should be deliberate, not incidental.
 
-Even better: the `check-bootstrap-deps.mjs` script validates that the framework's 5 core bootstrap files use **only `node:*` built-in imports**. Zero npm dependencies in the boot path. Why? Because if the framework itself depends on npm packages during initialization, a supply chain attack could compromise the very tool that's supposed to protect you. It's like making sure the lock on your front door wasn't manufactured by the burglar.
+Even better: the `check-bootstrap-deps.mjs` script validates that the framework's 5 core bootstrap files use **only `node:*` built-in imports**. Zero npm dependencies in the boot path. Because if the framework itself depends on npm packages during initialization, a supply chain attack could compromise the very tool that's supposed to protect you. It's like making sure the lock on your front door wasn't manufactured by the burglar.
+
+### The Supporting Cast
+
+Not every gate needs a dramatic backstory. These are the workhorses — merged, tested, quietly keeping things sane:
+
+| Gate | PR | What It Catches |
+|------|----|-----------------|
+| Hard-gate archival | [#637](https://github.com/bradygaster/squad/pull/637) | Scribe's archival runs first as a **hard gate** — if it fails, the entire task fails. No silent "we'll archive next time." Stale context = bad decisions = drift. |
+| Concurrency controls | [#705](https://github.com/bradygaster/squad/pull/705) | Only one workflow instance per `concurrency` group. `cancel-in-progress: true` — stale runs get cancelled. Two agents, same issue? Queue up. |
+| PR readiness checks | [#752](https://github.com/bradygaster/squad/pull/752) | 7 automated checks per PR: single commit, not draft, branch up to date, Copilot review present, changeset included, no conflicts, CI passing. Check #4 is sneaky-brilliant — ensures *both* AI and human reviewed before merge. Two-key launch system. |
 
 ```
   ┌──────────────────────────────────────────────────────┐
@@ -278,7 +247,7 @@ The pattern here is **defense against drift, not defense against malice.** These
 
 ---
 
-## Layer 4: The Approval Gate — Where Humans Stay in the Loop
+## Layer 4: The Hand on the Button — Approval Gates
 
 This is the layer that people ask about most after my security talks: "How do you actually stop the squad from deploying something dangerous?"
 
@@ -286,9 +255,7 @@ Two flavors: synchronous (block and wait) and asynchronous (propose and review).
 
 ### The AX Inspiration
 
-In early 2026, Netlify's CEO Matt Biilmann coined the term **AX — Agent Experience** ([netlify.com/agent-experience](https://www.netlify.com/agent-experience/)) to describe how products should be designed for AI agent users. The core insight: if AI agents are going to be primary users of your platform, the platform needs to be designed for their workflow, not just for humans clicking buttons.
-
-I read that and had an "oh wait" moment. The kind where you stop scrolling and stare at the wall for a minute. We'd been thinking about the squad as *our* tool. But what if we flipped it? What if we designed the approval workflow from the *agent's perspective* — letting the agent do everything it can autonomously, and only pulling the human in at the exact moment where human judgment is irreplaceable?
+The async gate was inspired by Netlify's [Agent Experience (AX)](https://www.netlify.com/agent-experience/) concept: design the workflow from the *agent's perspective*. Let the agent do everything it can autonomously, and only pull the human in at the exact moment where human judgment is irreplaceable. I read that and had one of those "stop scrolling and stare at the wall" moments. We'd been designing the approval flow for *us*. What if we designed it for *them*?
 
 That's the AX Approval Gate pattern. The agent works autonomously until it hits a trust boundary. Then it creates a reviewable artifact (a PR, a preview, a diff), tags it for human attention, and *waits*. The human reviews on their own schedule, applies a label, and the automation takes it from there.
 
@@ -400,21 +367,11 @@ Ralph monitors for staleness on async gates:
 
 ---
 
-## Layer 5: Separation of Duties — And the Workload Identity Experiment
+## Layer 5: Who Writes the Check Can't Sign It
 
 The final layer is organizational, and it's the one I keep coming back to because it maps directly to a principle that financial auditing figured out decades ago: **the person who writes the check can't sign it, and the person who signs it can't cash it.** (If your bank doesn't work this way, please change banks immediately.)
 
-In the squad's pipeline, these roles are enforced:
-
-| Phase | Actor | Cannot Also Be |
-|-------|-------|----------------|
-| Write code | Data | Reviewer |
-| Security review | Worf | Author of the code |
-| Approve deployment | Human | N/A (always human) |
-| Execute deployment | GitHub Actions | N/A (automated) |
-| Monitor + alert | Ralph | Author or Reviewer |
-
-**The agent that writes the code never reviews it. The agent that reviews it never deploys it. The human is the only one who can authorize deployment.**
+In the squad's pipeline, every phase has a different actor — and each one is explicitly *blocked* from performing the adjacent phases:
 
 ```
   ┌──────────────────────────────────────────────────────┐
@@ -435,6 +392,8 @@ In the squad's pipeline, these roles are enforced:
   │  ❌ Any agent approves → BLOCKED (human only)         │
   └──────────────────────────────────────────────────────┘
 ```
+
+**The agent that writes the code never reviews it. The agent that reviews it never deploys it. The human is the only one who can authorize deployment.** Five actors, five phases, zero overlap.
 
 ### The Workload Identity Experiment: Squad on AKS
 
@@ -470,7 +429,7 @@ In the AKS model, each agent pod has its own workload identity with its own Azur
   └─────────────────────────────────────────────────────────┘
 ```
 
-This is still experimental. We're running it on AKS free tier with KEDA-based autoscaling — agents spin up when work arrives and spin down when idle. But the security model is sound: if Data's pod is compromised via prompt injection, the attacker gets Data's permissions — not Worf's, not Ralph's, and not the human's.
+This is still experimental. We're running it on AKS free tier with KEDA-based autoscaling (KEDA = Kubernetes Event-Driven Autoscaler — it watches for GitHub events and spins pods up only when there's work) — agents spin up when work arrives and spin down when idle. But the security model is sound: if Data's pod is compromised via prompt injection, the attacker gets Data's permissions — not Worf's, not Ralph's, and not the human's.
 
 The research backs this up. Bühler et al. ([2025](https://arxiv.org/abs/2510.21236)) studied MCP server security and found that "thousands of MCP servers execute with unrestricted access to host systems, creating a broad attack surface." Their recommendation? Sandboxed execution with fine-grained permissions — exactly what the pod-per-agent model gives us.
 
@@ -511,10 +470,10 @@ Here's the full defense stack, layer by layer:
 No single layer is sufficient. An insider could potentially bypass any one of them. But together, they create a defense-in-depth stack where bypassing *all of them* requires either a *Mission: Impossible* level of coordination or admin access to the GitHub org (in which case you have bigger problems):
 
 - The **reviewer lockout** prevents agents from iterating past a rejection (no "just one more try, I promise")
-- The **immutable guard rails** prevent agents from editing the rules (the constitution is not a pull request)
-- The **CI gates** catch slow drift in tests, dependencies, and workspace integrity (the boiling frog detector)
-- The **approval gates** require human authorization for high-blast-radius operations (the "are you sure?" of infrastructure)
-- The **separation of duties** ensures no single agent controls the entire pipeline — and workload identity isolation limits the blast radius if one agent is compromised (compartmentalization, the boring superpower)
+- The **immutable guard rails** prevent agents from editing the rules (the constitution is not a pull request — hence the name)
+- The **boiling frog detector** catches slow drift in tests, dependencies, and workspace integrity
+- The **approval gates** require human authorization for high-blast-radius operations (the hand on the button)
+- The **separation of duties** ensures no single agent controls the entire pipeline — and workload identity isolation limits the blast radius if one agent is compromised (who writes the check can't sign it)
 
 ---
 
