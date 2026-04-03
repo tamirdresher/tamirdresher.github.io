@@ -8,9 +8,7 @@ series: "Scaling AI-Native Software Engineering"
 series_part: 9
 ---
 
-![The Prime Directive Part II — Defense in depth for AI agent teams](/assets/img/part9b-prime-directive.png)
-
-> *"Shields up. Red alert."*
+>*"Shields up. Red alert."*
 > — Every Starfleet captain, at the exact moment they realize talking isn't going to work
 
 In [Part I](/blog/2026/04/03/scaling-ai-part9-prime-directive), I laid out the threat model: the confused deputy evolved, the insider gaming the AI reviewer, the squad drifting its own directives, and supply chain attacks targeting the squad's context window. Four threats. Zero theoretical — all of them are natural consequences of giving AI agents real permissions. (Also, while writing Part I, the axios supply chain attack happened in real time. The universe has a flair for dramatic timing.)
