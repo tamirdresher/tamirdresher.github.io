@@ -117,7 +117,15 @@ GitHub branch protection is configured in the repository settings UI, not in fil
 - No force pushes to `main`/`master`
 - No deletions of protected branches
 
-**This is your strongest lever regardless of identity.** Even if the agent runs as you, it still has to go through a PR, get a review, and pass CI. It's the one thing that can't be changed by a commit, a PR, or an API call (unless you give the agent admin permissions — and if you do that, I can't help you. Nobody can help you. You've chosen chaos).
+**This is a strong lever regardless of identity.** Even if the agent runs as you, it still has to go through a PR, get a review, and pass CI.
+
+> ⚠️ **Important caveat:** Branch protection rules *can* be modified or deleted via the GitHub REST API or `gh` CLI by anyone with **admin** permissions on the repository. If your agent's token belongs to a repo admin (which is common — you're probably an admin on your own repos), the agent could theoretically call `gh api repos/{owner}/{repo}/branches/{branch}/protection -X DELETE` and remove the protection entirely. This isn't hypothetical — it's a documented API endpoint.
+>
+> **The fix:** Use [**GitHub Repository Rulesets**](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets) instead of (or in addition to) classic branch protection. Org-level rulesets can only be modified by **organization admins**, not repo admins — which means a repo-scoped agent token *cannot* alter them. Rulesets also support `evaluate` mode (audit without enforcing) for gradual rollout. If you're serious about immutable guardrails, org-level rulesets are the way to go.
+>
+> For personal repos where you're the only admin? Classic branch protection is still valuable — just be aware that the agent running under your token has the *theoretical* ability to modify it. The other layers (CI gates, CODEOWNERS, reviewer protocol) still hold even if branch protection is weakened.
+
+*Thanks to [Dina Berry](https://github.com/diberry) for flagging this — the original version of this section overstated the immutability of branch protection rules.*
 
 ### Azure DevOps Policies (for enterprise teams)
 
@@ -128,7 +136,7 @@ If you're using ADO pipelines alongside GitHub, you get another layer for free. 
 - **Comment resolution** (all comments must be resolved)
 - **Automatically include reviewers** based on path (e.g., `.squad/` changes → security team)
 
-The combination of GitHub branch protection + ADO pipeline policies creates a **two-layer lock** — an agent would need to bypass *both* to weaken the security posture. And both layers are controlled outside the repository's file tree.
+The combination of GitHub rulesets (or branch protection) + ADO pipeline policies creates a **two-layer lock** — an agent would need to bypass *both* to weaken the security posture. Org-level rulesets and ADO project-level policies are both controlled outside the repository's file tree and outside repo-admin scope.
 
 ---
 
@@ -396,7 +404,7 @@ block-beta
         L3a["Test count guard • Hard-gate archival • Workspace integrity • Prerelease guard • Export smoke test • Concurrency controls • .squad/ leakage detector • PR readiness (7 gates)"]
     end
     block:L2["📜 Layer 2: Immutable Guard Rails"]
-        L2a["CODEOWNERS • Branch protection • ADO pipeline policies • Workflow lockdown"]
+        L2a["CODEOWNERS • Org-level rulesets / branch protection • ADO pipeline policies • Workflow lockdown"]
     end
     block:L1["🔒 Layer 1: Reviewer Lockout Protocol"]
         L1a["Rejected → different agent revises • Rejected again → third agent • No self-approval • Security + architecture checklists enforced"]
@@ -451,7 +459,7 @@ The big remaining gap: the AX approval gate isn't deployed yet. That's literally
 If you're running AI agents with real permissions, here's the minimum viable defense stack:
 
 1. **[ ] CODEOWNERS** — Protect `.github/workflows/`, `.squad/policies/`, and any file that defines agent behavior. Require human approval for changes. (But remember: this only works if the agent runs under its own identity, not yours.)
-2. **[ ] Branch protection** — Require at least one human reviewer on `main`. No force pushes. Required status checks. This is your strongest lever.
+2. **[ ] Branch protection / Rulesets** — Require at least one human reviewer on `main`. No force pushes. Required status checks. For org repos, prefer **org-level rulesets** over classic branch protection — rulesets can't be altered by repo admins or their tokens.
 3. **[ ] Separation of duties** — The agent that writes code must not be the agent that reviews it. Enforce in your orchestration layer.
 4. **[ ] Test count baseline** — Record how many tests you have. Fail CI if the count drops.
 5. **[ ] Approval gate for destructive ops** — Any operation that changes production state must require explicit human authorization. Fail closed on timeout.
@@ -467,7 +475,7 @@ Every layer I've described follows the same principle:
 
 **The mechanisms that enforce governance must be outside the governance scope of the agents.**
 
-The agents can write code — but can't approve it. They can propose changes — but can't merge them. They can read policies — but can't modify the enforcement layer. The workflows, branch protections, and ADO policies exist in a plane that the agents can see but can't touch.
+The agents can write code — but can't approve it. They can propose changes — but can't merge them. They can read policies — but can't modify the enforcement layer. The workflows, org-level rulesets, and ADO policies exist in a plane that the agents can see but can't touch — *provided you've scoped their tokens correctly* (repo-level, not org-admin).
 
 This is what the security researchers call "externalizing the trust anchor" ([Shi et al., 2025](https://arxiv.org/abs/2512.06914)). In their B-I-P framework (Belief-Intention-Permission), the *Permission* layer must be decoupled from the agent's *Belief* and *Intention* layers — because an agent whose beliefs have been corrupted (via prompt injection, stale context, or supply chain poisoning) will naturally form intentions to bypass security. The permissions layer has to not care.
 
