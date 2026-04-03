@@ -17,7 +17,7 @@ In [Part I](/posts/scaling-ai-part9-prime-directive/), I laid out the threat mod
 
 Now for the part where we build the walls. Or, more accurately, the part where I admit I should have built the walls earlier and then show you the blueprints.
 
-I want to be upfront: some of what I'm describing here is deployed and battle-tested. Some of it is designed but not yet wired up. Some of it comes from excellent work by Dina, a core Squad team member, who built several of the CI gates after hitting exactly these problems in production. And some of it is informed by recent academic research that I'll cite throughout. I'll be clear about what's running in production versus what's still on the workbench.
+I want to be upfront: some of what I'm describing here is deployed and battle-tested. Some of it is designed but not yet wired up. Some of it comes from excellent work by [Dina Berry](https://github.com/diberry), a core Squad team member, who built several of the CI gates after hitting exactly these problems in production. And some of it is informed by recent academic research that I'll cite throughout. I'll be clear about what's running in production versus what's still on the workbench.
 
 Let's go layer by layer.
 
@@ -138,7 +138,7 @@ The combination of GitHub branch protection + ADO pipeline policies creates a **
 
 This is the layer that catches the stuff that *looks fine* but isn't. The slow drift. The helpful refactoring that quietly deletes three test files. The dependency update that sneaks in a pre-release. The "cleanup" PR that touches files it has no business touching.
 
-I'll be honest — I didn't build most of these gates. Dina did, after hitting exactly these problems in real deployments. Researchers call it the **Trust-Authorization Mismatch** ([Shi et al., 2025](https://arxiv.org/abs/2512.06914)): static permissions can't track an agent's fluctuating runtime trustworthiness. Your CI gates are the runtime check that compensates for that gap.
+I'll be honest — I didn't build most of these gates. [Dina Berry](https://github.com/diberry) did, after hitting exactly these problems in real deployments. Researchers call it the **Trust-Authorization Mismatch** ([Shi et al., 2025](https://arxiv.org/abs/2512.06914)): static permissions can't track an agent's fluctuating runtime trustworthiness. Your CI gates are the runtime check that compensates for that gap.
 
 Let me walk you through the ones that keep me sleeping at night. Well, sleeping *slightly better* at night.
 
