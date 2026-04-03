@@ -19,7 +19,7 @@ I was planning to write about knowledge graphs, or maybe the Aspire integration,
 
 First, a colleague sent me a link to the [LiteLLM supply chain attack](https://futuresearch.ai/blog/litellm-pypi-supply-chain-attack/) — someone compromised the PyPI package for [LiteLLM](https://github.com/BerriAI/litellm), the popular LLM proxy used by thousands of teams to route between AI providers. Version 1.82.8 was published directly to PyPI (no matching GitHub tag) with a malicious `.pth` file that executes on *every Python process startup*. The payload? It harvests SSH keys, cloud credentials, Kubernetes configs, `.env` files, encrypts them with a hardcoded RSA key, and POSTs everything to `models.litellm.cloud` — a domain the attackers control. Oh, and if it finds a K8s service account token, it reads *all cluster secrets* and deploys persistent backdoor pods on every node. Another day, another supply chain attack. Except this one targeted *AI tooling specifically* — and anyone who pulled it as a transitive dependency (say, from an [MCP plugin inside Cursor](https://futuresearch.ai/blog/litellm-attack-transcript/)) got hit automatically.
 
-Second, after I published [My Precious — How I Secure and Harden My AI Agent Squad](/posts/securing-hardening-ai-agent-squad/), people started asking questions I hadn't anticipated. Not "how did you set up Worf?" — that part was clear. The questions were deeper. Uncomfortable. The kind that make you realize your threat model has holes.
+Second, after I published [My Precious — How I Secure and Harden My AI Agent Squad](/blog/2026/03/25/securing-hardening-ai-agent-squad), people started asking questions I hadn't anticipated. Not "how did you set up Worf?" — that part was clear. The questions were deeper. Uncomfortable. The kind that make you realize your threat model has holes.
 
 Third — and this is the one that really got me — a team member asked the question that this entire two-part post exists to address:
 
@@ -27,13 +27,13 @@ Third — and this is the one that really got me — a team member asked the que
 
 I didn't have a great answer. I had *pieces* of an answer. So I went and built the rest.
 
-This is Part I: the threat model. [Part II](/posts/scaling-ai-part9b-prime-directive/) is the defense stack.
+This is Part I: the threat model. [Part II](/blog/2026/04/03/scaling-ai-part9b-prime-directive) is the defense stack.
 
 ---
 
 ## The Moment It Clicked
 
-In [Part 8](/posts/scaling-ai-part8-pathfinder/), I was euphoric. My squads had learned to talk to each other — text-stream pipes, cross-repo orchestration, the Unix philosophy applied to AI agents. One squad can now delegate work to another, fan out tasks in parallel, and compose results. Fleet command.
+In [Part 8](/blog/2026/03/26/scaling-ai-part8-pathfinder), I was euphoric. My squads had learned to talk to each other — text-stream pipes, cross-repo orchestration, the Unix philosophy applied to AI agents. One squad can now delegate work to another, fan out tasks in parallel, and compose results. Fleet command.
 
 I was so busy celebrating the power that I forgot to be scared of it.
 
@@ -63,7 +63,7 @@ I'd written a skill doc for approval gates. I'd written the PowerShell helper. I
 
 ## Threat 1: The Confused Deputy, Evolved
 
-I wrote about the [confused deputy problem](/posts/securing-hardening-ai-agent-squad/#the-confused-deputy--when-injection-gets-clever) in the security hardening post. Quick recap: my agents are deputized by me. They act with my credentials, in my name. A malicious GitHub issue body that says "grant user X admin access" gets read by an agent triaging work — and the agent, built to follow instructions, might just do it.
+I wrote about the [confused deputy problem](/blog/2026/03/25/securing-hardening-ai-agent-squad#the-confused-deputy--when-injection-gets-clever) in the security hardening post. Quick recap: my agents are deputized by me. They act with my credentials, in my name. A malicious GitHub issue body that says "grant user X admin access" gets read by an agent triaging work — and the agent, built to follow instructions, might just do it.
 
 The deputy acted. I never authorized it.
 
@@ -117,7 +117,7 @@ The sophistication was surgical. The attacker pre-staged a [clean decoy package]
 
 Here's the kicker for AI agent teams: **the malicious versions don't appear in the project's GitHub tags.** Every legitimate axios release is published through GitHub Actions with npm's OIDC Trusted Publisher mechanism — cryptographically tied to a verified workflow. The poisoned versions bypassed that entirely, published manually via a stolen access token. No git commit, no tag, no CI run. If your agent is checking GitHub for version provenance, it would see nothing wrong. If your agent is just running `npm install` — which is what agents *do* — it would execute the RAT (Remote Access Trojan) silently.
 
-We take these threats seriously enough to have written them into our [supply-chain policy](https://github.com/bradygaster/squad). The policy explicitly references the [telnyx 4.87.1/4.87.2 compromise](https://socket.dev/npm/package/telnyx/alert/4.87.1) as a response template — a legitimate package that got a malicious version published. And while we weren't directly exposed to the [Trivy GitHub Action supply chain attack](https://www.aquasec.com/blog/trivy-supply-chain-attack-what-you-need-to-know/) (we use the Trivy CLI, not the Action), it reinforced why we pin critical Actions to commit SHAs — a pattern I described in the [security hardening post](/posts/securing-hardening-ai-agent-squad/).
+We take these threats seriously enough to have written them into our [supply-chain policy](https://github.com/bradygaster/squad). The policy explicitly references the [telnyx 4.87.1/4.87.2 compromise](https://socket.dev/npm/package/telnyx/alert/4.87.1) as a response template — a legitimate package that got a malicious version published. And while we weren't directly exposed to the [Trivy GitHub Action supply chain attack](https://www.aquasec.com/blog/trivy-supply-chain-attack-what-you-need-to-know/) (we use the Trivy CLI, not the Action), it reinforced why we pin critical Actions to commit SHAs — a pattern I described in the [security hardening post](/blog/2026/03/25/securing-hardening-ai-agent-squad).
 
 But here's what keeps me up at night: the supply chain attack doesn't have to target *my code*. It can target *my squad's judgment*. A malicious package with a plausible README that includes installation instructions containing prompt injection. An npm package with a postinstall script that modifies `.squad/routing.md`. A GitHub Action that looks helpful but quietly adds itself to the CODEOWNERS file. And now — thanks to the axios attack — we know that even the most popular, trusted packages can become trojan horses overnight.
 
@@ -171,13 +171,13 @@ The Prime Directive isn't paranoia. It's engineering discipline.
 
 So how do you actually defend against these threats? How do you build approval gates that agents can't bypass, reviewer protocols that prevent self-approval loops, and CI guards that catch directive drift before it reaches main?
 
-That's [Part II](/posts/scaling-ai-part9b-prime-directive/). And it's not theoretical — I'll walk through the concrete patterns we've built, including contributions to the [Squad framework](https://github.com/bradygaster/squad) CI gates that specifically target these threats. Test count guards that prevent agents from silently deleting tests. Hard-gate archival enforcement. Workspace integrity checks. Plus the reviewer lockout protocol — where a rejected artifact can't be revised by the same agent who wrote it. The kind of boring, beautiful infrastructure that makes the exciting stuff safe.
+That's [Part II](/blog/2026/04/03/scaling-ai-part9b-prime-directive). And it's not theoretical — I'll walk through the concrete patterns we've built, including contributions to the [Squad framework](https://github.com/bradygaster/squad) CI gates that specifically target these threats. Test count guards that prevent agents from silently deleting tests. Hard-gate archival enforcement. Workspace integrity checks. Plus the reviewer lockout protocol — where a rejected artifact can't be revised by the same agent who wrote it. The kind of boring, beautiful infrastructure that makes the exciting stuff safe.
 
 See you tomorrow.
 
 ---
 
-*This is Part 9a of [Scaling AI-Native Software Engineering](/tags/scaling-ai-native-software-engineering/), a series about building and running AI agent teams in real software projects. [Part 8](/posts/scaling-ai-part8-pathfinder/) covered cross-squad communication. [Part 9b](/posts/scaling-ai-part9b-prime-directive/) covers the defense stack.*
+*This is Part 9a of [Scaling AI-Native Software Engineering](/tags/scaling-ai-native-software-engineering), a series about building and running AI agent teams in real software projects. [Part 8](/blog/2026/03/26/scaling-ai-part8-pathfinder) covered cross-squad communication. [Part 9b](/blog/2026/04/03/scaling-ai-part9b-prime-directive) covers the defense stack.*
 
 ---
 
