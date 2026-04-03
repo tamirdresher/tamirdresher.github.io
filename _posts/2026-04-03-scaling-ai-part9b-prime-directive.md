@@ -483,7 +483,7 @@ The remaining edge cases? That's what keeps me building. And occasionally keeps 
 
 ---
 
-*This is Part 9b of [Scaling AI-Native Software Engineering](/blog/tags/scaling-ai-native-software-engineering), a series about building and running AI agent teams in real software projects. [Part 9a](/blog/2026/04/03/scaling-ai-part9-prime-directive) covered the threat model. Next up: something lighter. Probably.*
+*This is Part 9b of [Scaling AI-Native Software Engineering](/tags/scaling-ai-native-software-engineering), a series about building and running AI agent teams in real software projects. [Part 9a](/blog/2026/04/03/scaling-ai-part9-prime-directive) covered the threat model. Next up: something lighter. Probably.*
 
 ---
 

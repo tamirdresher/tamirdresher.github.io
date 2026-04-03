@@ -177,7 +177,7 @@ See you tomorrow.
 
 ---
 
-*This is Part 9a of [Scaling AI-Native Software Engineering](/blog/tags/scaling-ai-native-software-engineering), a series about building and running AI agent teams in real software projects. [Part 8](/blog/2026/03/26/scaling-ai-part8-pathfinder) covered cross-squad communication. [Part 9b](/blog/2026/04/03/scaling-ai-part9b-prime-directive) covers the defense stack.*
+*This is Part 9a of [Scaling AI-Native Software Engineering](/tags/scaling-ai-native-software-engineering), a series about building and running AI agent teams in real software projects. [Part 8](/blog/2026/03/26/scaling-ai-part8-pathfinder) covered cross-squad communication. [Part 9b](/blog/2026/04/03/scaling-ai-part9b-prime-directive) covers the defense stack.*
 
 ---
 
