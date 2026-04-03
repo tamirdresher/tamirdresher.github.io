@@ -601,6 +601,8 @@ The remaining edge cases? That's what keeps me building. And occasionally keeps 
 **Industry sources:**
 
 - [Netlify AX (Agent Experience)](https://www.netlify.com/agent-experience/) — The concept that inspired the async approval gate pattern.
+- [LiteLLM PyPI Supply Chain Attack (FutureSearch)](https://futuresearch.ai/blog/litellm-pypi-supply-chain-attack/) — Detailed forensics on the March 2026 LiteLLM compromise: malicious `.pth` file harvesting credentials and deploying K8s backdoors via a compromised PyPI release.
+- [LiteLLM Attack Transcript (FutureSearch)](https://futuresearch.ai/blog/litellm-attack-transcript/) — Step-by-step walkthrough of how the LiteLLM malware was discovered inside a Cursor MCP plugin.
 - [Axios Supply Chain Attack Analysis (StepSecurity)](https://www.stepsecurity.io/blog/axios-compromised-on-npm-malicious-versions-drop-remote-access-trojan) — Detailed forensics on the March 2026 axios npm compromise, including OIDC provenance bypass and self-destructing malware.
 - [Axios Attack: npm Trust (Malwarebytes)](https://www.malwarebytes.com/blog/news/2026/03/axios-supply-chain-attack-chops-away-at-npm-trust) — Broader analysis of the axios incident's implications for the npm ecosystem.
 - [Squad Framework Reviewer Protocol](https://bradygaster.github.io/squad/features/reviewer-protocol/) — Full documentation on the lockout mechanism described in Layer 1.
