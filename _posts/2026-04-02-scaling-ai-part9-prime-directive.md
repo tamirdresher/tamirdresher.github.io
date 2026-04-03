@@ -51,7 +51,7 @@ Read that last one again.
 
 ## The 3% Problem
 
-Here's a stat that kept me up at night: according to the [Teleport 2026 State of AI in Enterprise Infrastructure Security](https://goteleport.com/resources/white-papers/ai-enterprise-infrastructure/) report, **only 3% of enterprises have automated controls governing AI agent behavior.** Organizations that give AI agents broad permissions experience **4.5x more security incidents** compared to those with scoped access (76% vs. 17%).
+Here's a stat that kept me up at night: according to Teleport's [2026 State of AI in Enterprise Infrastructure Security](https://www.infoq.com/news/2026/03/teleport-ai-report/) report, **only 3% of enterprises have automated controls governing AI agent behavior.** Organizations that give AI agents broad permissions experience **4.5x more security incidents** compared to those with scoped access (76% vs. 17%).
 
 Ninety-seven percent of companies running AI agents in their infrastructure have no machine-speed controls. They're relying on humans reviewing logs after the fact, or just hoping the agent does the right thing.
 
@@ -117,7 +117,7 @@ The sophistication was surgical. The attacker pre-staged a [clean decoy package]
 
 Here's the kicker for AI agent teams: **the malicious versions don't appear in the project's GitHub tags.** Every legitimate axios release is published through GitHub Actions with npm's OIDC Trusted Publisher mechanism — cryptographically tied to a verified workflow. The poisoned versions bypassed that entirely, published manually via a stolen access token. No git commit, no tag, no CI run. If your agent is checking GitHub for version provenance, it would see nothing wrong. If your agent is just running `npm install` — which is what agents *do* — it would execute the RAT silently.
 
-We've already had our own supply chain close calls before this. Our policy file references the [telnyx 4.87.1/4.87.2 compromise](https://socket.dev/npm/package/telnyx/alert/4.87.1) — a legitimate package that got a malicious version published. We caught the [Trivy GitHub Action supply chain attack](https://www.aquasec.com/blog/aqua-trivy-github-action-supply-chain-attack/) because we pin our Actions to commit SHAs (a pattern I described in the [security hardening post](/posts/securing-hardening-ai-agent-squad/)).
+We've already had our own supply chain close calls before this. Our policy file references the [telnyx 4.87.1/4.87.2 compromise](https://socket.dev/npm/package/telnyx/alert/4.87.1) — a legitimate package that got a malicious version published. We caught the [Trivy GitHub Action supply chain attack](https://www.aquasec.com/blog/trivy-supply-chain-attack-what-you-need-to-know/) because we pin our Actions to commit SHAs (a pattern I described in the [security hardening post](/posts/securing-hardening-ai-agent-squad/)).
 
 But here's what keeps me up at night: the supply chain attack doesn't have to target *my code*. It can target *my squad's judgment*. A malicious package with a plausible README that includes installation instructions containing prompt injection. An npm package with a postinstall script that modifies `.squad/routing.md`. A GitHub Action that looks helpful but quietly adds itself to the CODEOWNERS file. And now — thanks to the axios attack — we know that even the most popular, trusted packages can become trojan horses overnight.
 

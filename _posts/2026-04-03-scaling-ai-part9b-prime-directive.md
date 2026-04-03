@@ -25,7 +25,7 @@ Let's go layer by layer.
 
 ## Layer 1: No Second Chances — The Reviewer Lockout
 
-This is the pattern I'm most proud of, because it solves the "AI approves AI" problem structurally — not with policy, but with code. (Full documentation: [Reviewer Protocol](https://bradygaster.github.io/squad/features/reviewer-protocol/))
+This is the pattern I'm most proud of, because it solves the "AI approves AI" problem structurally — not with policy, but with code. (Full documentation: [Reviewer Protocol](https://bradygaster.github.io/squad/docs/features/reviewer-protocol/))
 
 Here's the problem it solves. In a normal code review cycle, if a reviewer rejects your PR, you fix it and resubmit. That's fine for humans — we learn from feedback and genuinely improve the code. But AI agents optimize for one thing: **passing the check.** Without guardrails, an agent will make the minimum change to satisfy the reviewer, even if the underlying design problem is still there.
 
@@ -484,7 +484,7 @@ I promised to be honest about what's deployed versus what's designed. Here's the
 | Component | Status |
 |-----------|--------|
 | Reviewer lockout protocol | ✅ Enforced in orchestration pipeline |
-| Security + architecture review skills | ✅ Added to framework ([PR #766](https://github.com/bradygaster/squad/pull/766)) |
+| Security + architecture review skills | 🔄 PR open ([PR #766](https://github.com/bradygaster/squad/pull/766)) |
 | CODEOWNERS for `.squad/` | ⚠️ Designed, not yet applied to all repos |
 | Branch protection on `main` | ✅ Active on production repos |
 | ADO pipeline policies | ✅ Active (enterprise repos only) |
@@ -553,9 +553,9 @@ The remaining edge cases? That's what keeps me building. And occasionally keeps 
 
 - Abaev, N. et al. (2026). ["AgentGuardian: Learning Access Control Policies to Govern AI Agent Behavior."](https://arxiv.org/abs/2601.10440) — A security framework for context-aware access control in AI agent operations.
 
-- Spracklen, J. et al. (2024). ["We Have a Package for You! A Comprehensive Analysis of Package Hallucinations by Code Generating LLMs."](https://arxiv.org/abs/2406.10279) — LLMs routinely hallucinate package names, creating supply chain attack vectors. Motivates the prerelease guard in Layer 3.
+- Spracklen, J. et al. (2025). ["We Have a Package for You! A Comprehensive Analysis of Package Hallucinations by Code Generating LLMs."](https://arxiv.org/abs/2406.10279) — LLMs routinely hallucinate package names, creating supply chain attack vectors. Published at USENIX Security 2025. Motivates the prerelease guard in Layer 3.
 
-- Twist, L. et al. (2025). ["Library Hallucinations in LLMs: Risk Analysis Grounded in Developer Queries."](https://arxiv.org/abs/2509.22202) — Introduces the term "slopsquatting" — attackers registering the package names that LLMs hallucinate.
+- Twist, L. et al. (2025). ["Library Hallucinations in LLMs: Risk Analysis Grounded in Developer Queries."](https://arxiv.org/abs/2509.22202) — Studies the phenomenon of "slopsquatting" (term coined by Seth Larson) — attackers registering the package names that LLMs hallucinate.
 
 **Industry sources:**
 
@@ -564,6 +564,6 @@ The remaining edge cases? That's what keeps me building. And occasionally keeps 
 - [LiteLLM Attack Transcript (FutureSearch)](https://futuresearch.ai/blog/litellm-attack-transcript/) — Step-by-step walkthrough of how the LiteLLM malware was discovered inside a Cursor MCP plugin.
 - [Axios Supply Chain Attack Analysis (StepSecurity)](https://www.stepsecurity.io/blog/axios-compromised-on-npm-malicious-versions-drop-remote-access-trojan) — Detailed forensics on the March 2026 axios npm compromise, including OIDC provenance bypass and self-destructing malware.
 - [Axios Attack: npm Trust (Malwarebytes)](https://www.malwarebytes.com/blog/news/2026/03/axios-supply-chain-attack-chops-away-at-npm-trust) — Broader analysis of the axios incident's implications for the npm ecosystem.
-- [Squad Framework Reviewer Protocol](https://bradygaster.github.io/squad/features/reviewer-protocol/) — Full documentation on the lockout mechanism described in Layer 1.
+- [Squad Framework Reviewer Protocol](https://bradygaster.github.io/squad/docs/features/reviewer-protocol/) — Full documentation on the lockout mechanism described in Layer 1.
 - [Squad on AKS](https://github.com/tamirdresher/squad-on-aks) — The pod-per-agent experiment with workload identity isolation.
 - [Squad Framework](https://github.com/bradygaster/squad) — The open-source framework behind these patterns. CI gate PRs linked throughout the post.
