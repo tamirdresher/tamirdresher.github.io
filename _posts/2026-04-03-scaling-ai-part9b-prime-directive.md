@@ -13,9 +13,9 @@ series_part: 9
 > *"Shields up. Red alert."*
 > — Every Starfleet captain, at the exact moment they realize talking isn't going to work
 
-In [Part I](/posts/scaling-ai-part9-prime-directive/), I laid out the threat model: the confused deputy evolved, the insider gaming the AI reviewer, the squad drifting its own directives, and supply chain attacks targeting the squad's context window. Three threats. Zero theoretical — all of them are natural consequences of giving AI agents real permissions.
+In [Part I](/posts/scaling-ai-part9-prime-directive/), I laid out the threat model: the confused deputy evolved, the insider gaming the AI reviewer, the squad drifting its own directives, and supply chain attacks targeting the squad's context window. Four threats. Zero theoretical — all of them are natural consequences of giving AI agents real permissions. (Also, while writing Part I, the axios supply chain attack happened in real time. The universe has a flair for dramatic timing.)
 
-Now for the part where we build the walls.
+Now for the part where we build the walls. Or, more accurately, the part where I admit I should have built the walls earlier and then show you the blueprints.
 
 I want to be upfront: some of what I'm describing here is deployed and battle-tested. Some of it is designed but not yet wired up. Some of it comes from community contributions to the [Squad framework](https://github.com/bradygaster/squad) — CI gates built after hitting exactly these problems in production. And some of it is informed by recent academic research that I'll cite throughout. I'll be clear about what's running in production versus what's still on the workbench.
 
@@ -75,7 +75,7 @@ A *different* agent must do the revision. If that revision is also rejected, the
 
 Why does this matter? Because without lockout, you get an infinite fix-reject loop where the agent learns to game the reviewer rather than fix the actual problem. With lockout, a fresh agent brings fresh perspective — and if nobody can satisfy the reviewer, **the human gets pulled in**, which is exactly the right escalation path.
 
-**Human rejections follow the same rule.** If I reject something, the same agent can't just tweak it and resubmit. That prevents the "I'll just change one line until Tamir clicks approve" pattern.
+**Human rejections follow the same rule.** If I reject something, the same agent can't just tweak it and resubmit. That prevents the "I'll just change one line until Tamir clicks approve at 11 PM because he's tired" pattern. (Don't look at me like that. You've done it too.)
 
 ---
 
@@ -96,6 +96,8 @@ The `.github/workflows/` directory contains the CI/CD pipelines. These are the a
 .github/workflows/ @tamirdresher
 .squad/policies/   @tamirdresher
 ```
+
+(Yes, that's me. The bus factor is 1. I'm aware. We're working on it.)
 
 Now here's the nuance — and this tripped me up when a team member asked: **CODEOWNERS only works if the squad is operating under its own identity, not yours.** If your agents are running as *you* (same GitHub token, same identity), CODEOWNERS can't distinguish between "you pushed this" and "an agent pushed this using your token."
 
@@ -132,7 +134,7 @@ GitHub branch protection is configured in the repository settings UI, not in fil
 - No force pushes to `main`/`master`
 - No deletions of protected branches
 
-**This is your strongest lever regardless of identity.** Even if the agent runs as you, it still has to go through a PR, get a review, and pass CI. It's the one thing that can't be changed by a commit, a PR, or an API call (unless you give the agent admin permissions — don't).
+**This is your strongest lever regardless of identity.** Even if the agent runs as you, it still has to go through a PR, get a review, and pass CI. It's the one thing that can't be changed by a commit, a PR, or an API call (unless you give the agent admin permissions — and if you do that, I can't help you. Nobody can help you. You've chosen chaos).
 
 ### Azure DevOps Policies (for enterprise teams)
 
@@ -149,13 +151,13 @@ The combination of GitHub branch protection + ADO pipeline policies creates a **
 
 ## Layer 3: CI Gates That Catch Directive Drift
 
-This is where the Squad framework's CI gates become critical. Several contributors — notably [Dina Berry](https://github.com/diberry) — have been building gates that specifically target the "slow erosion" problem: changes that individually look innocent but cumulatively weaken the system.
+This is where the Squad framework's CI gates become critical. Several contributors have been building gates that specifically target the "slow erosion" problem: changes that individually look innocent but cumulatively weaken the system. It's like watching someone remove one screw at a time from an IKEA bookshelf. Each one seems fine. Then you lean on it.
 
 Researchers call this the "boiling frog" of agentic security. A recent systematization paper ([Shi et al., 2025](https://arxiv.org/abs/2512.06914)) frames it as the **Trust-Authorization Mismatch**: static permissions can't track an agent's fluctuating runtime trustworthiness. Your CI gates are the runtime check that compensates for that gap.
 
 ### Test Count Guard
 
-The problem: an AI agent refactoring code might "clean up" test files it considers redundant. Each deletion is small. The PR looks tidy. But over time, your test coverage drops to nothing. This isn't hypothetical — package hallucination research ([Spracklen et al., 2024](https://arxiv.org/abs/2406.10279)) shows LLMs routinely generate code that references non-existent packages. The same optimization instinct that hallucinates a dependency will happily delete a test that "isn't needed."
+The problem: an AI agent refactoring code might "clean up" test files it considers redundant. Each deletion is small. The PR looks tidy. The commit message says something reassuring like "remove obsolete tests." But over time, your test coverage drops to nothing — and nobody noticed because each individual PR was fine. Death by a thousand tidy commits.
 
 The fix: a CI step that records the baseline test count and **fails the build if the count drops.**
 
@@ -171,7 +173,9 @@ The fix: a CI step that records the baseline test count and **fails the build if
     fi
 ```
 
-The agent can't silently reduce your test suite. If it needs to remove tests, it has to explicitly update the baseline — which shows up as a diff in the PR for a human to review.
+The agent can't silently reduce your test suite. If it needs to remove tests, it has to explicitly update the baseline — which shows up as a diff in the PR for a human to review. It's the engineering equivalent of "I see you moved that cookie jar. Put it back."
+
+This isn't hypothetical paranoia, by the way — research shows LLMs routinely hallucinate package names at [5.2% for commercial models](https://arxiv.org/abs/2406.10279). The same optimization instinct that invents a dependency will happily delete a test that "isn't needed."
 
 ### Hard-Gate Archival Enforcement
 
@@ -185,14 +189,14 @@ The fix: archival runs *first* and is a **hard gate** — if it fails, the entir
 
 > *[PR #691](https://github.com/bradygaster/squad/pull/691) — "Add workspace integrity, prerelease guard, and export smoke gates"* (merged)
 
-Three CI gates in one:
-1. **Workspace integrity** — catches stale npm workspace resolution (you'd be surprised how often agents run `npm install` and don't commit the lockfile changes)
+Three CI gates in one (because apparently we were having a "buy one get two free" sale on security):
+1. **Workspace integrity** — catches stale npm workspace resolution (you'd be surprised how often agents run `npm install` and don't commit the lockfile changes — or maybe you wouldn't, if you've ever worked with a junior developer at 4 AM)
 2. **Prerelease guard** — blocks packages with `-alpha` or `-beta` version suffixes from reaching production
 3. **Export smoke test** — verifies the package's public API surface hasn't changed unexpectedly
 
 Why does the prerelease guard matter? Because AI agents are aggressive optimizers. When an agent sees a newer version of a package, it wants to use it — even if that version is a pre-release. This is a concrete supply chain risk: attackers can publish a `-beta` version with malicious code, knowing that an AI coding agent might eagerly adopt it.
 
-But here's the sobering reality check: **the prerelease guard wouldn't have caught the axios attack.** The poisoned `axios@1.14.1` was a full release version, not a prerelease — it passed every version-based heuristic. What *would* have caught it? The **workspace integrity check**. The attack injected `plain-crypto-js@4.2.1` as a new dependency that never existed in the legitimate codebase. A lockfile diff check would have flagged that a *brand new* dependency appeared — one that's never been imported anywhere in the source code. That's why you need the full CI gate stack, not just one check. Each gate catches a different failure mode.
+But here's the sobering reality check — and I had to rewrite this paragraph after the axios incident happened while I was drafting this post: **the prerelease guard wouldn't have caught the axios attack.** The poisoned `axios@1.14.1` was a full release version, not a prerelease — it sailed past every version-based heuristic like it owned the place. What *would* have caught it? The **workspace integrity check**. The attack injected `plain-crypto-js@4.2.1` as a new dependency that never existed in the legitimate codebase. A lockfile diff check would have screamed "Hey! A *brand new* dependency appeared — one that's never been imported anywhere in the source code!" That's why you need the full CI gate stack, not just one check. Each gate catches a different failure mode. Security is a team sport, even when the team is made of YAML files.
 
 The axios incident ([March 2026](https://www.stepsecurity.io/blog/axios-compromised-on-npm-malicious-versions-drop-remote-access-trojan)) is a case study in why. The attacker compromised a maintainer's credentials, published two poisoned versions that injected a self-destructing RAT via `postinstall`, and the malicious versions didn't even appear in GitHub tags. The forensic signal? The legitimate releases used npm's OIDC Trusted Publisher (published by GitHub Actions), but the malicious ones were published manually — no `trustedPublisher` field, no `gitHead`. If your CI pipeline checks for OIDC provenance on critical dependencies, you'd catch it. If not... you're running `npm install` and hoping for the best.
 
@@ -236,7 +240,7 @@ The `cancel-in-progress: true` means if a newer push arrives while a workflow is
   └──────────────────────────────────────────────────────┘
 ```
 
-The pattern here is **defense against drift, not defense against malice.** These gates don't assume the agent is adversarial — they assume it's an enthusiastic optimizer that doesn't know when to stop.
+The pattern here is **defense against drift, not defense against malice.** These gates don't assume the agent is adversarial — they assume it's an enthusiastic optimizer that doesn't know when to stop. Think of it as childproofing your house: the kid isn't trying to burn the place down, but you still put covers on the electrical outlets.
 
 ---
 
@@ -250,7 +254,7 @@ Two flavors: synchronous (block and wait) and asynchronous (propose and review).
 
 In early 2026, Netlify's CEO Matt Biilmann coined the term **AX — Agent Experience** ([netlify.com/agent-experience](https://www.netlify.com/agent-experience/)) to describe how products should be designed for AI agent users. The core insight: if AI agents are going to be primary users of your platform, the platform needs to be designed for their workflow, not just for humans clicking buttons.
 
-I read that and had an "oh wait" moment. We'd been thinking about the squad as *our* tool. But what if we flipped it? What if we designed the approval workflow from the *agent's perspective* — letting the agent do everything it can autonomously, and only pulling the human in at the exact moment where human judgment is irreplaceable?
+I read that and had an "oh wait" moment. The kind where you stop scrolling and stare at the wall for a minute. We'd been thinking about the squad as *our* tool. But what if we flipped it? What if we designed the approval workflow from the *agent's perspective* — letting the agent do everything it can autonomously, and only pulling the human in at the exact moment where human judgment is irreplaceable?
 
 That's the AX Approval Gate pattern. The agent works autonomously until it hits a trust boundary. Then it creates a reviewable artifact (a PR, a preview, a diff), tags it for human attention, and *waits*. The human reviews on their own schedule, applies a label, and the automation takes it from there.
 
@@ -364,7 +368,7 @@ Ralph monitors for staleness on async gates:
 
 ## Layer 5: Separation of Duties — And the Workload Identity Experiment
 
-The final layer is organizational, and it's the one I keep coming back to because it maps directly to a principle that financial auditing figured out decades ago: **the person who writes the check can't sign it, and the person who signs it can't cash it.**
+The final layer is organizational, and it's the one I keep coming back to because it maps directly to a principle that financial auditing figured out decades ago: **the person who writes the check can't sign it, and the person who signs it can't cash it.** (If your bank doesn't work this way, please change banks immediately.)
 
 In the squad's pipeline, these roles are enforced:
 
@@ -402,7 +406,7 @@ In the squad's pipeline, these roles are enforced:
 
 Here's where it gets interesting. We've been experimenting with running squad agents as separate pods on Azure Kubernetes Service, where each agent runs with a **different Azure workload identity** ([tamirdresher/squad-on-aks](https://github.com/tamirdresher/squad-on-aks)).
 
-Why? Because in the current model, all agents share the same execution context — same token, same permissions. If one agent is compromised (say, via a prompt injection in a malicious issue), it has access to everything the other agents can see. That's the "blast radius" problem.
+Why? Because in the current model, all agents share the same execution context — same token, same permissions. If one agent is compromised (say, via a prompt injection in a malicious issue), it has access to everything the other agents can see. That's the "blast radius" problem. It's like putting all your eggs in one basket, except the basket is on fire and the eggs are production credentials.
 
 In the AKS model, each agent pod has its own workload identity with its own Azure RBAC scope:
 
@@ -467,13 +471,13 @@ Here's the full defense stack, layer by layer:
 └─────────────────────────────────────────────────────┘
 ```
 
-No single layer is sufficient. An insider could potentially bypass any one of them. But together, they create a defense-in-depth stack where:
+No single layer is sufficient. An insider could potentially bypass any one of them. But together, they create a defense-in-depth stack where bypassing *all of them* requires either a Mission: Impossible level of coordination or admin access to the GitHub org (in which case you have bigger problems):
 
-- The **reviewer lockout** prevents agents from iterating past a rejection
-- The **immutable guard rails** prevent agents from editing the rules
-- The **CI gates** catch slow drift in tests, documents, and workspace integrity
-- The **approval gates** require human authorization for high-blast-radius operations
-- The **separation of duties** ensures no single agent controls the entire pipeline — and workload identity isolation limits the blast radius if one agent is compromised
+- The **reviewer lockout** prevents agents from iterating past a rejection (no "just one more try, I promise")
+- The **immutable guard rails** prevent agents from editing the rules (the constitution is not a pull request)
+- The **CI gates** catch slow drift in tests, dependencies, and workspace integrity (the boiling frog detector)
+- The **approval gates** require human authorization for high-blast-radius operations (the "are you sure?" of infrastructure)
+- The **separation of duties** ensures no single agent controls the entire pipeline — and workload identity isolation limits the blast radius if one agent is compromised (compartmentalization, the boring superpower)
 
 ---
 
@@ -496,7 +500,7 @@ I promised to be honest about what's deployed versus what's designed. Here's the
 | Separation of duties | ✅ Enforced in pipeline phases |
 | Pod-per-agent (AKS) | 🧪 Experimental — running on [squad-on-aks](https://github.com/tamirdresher/squad-on-aks) |
 
-The big remaining gap: the AX approval gate isn't deployed yet. That's literally the next thing I'm doing — wiring it up to this blog's repository so that agent-proposed posts (like this one!) go through the `waiting-approval` → `approved:ship` flow.
+The big remaining gap: the AX approval gate isn't deployed yet. That's literally the next thing I'm doing — wiring it up to this blog's repository so that agent-proposed posts (like this one!) go through the `waiting-approval` → `approved:ship` flow. Yes, I'm writing about the thing I haven't finished building. Welcome to the blog.
 
 ---
 
@@ -529,9 +533,9 @@ If you're running AI agents with real permissions, here's the minimum viable def
 5. **[ ] Approval gate for destructive ops** — Any operation that changes production state must require explicit human authorization. Fail closed on timeout.
 6. **[ ] Agent identity** — Run your agents under their own identity (GitHub App, Copilot bot, or dedicated service account), not your personal token. This makes every other control more effective.
 
-That's six items. You can implement the first five in a single afternoon. Item 6 takes longer but pays off exponentially — it's the difference between CODEOWNERS being a suggestion and CODEOWNERS being a wall.
+That's six items. You can implement the first five in a single afternoon. (I say "afternoon" but it took me a weekend. Don't judge.) Item 6 takes longer but pays off exponentially — it's the difference between CODEOWNERS being a suggestion and CODEOWNERS being a wall.
 
-The remaining edge cases? That's what keeps me building.
+The remaining edge cases? That's what keeps me building. And occasionally keeps me up at night. But mostly building.
 
 ---
 
