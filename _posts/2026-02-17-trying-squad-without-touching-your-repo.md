@@ -7,7 +7,7 @@ tags: [ai-agents, squad, github-copilot, git, symlinks, development-workflow, pr
 
 > **📝 Update (March 2026):** Since this post was published, Squad has been updated significantly. See the notes at the bottom for updated commands and the latest symlink setup. Also check out [Part 7 of the Scaling AI series](/blog/2026/03/22/scaling-ai-part7-enterprise-state) where I explore the enterprise state problem more deeply.
 
-I've been running multiple AI agents in parallel using [Git worktrees](/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html) for a while now, and it's been a productivity multiplier. But recently I stumbled upon [Squad](https://github.com/bradygaster/squad)—a framework by Brady Gaster that lets you define an entire AI team with specialized roles, all orchestrated through GitHub Copilot. Think of it as going from managing individual AI agents to having a full team with a tech lead, developers, testers, and a documentation writer, all coordinated automatically.
+I've been running multiple AI agents in parallel using [Git worktrees](/blog/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html) for a while now, and it's been a productivity multiplier. But recently I stumbled upon [Squad](https://github.com/bradygaster/squad)—a framework by Brady Gaster that lets you define an entire AI team with specialized roles, all orchestrated through GitHub Copilot. Think of it as going from managing individual AI agents to having a full team with a tech lead, developers, testers, and a documentation writer, all coordinated automatically.
 
 The catch? Squad works by adding configuration files directly into your repository—`.ai-team/` for team state, `.ai-team-templates/` for role definitions, and `.github/agents/squad.agent.md` for the main agent. For a personal project, that's fine. But I wanted to try it on a work repo where I can't just commit experimental AI framework files. My teammates didn't sign up for 38 new files appearing in their next pull.
 
@@ -285,5 +285,5 @@ If you're coming from an older Squad version, the [migration guide](https://brad
 
 ## Related Posts
 
-- [Scaling Your AI Development Team with Git Worktrees](/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html)
-- [Scaling AI Agents with Aspire: The Missing Isolation Layer](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html)
+- [Scaling Your AI Development Team with Git Worktrees](/blog/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html)
+- [Scaling AI Agents with Aspire: The Missing Isolation Layer](/blog/2025/12/16/scaling-ai-agents-with-aspire-isolation.html)
