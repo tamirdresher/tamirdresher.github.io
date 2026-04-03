@@ -2,7 +2,7 @@
 layout: post
 title: "Aspire Conf 2026: Everything New in 13.2 and How AI Agents Use It"
 date: 2026-04-02
-tags: [aspire, aspire-conf-2026, book-of-news, azure-ai-foundry, typescript, aws, docker-compose, kubernetes, genai, mcp, developer-experience, cloud-native, ai, ai-agents, squad, polyglot, observability]
+tags: [aspire, aspire-conf-2026, book-of-news, microsoft-foundry, typescript, aws, docker-compose, kubernetes, genai, mcp, developer-experience, cloud-native, ai, ai-agents, squad, polyglot, observability]
 series: "Scaling AI-Native Software Engineering"
 ---
 
@@ -174,7 +174,7 @@ Luke Parker then showed how OpenCode uses Aspire as the shared observability sur
 
 ---
 
-### 7. Azure AI Foundry Hosting — From Bicep to C#
+### 7. Microsoft Foundry Hosting — From Bicep to C#
 
 This was the original focus of this post, and it's still a major story. Aspire 13.2 ships first-class support for Microsoft Foundry via `Aspire.Hosting.Foundry`.
 
