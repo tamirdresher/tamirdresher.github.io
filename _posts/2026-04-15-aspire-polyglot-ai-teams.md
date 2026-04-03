@@ -1,271 +1,138 @@
 ---
 layout: post
-title: "The Language Doesn't Matter Anymore — Aspire Polyglot and the AI Team That Actually Runs"
+title: "Kubernetes IN Docker, IN Aspire — Why KinD Changes Everything for Platform Engineers"
 date: 2026-04-15
-tags: [aspire, polyglot, ai-agents, squad, github-copilot, python, nodejs, distributed-systems, autonomy]
-series: "Scaling AI-Native Software Engineering"
+tags: [aspire, kubernetes, kind, platform-engineering, community-toolkit, aspire-community-toolkit, crd, operators, controllers, squad, ai-agents]
+published: false
 ---
 
-## A Problem I Didn't Know I Had
+## The Part of Aspire Nobody Was Talking About
 
-I've been running Squad — my personal AI engineering team — for a few months now. Picard leads. Data writes code. Worf handles security. Seven does research. Ralph watches the queue 24/7 so I don't have to. It works. It works surprisingly well, actually. I [wrote about it in Part 0](/blog/2026/03/10/organized-by-ai), and the reaction was... not what I expected. A lot of people asked the same follow-up question: *"But what happens when your agents need to run code in Python? Or Node.js? Or something other than C#?"*
+Aspire 13.2 shipped recently, and everyone's talking about the TypeScript AppHost. And honestly? Fair. Being able to write your entire distributed application manifest in TypeScript — service discovery, resource dependencies, environment wiring — is genuinely useful, especially for teams where the AppHost owner is more comfortable in TypeScript than C#.
 
-The honest answer, until recently, was: nothing good.
+But that's not the 13.2 thing I keep thinking about.
 
-Because here's the dirty secret of AI coding agents. They read files. They write files. They comment on PRs. But they don't *run* things. They're stateless by nature — each prompt is a conversation, not a running process. If your agent writes a FastAPI endpoint in Python, it can't spin up a local Python environment to verify it works. If your agent builds a TypeScript service, it can't actually start it, query it, watch its logs, and know that it's healthy.
-
-They're brilliant architects who hand you blueprints and can't check if the building stands up.
-
-And that bothered me. Because the moment you start thinking about an AI team working on real distributed systems — the kind I work on every day at my infrastructure platform team at Microsoft — you realize the language thing is a real constraint. Real systems don't speak one language. They speak many.
+The thing I keep thinking about is what Aspire can now do for the people who don't build apps *on* Kubernetes — they build the platform *for* Kubernetes.
 
 ---
 
-## Then Aspire Dropped the ".NET"
+## A Problem I Have at Work
 
-In November 2025, the team behind .NET Aspire shipped version 13 and made a quiet but massive announcement: they dropped "**.NET**" from the name. It's just **Aspire** now.
+Here's something I don't write about much on this blog: a significant part of my day job involves Kubernetes platform work. Not just deploying apps to K8s — building the K8s extensions themselves. Controllers, operators, CRDs, admission webhooks. The kind of thing where you write code that *watches* Kubernetes resources and reacts to them. Where you define `kind: TenantConfig` and build the reconciler that makes "TenantConfig exists" mean "tenant infrastructure exists."
 
-That's not a branding decision. That's a statement of intent.
+Testing this stuff has historically been... a process.
 
-Aspire 13 brought first-class Python support and first-class Node.js/JavaScript support alongside the C# stack it was built on. We're talking real integration — not "throw it in a container and hope for the best." Python virtual environments auto-detected. pip, uv, venv all handled. FastAPI via Uvicorn. Node.js with npm, yarn, or pnpm auto-detection. Hot reload. Debugging. Container builds. Database connection strings exposed in every format a Python or JS developer expects (URI, JDBC, individual properties).
+The standard flow: spin up a local `kind` cluster (I'll explain what that is in a second), apply your CRDs, run your controller locally against the cluster, poke at it, wait for logs, debug why the reconciler isn't triggering, repeat. It works. But it's friction. Manual steps, no dashboard, logs strewn across multiple terminal windows, and every time you restart the cluster you start from scratch with zero visibility into what just happened.
 
-When I first read the release notes, I had that feeling you get when a piece clicks into place that you didn't even know was missing.
-
-Because I suddenly understood: **Aspire isn't just a developer tool for distributed apps. It's the runtime that makes autonomous AI teams actually viable.**
+I've been thinking for a while that there should be a better way. And then, a few weeks ago, I found myself down a rabbit hole with Andrey Noskov, working through what "better" might actually look like.
 
 ---
 
-## The Gap Between "Agents" and "Running Services"
+## What KinD Is (For Everyone Who Just Googled It)
 
-Let me explain what I mean, because I think a lot of people are still thinking about AI agents the wrong way.
+Quick clarification because the naming here is genuinely confusing: when I say "KinD," I mean the **tool** — **Kubernetes IN Docker** — not the Kubernetes API concept of `kind: Deployment`. Same letters, completely different thing. (I'll agree with you that this is unfortunate naming.)
 
-When people talk about AI agents automating software development, they usually imagine something like: agent reads issue → agent writes code → agent opens PR → done. And that's real, and it works, and I [wrote a whole series about it](/blog/2026/03/11/scaling-ai-part1-first-team).
+[KinD](https://kind.sigs.k8s.io/) is a tool that runs a complete Kubernetes cluster inside Docker containers. You install it, run `kind create cluster`, and in about 30 seconds you have a real, fully functional Kubernetes cluster running on your laptop without needing any cloud resources, any VM, or any prior cluster setup. The control plane runs in Docker. The worker nodes run in Docker. It's genuinely remarkable.
 
-But there's a deeper level of autonomy that nobody talks about: **what if the agents themselves need to be services?**
+For local development and CI, KinD has become *the* standard. If you write Kubernetes controllers or operators, you use KinD for local testing. If you write CI pipelines that need a k8s cluster, they use KinD. It's fast, it's reproducible, and it tears down cleanly when you're done.
 
-Think about Ralph, my work monitor. Right now, Ralph is a script that fires every few minutes. It loads context, reads GitHub issues, picks up work. But Ralph could be a continuously running Node.js service with a proper health endpoint, a job queue, and an API that other agents can call. He could have state. He could manage concurrency. He could have a proper retry mechanism that's not just a PowerShell loop in my terminal.
-
-Think about Seven, my research agent. Right now, Seven reads files and writes reports. But Seven could be a Python service with a RAG pipeline — a vector database, document ingestion, semantic search — that Data and Picard can *query* when they need to answer questions about the codebase. Instead of Seven spending half her time re-reading the same docs, she'd have a running service with an index that stays fresh.
-
-Think about Worf, my security agent. Right now, Worf scans code when asked. But Worf could be a continuously running Python analysis service with rules and patterns, watching every file change and streaming findings to whoever needs them.
-
-The agents I have today are brilliant but ephemeral. The agents I want are **persistent services with real state**.
-
-And until Aspire went polyglot, there was no sane way to orchestrate them all together.
+The question I had: what if KinD clusters were just another Aspire resource?
 
 ---
 
-## The Demo I Wish I Could Build Right Now
+## Building the Aspire.Hosting.Kind Resource
 
-Here's what I'm designing. I haven't built all of it yet (some pieces are still weeks away), but the architecture is clear.
+A few weeks ago, I started sketching this out with Andrey. The idea is simple on paper: `AddKindCluster()` in your Aspire AppHost, and Aspire manages the cluster lifecycle — creates it when you run the app, exposes it in the dashboard, and tears it down when you stop. Your operator or controller, running as another Aspire resource, connects to the cluster through Aspire's resource reference model.
 
-Imagine a Squad AppHost — `squad-demo/AppHost/Program.cs` — that looks like this:
+I ended up building a working implementation: `KindClusterResource` (implementing `IResourceWithConnectionString`), a `KindClusterLifecycleHook` that wraps the `kind` CLI via `CliWrap`, extension methods for the fluent API, and enough integration tests to feel confident it actually worked. The repo is at [tamirdresher/aspire-kind](https://github.com/tamirdresher/aspire-kind).
+
+Then Andrey took a proper look. Andrey knows the Aspire Community Toolkit ecosystem well, and having someone who could tell me "this doesn't match the conventions" was exactly what I needed. We went back and forth on the API surface, the lifecycle semantics (should `AddDeployment` be a child resource? yes, it should), and the testing approach.
+
+Matt and Mitch joined the conversation from the Aspire community side. The thing I always appreciate about this ecosystem is how fast maintainers engage with a well-specified proposal. Within a day of filing the [CommunityToolkit/Aspire issue](https://github.com/CommunityToolkit/Aspire/issues/1232), Aaron Powell had tagged David Fowler for broader thoughts on the design. That's the signal that it's being taken seriously.
+
+Here's what the API looks like:
 
 ```csharp
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Shared infrastructure
-var postgres = builder.AddPostgres("postgres")
-    .WithDataVolume();
-var redis = builder.AddRedis("redis");
-var qdrant = builder.AddContainer("qdrant", "qdrant/qdrant", "latest")
-    .WithHttpEndpoint(targetPort: 6333, name: "http");
+var cluster = builder.AddKindCluster("dev-cluster")
+    .WithKubernetesVersion("v1.30.0");
 
-// Picard — the C# coordinator
-var picard = builder.AddProject<Projects.Picard>("picard")
-    .WithReference(postgres)
-    .WithReference(redis);
+cluster.AddDeployment("my-controller", "manifests/controller-deployment.yaml");
+cluster.AddService("my-controller-service", "manifests/controller-service.yaml");
 
-// Seven — Python RAG service
-var seven = builder.AddPythonApp("seven", "../agents/seven", "main.py")
-    .WithEnvironment("QDRANT_URL", qdrant.GetEndpoint("http"))
-    .WithEnvironment("OPENAI_API_KEY", builder.AddParameter("openai-key", secret: true))
-    .WithReference(qdrant);
-
-// Ralph — Node.js queue monitor  
-var ralph = builder.AddNpmApp("ralph", "../agents/ralph")
-    .WithReference(redis)
-    .WithReference(postgres);
-
-// Data — C# code analysis service
-var data = builder.AddProject<Projects.Data>("data")
-    .WithReference(postgres)
-    .WithReference(picard);
-
-// Worf — Python security scanner
-var worf = builder.AddPythonApp("worf", "../agents/worf", "scanner.py")
-    .WithReference(data);
+// Your operator runs as a regular Aspire project, targeting the KinD cluster
+var controller = builder.AddProject<Projects.MyController>("my-controller")
+    .WithReference(cluster);
 
 builder.Build().Run();
 ```
 
-Four languages, one `dotnet run`. One Aspire Dashboard. Every service visible, every log streamable, every trace queryable.
-
-And here's what gets me excited: all of them get **OpenTelemetry for free**. Aspire instruments them automatically. So I can see, from a single dashboard, that Ralph is processing 12 issues per minute, Seven is returning semantic search results in 180ms, Worf flagged two potential SQL injection patterns in the last commit, and Data is sitting at 98% CPU trying to analyze that 40,000-line legacy file (classic Data).
-
-**No custom monitoring setup. No separate observability stack. It's just there.**
+One `dotnet run`. KinD cluster spins up, manifests apply, your controller starts with the right kubeconfig wired through Aspire's environment model, and everything appears in the Aspire Dashboard — cluster health, controller logs, distributed traces across your reconcile loops.
 
 ---
 
-## What Polyglot Actually Unlocks
+## Why This Matters for Platform Engineers
 
-Let me be specific about what changes when your agents run in their natural language.
+Let me describe the workflow this enables, because I think it's genuinely different from what exists today.
 
-**Python agents become real AI services.** Hugging Face, LangChain, LlamaIndex, PyTorch — all of this is the Python ML/AI ecosystem, and it's unmatched. My Seven agent, doing research and RAG, is dramatically better as a Python FastAPI service with LangChain than as a C# service trying to import everything through HTTP wrappers. The semantic search quality is better. The embedding models are more accessible. The code is half the length.
+Normally, if you're building a Kubernetes operator, your local dev loop looks like this: make change → build binary → copy to cluster or restart local process → apply test manifests → check logs in one terminal → check events in another terminal → check controller output in a third terminal → somehow correlate all of this mentally. Your cluster might have state from the last run that's interfering. You're not sure if the behavior you're seeing is from your new code or from some stale CRD instance sitting around from yesterday.
 
-**Node.js agents get the frontend-backend bridge.** If you're building an AI team that needs to interact with your web applications — scraping, testing, generating UI, validating design systems — Node.js is where Playwright lives natively, where the web ecosystem breathes. Ralph, monitoring issues and webhooks, feels natural as a Node.js service because that's the ecosystem webhooks were designed for.
+With Aspire running your KinD cluster:
 
-**C# remains the coordination layer.** Picard and Data stay in C#. The Aspire AppHost itself stays in C#. The service discovery, the dependency injection, the orchestration logic — this is what C# and .NET are exceptional at. You're not abandoning .NET. You're just letting it be what it's best at, while Python and Node.js do what they're best at.
+Every run starts fresh (or seeded from state, your choice). Your controller's logs, the K8s events, and anything else your operator emits all flow into the Aspire Dashboard via OpenTelemetry — structured, searchable, correlated by trace. You can see the reconcile call as a span, the API server calls it makes as child spans, and the eventual state change as the outcome. All in one place, instead of mentally stitching together three terminal windows.
 
-This is how real engineering teams work. You don't write your ML pipeline in Java just because your API gateway happens to be Spring Boot. You use the right tool for the job. Now your AI team can too.
+The feedback loop from "made a change" to "understood the impact" collapses from minutes to seconds.
 
----
+And here's the part that connects back to why I care about this: my team does a lot of this kind of platform work. Writing controllers, building CRDs, extending Kubernetes for internal use. The dev experience for that has always been second-class compared to, say, a microservice developer who has Aspire, hot-reload, and a beautiful dashboard. The KinD resource is how platform engineers get the same experience.
 
-## The Observability Magic
-
-Here's the part that surprises people when I explain it: once your agents are Aspire resources, you can *observe them the way you observe any microservice*.
-
-With Aspire's MCP server (or the `aspire` CLI, which I [wrote about recently](/blog/2026/03/22/aspire-squad-love)), any agent in your squad can query any other agent's state. Data needs to know if Seven has already indexed the docs for a repo? She calls `aspire-list_resources` and checks Seven's health status. Ralph detects an unhealthy Worf service and automatically creates a GitHub issue. Picard sees that Seven's P95 latency spiked to 4 seconds and routes research tasks to a fallback path.
-
-The agents aren't just running in parallel — they're **aware of each other's operational state**. That's not possible when they're just stateless prompts. That's only possible when they're running services that Aspire can observe.
-
-The Aspire Dashboard becomes the control plane for both your distributed application *and* your AI team. Two birds, one beautiful dashboard.
+That gap has always bothered me. Now we can close it.
 
 ---
 
-## Setting It Up (The `aspire agent init` Shortcut)
+## Aspire 13.2 Context
 
-The practical thing I want to call out: Aspire 13.2 shipped a command that makes all of this embarrassingly easy to start.
+While all of this was happening, Aspire 13.2 shipped. Two things worth noting:
 
-```bash
-cd your-project
-aspire agent init
-```
+**TypeScript AppHost** is now available in preview. For teams where the platform configuration is TypeScript-first — or where the person owning the AppHost is more comfortable in TypeScript — this is real. The polyglot story isn't just "my services can run in Python"; it's now "my platform definition can run in TypeScript." That includes `AddKindCluster`, once the CommunityToolkit package matures.
 
-This command auto-detects your agent environment — VS Code with Copilot, Copilot CLI, Claude Code — and generates the right config file plus a skill file that teaches your agent all the Aspire CLI commands. For Copilot CLI (which is what I run), it creates `~/.copilot/mcp-config.json` automatically.
-
-Then to add a Python agent to an existing Aspire app:
-
-```bash
-aspire add python-app --name seven --project-path ../agents/seven
-```
-
-Aspire sets up the venv, writes the AppHost integration code, wires up the health endpoints. You write the Python service itself.
-
-For Node.js:
-
-```bash
-aspire add npm-app --name ralph --project-path ../agents/ralph
-```
-
-You don't have to figure out how to get Node.js service discovery working with Aspire's environment variables. The `AddNpmApp` extension handles it. Your Node.js service just reads `process.env.ConnectionStrings__redis` and it connects. Done.
+**The direction is clear**: Aspire is moving toward being the local development standard not just for app developers but for platform engineers and infrastructure teams. The CommunityToolkit is part of how that happens — it's the place where ecosystem-driven integrations live before (and sometimes instead of) getting pulled into the main Aspire project. KinD is exactly the kind of thing that fits there. Specialized enough that it shouldn't be in the core, general enough that a lot of people need it.
 
 ---
 
-## The Part That's Still Hard
+## How Squad Helped
 
-I want to be honest here, because I've learned to be suspicious of blog posts that make everything sound easy.
+I can't write about a project I've been building without mentioning that I didn't build it alone — and I don't just mean Andrey and Matt and Mitch.
 
-**Writing agents that behave well as long-running services is harder than writing agents as stateless prompts.**
+When I was trying to understand the CommunityToolkit's contribution conventions, the lifecycle hook patterns, and how other hosting integrations like `Hosting.Docker` handle similar problems, I asked Seven (my research agent) to dig through the CommunityToolkit source. She read the CONTRIBUTING guide, mapped out the patterns across similar integrations, and gave me a structured summary that saved me hours of reading unfamiliar code.
 
-When Ralph is a stateless script, a crash means nothing — you just run it again. When Ralph is a Node.js service with a queue and state in Redis, a crash means you need proper error handling, retry logic, dead-letter queues, and someone (Aspire, in this case) to restart him. The operational complexity goes up.
+When I was validating that `IDistributedApplicationLifecycleHook` was the right abstraction for the cluster lifecycle, Data reviewed the implementation and flagged something I'd missed: the teardown on SIGINT needed to be resilient to race conditions with other resources shutting down at the same time. Easy to miss. Easy to fix once you see it.
 
-**Language boundaries mean communication overhead.** When Picard (C#) needs to ask Seven (Python) something, it's an HTTP call. That's fine. But you need contracts — OpenAPI, gRPC, whatever you choose — and you need both sides to agree. Stateless agent prompts don't have this problem because there are no sides. Persistent services do.
+That's how I actually work now. Research, code review, writing — it happens in parallel, across agents, with me directing rather than doing everything myself. The squad knows the project, knows the conventions. The work is collaborative in a way that feels different from "I used an AI to clean up my sentences."
 
-**The Python ML ecosystem and the C# enterprise ecosystem want different things from their infrastructure.** Python services expect environment variables for configuration. C# services love DI containers and strongly-typed config. Aspire bridges this reasonably well, but there are rough edges, especially when you start mixing secrets management across the language boundary.
-
-None of this is a reason not to do it. It's just a reason to build it incrementally — start with the agents that benefit most from persistence (Ralph and Seven, in my case), prove the pattern, then expand.
+It's more like: I had an idea, and I had a team that helped me figure out whether it was a good one and then build it.
 
 ---
 
-## Why This Is the Actual Inflection Point
+## Status and What's Next
 
-I've been building with AI agents long enough to have opinions about what's real and what's hype. The hype is "AI will replace developers." The reality is "AI is the best force multiplier developers have ever had."
+The proposal is live: [CommunityToolkit/Aspire#1232](https://github.com/CommunityToolkit/Aspire/issues/1232). The implementation is at [tamirdresher/aspire-kind](https://github.com/tamirdresher/aspire-kind). Aaron Powell has tagged David Fowler for design input. We're in the feedback cycle.
 
-But even within the "real" category, there's been a ceiling. AI coding agents are genuinely good at reading and writing code within a context window. They're less good at operating continuously, maintaining state, and making decisions across long time horizons.
+If the maintainers are happy with the approach, the next step is adapting the implementation to fully match CommunityToolkit conventions, writing the samples, and submitting the PR. That's the part I'm most looking forward to — going from "this works on my machine" to "anyone building K8s tooling can `dotnet add package CommunityToolkit.Aspire.Hosting.Kind` and go."
 
-Aspire's polyglot support cracks that ceiling.
+If you're building Kubernetes operators or controllers and this sounds useful — or if you have opinions about the API surface — go comment on [the issue](https://github.com/CommunityToolkit/Aspire/issues/1232). The design is still open and feedback from people who actually do KinD-based workflows is exactly what makes these proposals land well.
 
-When your Squad agents are real services with health checks and telemetry, they stop being consultants you summon and start being colleagues who are always at their desks. Ralph isn't "the monitor agent you run before going to bed" — he's a service that runs whether you're there or not, observing the system, catching regressions, filing issues, and handling the 80% of work that doesn't need your input.
+This is the kind of thing (sorry) that makes me genuinely excited about the Aspire ecosystem. The framework is well-designed and well-maintained. The CommunityToolkit pattern for community integrations actually works. And there's a window right now where Aspire is expanding from "developer tool" to "platform engineering tool," and it's possible to help shape what that looks like.
 
-Seven isn't "the agent I ask to do research" — she's a knowledge service with a live index of everything the team has learned, available to every other agent via a simple API call.
-
-That's the AI team I actually want. Not a collection of prompts I have to invoke. A running system that works.
-
----
-
-## Getting Started
-
-If you want to experiment with this, here's the actual starting point:
-
-**1. Install Aspire 13+ and add polyglot support:**
-```bash
-dotnet workload install aspire
-aspire --version  # Should show 13.x
-```
-
-**2. Create a new polyglot AppHost:**
-```bash
-dotnet new aspire-apphost -o squad-demo
-cd squad-demo
-aspire agent init  # Auto-configures Copilot integration
-```
-
-**3. Add your first Python agent:**
-```bash
-mkdir ../agents/seven && cd ../agents/seven
-# Create your FastAPI service: main.py, requirements.txt
-cd ../../squad-demo/AppHost
-aspire add python-app --name seven --project-path ../../agents/seven
-```
-
-**4. Run everything:**
-```bash
-dotnet run
-# Aspire Dashboard starts at https://localhost:18888
-# Python FastAPI service starts automatically
-# Health checks, logs, traces — all visible
-```
-
-**5. Ask your Copilot agent to query the running system:**
-```bash
-aspire resources          # See all your squad services
-aspire logs seven         # Stream Seven's logs
-aspire telemetry traces   # See distributed traces across all agents
-```
-
-The full concept for the `squad-polyglot-demo` — with Picard as the C# coordinator, Seven as a Python RAG service, Ralph as Node.js, and Worf as a Python scanner — is something I'm actively building. When it's ready, I'll share the repo. The architecture I described here is the real target. The plumbing Aspire provides is already there.
-
----
-
-## One More Thing
-
-There's a meta-observation I can't stop thinking about.
-
-Aspire dropped "**.NET**" from its name because it's no longer just a .NET framework. That's the technical fact. But there's a deeper reason it matters for AI teams specifically.
-
-AI agents themselves are language-agnostic. GitHub Copilot agents run JavaScript/TypeScript. Many LLM tools are Python-first. C# is great for enterprise coordination. The best AI agent for a given job is often the one built in the language where the relevant ecosystem is strongest.
-
-A truly autonomous AI team needs infrastructure that matches how AI tooling is actually built — spread across Python, TypeScript, and C#, each doing what it's best at. Aspire's polyglot support isn't incidental to AI teams. It's **designed for** AI teams.
-
-The name change wasn't rebranding. It was a mission statement.
-
-And I, for one, am here for it.
+Worth building.
 
 ---
 
 ## Links
 
-- [Aspire What's New in Version 13](https://aspire.dev/whats-new/aspire-13/) — official polyglot feature docs
-- [Aspire CLI Reference](https://aspire.dev/install-aspire-cli/) — `aspire agent init` and all the CLI goodies
-- [Aspire Python Support Docs](https://learn.microsoft.com/dotnet/aspire/get-started/add-python-app) — how `AddPythonApp` works
-- [Aspire + Squad = ❤️](/blog/2026/03/22/aspire-squad-love) — my previous post on Aspire MCP + Squad agents
-- [Scaling AI Agents with Aspire: Port Isolation](/blog/2025/12/16/scaling-ai-agents-with-aspire-isolation) — how I use Aspire with git worktrees
-- [Part 0: Organized by AI](/blog/2026/03/10/organized-by-ai) — the Squad series start
-- [Squad Framework](https://github.com/microsoft/squad) — open-source, if you want to build your own team
-- [My Aspire Workshop](https://github.com/tamirdresher/aspire-workshop) — 3-day hands-on, if you want to go deep on Aspire itself
-
-If you're building something like this — polyglot agents, Squad integration, autonomous services — I genuinely want to hear about it. Find me on [Twitter/X](https://twitter.com/tamirdresher) or [LinkedIn](https://www.linkedin.com/in/tamirdresher).
-
----
-
-*This post is part of the "Scaling AI-Native Software Engineering" series. Previous: [Part 7: Enterprise State and the Local-First Realization](/blog/2026/03/23/scaling-ai-part7-enterprise-state)*
+- [CommunityToolkit/Aspire Issue #1232](https://github.com/CommunityToolkit/Aspire/issues/1232) — the proposal
+- [tamirdresher/aspire-kind](https://github.com/tamirdresher/aspire-kind) — working implementation
+- [KinD: Kubernetes IN Docker](https://kind.sigs.k8s.io/) — the upstream tool
+- [Aspire Community Toolkit](https://github.com/CommunityToolkit/Aspire) — where this would live
+- [Aspire 13.2 What''s New](https://aspire.dev/whats-new/aspire-13-2/) — TypeScript AppHost and more
+- [Squad Framework](https://github.com/microsoft/squad) — the AI team that helps me build things
