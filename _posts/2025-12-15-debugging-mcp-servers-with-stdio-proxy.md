@@ -318,5 +318,5 @@ The MCP stdio proxy is now an essential tool in my development toolkit. Whenever
 
 ## Related Posts
 
-- [Give Your AI Coding Agent Eyes: Integrating Playwright MCP for Visual Testing](/2025/11/17/give-your-ai-coding-agent-eyes-with-playwright-mcp.html)
-- [Scaling Your AI Development Team with Git Worktrees](/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html)
+- [Give Your AI Coding Agent Eyes: Integrating Playwright MCP for Visual Testing](/blog/2025/11/17/give-your-ai-coding-agent-eyes-with-playwright-mcp.html)
+- [Scaling Your AI Development Team with Git Worktrees](/blog/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html)

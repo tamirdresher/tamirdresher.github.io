@@ -236,7 +236,7 @@ while ($true) {
 - **SubSquads** ([PR #272](https://github.com/bradygaster/squad/pull/272)) — שינוי שם ומבנה של איך צוותים מקוננים עובדים
 - **Upstream & Watch** ([PR #280](https://github.com/bradygaster/squad/pull/280)) — חיבור לולאת watch וסנכרון upstream ב-CLI
 - **Test resilience** ([PR #283](https://github.com/bradygaster/squad/pull/283)) — שיפור יציבות בדיקות ב-CI
-- **Remote Control** — ה-[squad start --tunnel](/2026/02/26/squad-remote-control.html) שמאפשר לשלוט ב-Squad מהטלפון
+- **Remote Control** — ה-[squad start --tunnel](/blog/2026/02/26/squad-remote-control.html) שמאפשר לשלוט ב-Squad מהטלפון
 
 התרומות האלה לא היו מתוכננות. הן צמחו משימוש יומיומי — הייתי נתקל במגבלה, ה-Squad שלי היה חוקר פתרון, Data היה מממש אותו, ואני הייתי שולח PR ל-upstream. הגבול בין "להשתמש בכלי" ל"לבנות כלי" נמחק לגמרי.
 

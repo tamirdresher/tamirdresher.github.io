@@ -5,7 +5,7 @@ date: 2025-12-16
 tags: [aspire, git-worktrees, ai-agents, parallel-development, dotnet, port-management, mcp]
 ---
 
-In my [previous post about Git worktrees](/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html), I showed how to run multiple AI agents in parallel, each working on different features in separate worktrees. Aspire is a game-changer for AI-assisted development because it gives your agents **superpowers**: with a single [`Program.cs`](https://github.com/tamirdresher/worktrees-example/blob/main/src/NoteTaker.AppHost/Program.cs), an agent can spawn an entire distributed system—backend APIs, Python services, frontends, databases, message queues—everything orchestrated and ready to test. Even better, using [Aspire's MCP server](https://aspire.dev/dashboard/mcp-server/), agents can programmatically query resource status, retrieve logs, and troubleshoot issues. This means AI agents can interact with the **whole system**, not just individual components, dramatically simplifying development workflows.
+In my [previous post about Git worktrees](/blog/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html), I showed how to run multiple AI agents in parallel, each working on different features in separate worktrees. Aspire is a game-changer for AI-assisted development because it gives your agents **superpowers**: with a single [`Program.cs`](https://github.com/tamirdresher/worktrees-example/blob/main/src/NoteTaker.AppHost/Program.cs), an agent can spawn an entire distributed system—backend APIs, Python services, frontends, databases, message queues—everything orchestrated and ready to test. Even better, using [Aspire's MCP server](https://aspire.dev/dashboard/mcp-server/), agents can programmatically query resource status, retrieve logs, and troubleshoot issues. This means AI agents can interact with the **whole system**, not just individual components, dramatically simplifying development workflows.
 
 But there's a critical problem when you want to scale to multiple worktrees: **port conflicts**. When you try to run Aspire AppHost from multiple worktrees simultaneously, they all fight over the same ports, making parallel AI agent development impossible.
 
@@ -698,8 +698,8 @@ This approach transformed my AI agent workflow from sequential (one at a time) t
 
 ## Related Posts
 
-- [Scaling Your AI Development Team with Git Worktrees](/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html) - The foundation for parallel AI development
-- [Seamless Private NPM Feeds in .NET Aspire](/2025/11/15/seamless-private-npm-feeds-in-dotnet-aspire.html) - Handling private packages in Aspire
+- [Scaling Your AI Development Team with Git Worktrees](/blog/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html) - The foundation for parallel AI development
+- [Seamless Private NPM Feeds in .NET Aspire](/blog/2025/11/15/seamless-private-npm-feeds-in-dotnet-aspire.html) - Handling private packages in Aspire
 
-- [Give Your AI Coding Agent Eyes with Playwright MCP](/2025/11/15/give-your-ai-coding-agent-eyes-with-playwright-mcp.html) - Visual testing for AI agents
+- [Give Your AI Coding Agent Eyes with Playwright MCP](/blog/2025/11/15/give-your-ai-coding-agent-eyes-with-playwright-mcp.html) - Visual testing for AI agents
 

@@ -126,5 +126,5 @@ If you're already using AI coding agents, adding Playwright MCP is a no-brainer.
 
 ## Related Posts
 
-- [Scaling Your AI Development Team with Git Worktrees](/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html)
+- [Scaling Your AI Development Team with Git Worktrees](/blog/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html)
 
