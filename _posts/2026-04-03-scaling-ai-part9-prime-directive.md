@@ -8,9 +8,7 @@ series: "Scaling AI-Native Software Engineering"
 series_part: 9
 ---
 
-![The Prime Directive — Star Trek-themed security control room](/assets/img/part9a-prime-directive.png)
-
-> *"The Prime Directive is not just a set of rules. It is a philosophy, and a very correct one. History has proved again and again that whenever mankind interferes with a less developed civilization, no matter how well-intentioned that interference may be, the results are invariably disastrous."*
+>*"The Prime Directive is not just a set of rules. It is a philosophy, and a very correct one. History has proved again and again that whenever mankind interferes with a less developed civilization, no matter how well-intentioned that interference may be, the results are invariably disastrous."*
 > — Captain Picard, Star Trek: The Next Generation, "Symbiosis"
 
 I wasn't planning to write this post.
