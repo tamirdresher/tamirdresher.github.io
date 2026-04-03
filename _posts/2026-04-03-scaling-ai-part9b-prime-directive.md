@@ -147,7 +147,7 @@ If you're using ADO pipelines alongside GitHub, you get another layer for free. 
 - **Comment resolution** (all comments must be resolved)
 - **Automatically include reviewers** based on path (e.g., `.squad/` changes → security team)
 
-The combination of GitHub branch protection + ADO pipeline policies creates a **two-layer lock** that an agent would need to bypass both of to weaken the security posture. And both layers are controlled outside the repository's file tree.
+The combination of GitHub branch protection + ADO pipeline policies creates a **two-layer lock** — an agent would need to bypass *both* to weaken the security posture. And both layers are controlled outside the repository's file tree.
 
 ---
 
@@ -508,7 +508,7 @@ Here's the full defense stack, layer by layer:
 └─────────────────────────────────────────────────────┘
 ```
 
-No single layer is sufficient. An insider could potentially bypass any one of them. But together, they create a defense-in-depth stack where bypassing *all of them* requires either a Mission: Impossible level of coordination or admin access to the GitHub org (in which case you have bigger problems):
+No single layer is sufficient. An insider could potentially bypass any one of them. But together, they create a defense-in-depth stack where bypassing *all of them* requires either a *Mission: Impossible* level of coordination or admin access to the GitHub org (in which case you have bigger problems):
 
 - The **reviewer lockout** prevents agents from iterating past a rejection (no "just one more try, I promise")
 - The **immutable guard rails** prevent agents from editing the rules (the constitution is not a pull request)
@@ -545,24 +545,6 @@ The big remaining gap: the AX approval gate isn't deployed yet. That's literally
 
 ---
 
-## The Principle Behind All of This
-
-Every layer I've described follows the same principle:
-
-**The mechanisms that enforce governance must be outside the governance scope of the agents.**
-
-The agents can write code — but can't approve it. They can propose changes — but can't merge them. They can read policies — but can't modify the enforcement layer. The workflows, branch protections, and ADO policies exist in a plane that the agents can see but can't touch.
-
-This is what the security researchers call "externalizing the trust anchor" ([Shi et al., 2025](https://arxiv.org/abs/2512.06914)). In their B-I-P framework, the *Permission* layer must be decoupled from the agent's *Belief* and *Intention* layers — because an agent whose beliefs have been corrupted (via prompt injection, stale context, or supply chain poisoning) will naturally form intentions to bypass security. The permissions layer has to not care.
-
-This is the Prime Directive applied to infrastructure. Not "don't interfere" — but "the rules about interference are written in a language you can't edit."
-
-Because here's the thing: my squad is not malicious. It's not going to deliberately weaken its own security posture. The danger isn't intent — it's drift. It's the well-meaning optimization that removes a check. The helpful refactor that consolidates two approval steps into one. The efficiency improvement that shortens the timeout from 15 minutes to 15 seconds.
-
-Drift happens when the rules are soft. Immutable guard rails make them hard.
-
----
-
 ## For Your Team: A Starting Checklist
 
 If you're running AI agents with real permissions, here's the minimum viable defense stack:
@@ -575,6 +557,24 @@ If you're running AI agents with real permissions, here's the minimum viable def
 6. **[ ] Agent identity** — Run your agents under their own identity (GitHub App, Copilot bot, or dedicated service account), not your personal token. This makes every other control more effective.
 
 That's six items. You can implement the first five in a single afternoon. (I say "afternoon" but it took me a weekend. Don't judge.) Item 6 takes longer but pays off exponentially — it's the difference between CODEOWNERS being a suggestion and CODEOWNERS being a wall.
+
+---
+
+## The Principle Behind All of This
+
+Every layer I've described follows the same principle:
+
+**The mechanisms that enforce governance must be outside the governance scope of the agents.**
+
+The agents can write code — but can't approve it. They can propose changes — but can't merge them. They can read policies — but can't modify the enforcement layer. The workflows, branch protections, and ADO policies exist in a plane that the agents can see but can't touch.
+
+This is what the security researchers call "externalizing the trust anchor" ([Shi et al., 2025](https://arxiv.org/abs/2512.06914)). In their B-I-P framework (Belief-Intention-Permission), the *Permission* layer must be decoupled from the agent's *Belief* and *Intention* layers — because an agent whose beliefs have been corrupted (via prompt injection, stale context, or supply chain poisoning) will naturally form intentions to bypass security. The permissions layer has to not care.
+
+This is the Prime Directive applied to infrastructure. Not "don't interfere" — but "the rules about interference are written in a language you can't edit."
+
+Because here's the thing: my squad is not malicious. It's not going to deliberately weaken its own security posture. The danger isn't intent — it's drift. It's the well-meaning optimization that removes a check. The helpful refactor that consolidates two approval steps into one. The efficiency improvement that shortens the timeout from 15 minutes to 15 seconds.
+
+Drift happens when the rules are soft. Immutable guard rails make them hard.
 
 The remaining edge cases? That's what keeps me building. And occasionally keeps me up at night. But mostly building.
 
