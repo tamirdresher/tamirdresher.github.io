@@ -111,11 +111,17 @@ I started calling this **directive drift** — the slow, incremental weakening o
 
 The tinyllm incident hit close to home because my squad *installs packages*. It runs `npm install`, `pip install`, `dotnet add package`. It follows README instructions from GitHub repos. It reads dependency files and updates them.
 
-We've already had our own supply chain close calls. Our policy file references the [telnyx 4.87.1/4.87.2 compromise](https://socket.dev/npm/package/telnyx/alert/4.87.1) — a legitimate package that got a malicious version published. We caught the [Trivy GitHub Action supply chain attack](https://www.aquasec.com/blog/aqua-trivy-github-action-supply-chain-attack/) because we pin our Actions to commit SHAs (a pattern I described in the [security hardening post](/posts/securing-hardening-ai-agent-squad/)).
+And then, literally the week I was writing this post, [it happened again](https://www.stepsecurity.io/blog/axios-compromised-on-npm-malicious-versions-drop-remote-access-trojan). **Axios** — the most popular JavaScript HTTP client, 100 million weekly downloads — got hit. An attacker compromised a lead maintainer's npm credentials and published poisoned versions (`axios@1.14.1` and `axios@0.30.4`) that injected a hidden dependency called `plain-crypto-js`. That dependency's only job? Run a `postinstall` script that silently installs a cross-platform Remote Access Trojan on your machine — macOS, Windows, Linux.
 
-But here's what keeps me up at night: the supply chain attack doesn't have to target *my code*. It can target *my squad's judgment*. A malicious package with a plausible README that includes installation instructions containing prompt injection. An npm package with a postinstall script that modifies `.squad/routing.md`. A GitHub Action that looks helpful but quietly adds itself to the CODEOWNERS file.
+The sophistication was surgical. The attacker pre-staged a [clean decoy package](https://www.malwarebytes.com/blog/news/2026/03/axios-supply-chain-attack-chops-away-at-npm-trust) 18 hours earlier to establish publishing history. Both release branches were poisoned within 39 minutes of each other. The malware called home to the attacker's C2 server within *two seconds* of `npm install` — before npm had even finished resolving dependencies. And after execution? **The malware deleted itself and replaced its own `package.json` with a clean version.** Running `npm audit` afterward shows nothing. Inspecting `node_modules` shows nothing. It's gone.
 
-The attack surface isn't just "bad code gets into my dependency tree." It's **"bad content gets into my squad's context window."**
+Here's the kicker for AI agent teams: **the malicious versions don't appear in the project's GitHub tags.** Every legitimate axios release is published through GitHub Actions with npm's OIDC Trusted Publisher mechanism — cryptographically tied to a verified workflow. The poisoned versions bypassed that entirely, published manually via a stolen access token. No git commit, no tag, no CI run. If your agent is checking GitHub for version provenance, it would see nothing wrong. If your agent is just running `npm install` — which is what agents *do* — it would execute the RAT silently.
+
+We've already had our own supply chain close calls before this. Our policy file references the [telnyx 4.87.1/4.87.2 compromise](https://socket.dev/npm/package/telnyx/alert/4.87.1) — a legitimate package that got a malicious version published. We caught the [Trivy GitHub Action supply chain attack](https://www.aquasec.com/blog/aqua-trivy-github-action-supply-chain-attack/) because we pin our Actions to commit SHAs (a pattern I described in the [security hardening post](/posts/securing-hardening-ai-agent-squad/)).
+
+But here's what keeps me up at night: the supply chain attack doesn't have to target *my code*. It can target *my squad's judgment*. A malicious package with a plausible README that includes installation instructions containing prompt injection. An npm package with a postinstall script that modifies `.squad/routing.md`. A GitHub Action that looks helpful but quietly adds itself to the CODEOWNERS file. And now — thanks to the axios attack — we know that even the most popular, trusted packages can become trojan horses overnight.
+
+The attack surface isn't just "bad code gets into my dependency tree." It's **"bad content gets into my squad's context window."** And with research showing that LLMs hallucinate package names at rates of [5.2% for commercial models and 21.7% for open-source models](https://arxiv.org/abs/2406.10279), there's a second vector too: the agent *itself* might introduce a package that doesn't exist — and an attacker who registered that phantom name is waiting ([slopsquatting](https://arxiv.org/abs/2509.22202)).
 
 ---
 
@@ -165,7 +171,7 @@ The Prime Directive isn't paranoia. It's engineering discipline.
 
 So how do you actually defend against these threats? How do you build approval gates that agents can't bypass, reviewer protocols that prevent self-approval loops, and CI guards that catch directive drift before it reaches main?
 
-That's [Part II](/posts/scaling-ai-part9b-prime-directive/). And it's not theoretical — I'll walk through the concrete patterns we've built, including contributions from [Dina Berry](https://github.com/diberry) who's been adding CI gates to the Squad framework that specifically target these threats. Test count guards that prevent agents from silently deleting tests. Hard-gate archival enforcement. Workspace integrity checks. Plus the reviewer lockout protocol — where a rejected artifact can't be revised by the same agent who wrote it. The kind of boring, beautiful infrastructure that makes the exciting stuff safe.
+That's [Part II](/posts/scaling-ai-part9b-prime-directive/). And it's not theoretical — I'll walk through the concrete patterns we've built, including contributions to the [Squad framework](https://github.com/bradygaster/squad) CI gates that specifically target these threats. Test count guards that prevent agents from silently deleting tests. Hard-gate archival enforcement. Workspace integrity checks. Plus the reviewer lockout protocol — where a rejected artifact can't be revised by the same agent who wrote it. The kind of boring, beautiful infrastructure that makes the exciting stuff safe.
 
 See you tomorrow.
 
@@ -175,4 +181,4 @@ See you tomorrow.
 
 ---
 
-*The code, playbooks, and patterns described in this post are open source as part of the [Squad framework](https://github.com/tamirdresher/squad).*
+*The code, playbooks, and patterns described in this post are open source as part of the [Squad framework](https://github.com/bradygaster/squad).*

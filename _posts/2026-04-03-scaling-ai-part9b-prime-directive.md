@@ -192,6 +192,10 @@ Three CI gates in one:
 
 Why does the prerelease guard matter? Because AI agents are aggressive optimizers. When an agent sees a newer version of a package, it wants to use it — even if that version is a pre-release. This is a concrete supply chain risk: attackers can publish a `-beta` version with malicious code, knowing that an AI coding agent might eagerly adopt it.
 
+But here's the sobering reality check: **the prerelease guard wouldn't have caught the axios attack.** The poisoned `axios@1.14.1` was a full release version, not a prerelease — it passed every version-based heuristic. What *would* have caught it? The **workspace integrity check**. The attack injected `plain-crypto-js@4.2.1` as a new dependency that never existed in the legitimate codebase. A lockfile diff check would have flagged that a *brand new* dependency appeared — one that's never been imported anywhere in the source code. That's why you need the full CI gate stack, not just one check. Each gate catches a different failure mode.
+
+The axios incident ([March 2026](https://www.stepsecurity.io/blog/axios-compromised-on-npm-malicious-versions-drop-remote-access-trojan)) is a case study in why. The attacker compromised a maintainer's credentials, published two poisoned versions that injected a self-destructing RAT via `postinstall`, and the malicious versions didn't even appear in GitHub tags. The forensic signal? The legitimate releases used npm's OIDC Trusted Publisher (published by GitHub Actions), but the malicious ones were published manually — no `trustedPublisher` field, no `gitHead`. If your CI pipeline checks for OIDC provenance on critical dependencies, you'd catch it. If not... you're running `npm install` and hoping for the best.
+
 ### Concurrency Controls
 
 > *[PR #705](https://github.com/bradygaster/squad/pull/705) — "Concurrency controls for 5 workflows"* (merged)
@@ -552,6 +556,8 @@ The remaining edge cases? That's what keeps me building.
 **Industry sources:**
 
 - [Netlify AX (Agent Experience)](https://www.netlify.com/agent-experience/) — The concept that inspired the async approval gate pattern.
+- [Axios Supply Chain Attack Analysis (StepSecurity)](https://www.stepsecurity.io/blog/axios-compromised-on-npm-malicious-versions-drop-remote-access-trojan) — Detailed forensics on the March 2026 axios npm compromise, including OIDC provenance bypass and self-destructing malware.
+- [Axios Attack: npm Trust (Malwarebytes)](https://www.malwarebytes.com/blog/news/2026/03/axios-supply-chain-attack-chops-away-at-npm-trust) — Broader analysis of the axios incident's implications for the npm ecosystem.
 - [Squad Framework Reviewer Protocol](https://bradygaster.github.io/squad/features/reviewer-protocol/) — Full documentation on the lockout mechanism described in Layer 1.
 - [Squad on AKS](https://github.com/tamirdresher/squad-on-aks) — The pod-per-agent experiment with workload identity isolation.
 - [Squad Framework](https://github.com/bradygaster/squad) — The open-source framework behind these patterns. CI gate PRs linked throughout the post.
