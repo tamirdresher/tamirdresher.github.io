@@ -326,6 +326,28 @@ Aspire Conf 2026 made one thing crystal clear: Aspire has crossed the chasm from
 
 The first dedicated Aspire conference won't be the last.
 
+## What to Look Forward To
+
+Aspire 13.2 was described as the "biggest ever release" — but the roadmap discussion makes clear that the team views this as a foundation, not a finish line. Here's what's actively coming next.
+
+**First-class testing experience** is the biggest gap the team has publicly acknowledged. The `aspire wait` command shipped in 13.2 as a useful building block for CI scripts, but the vision goes much further: a live dashboard during test runs, capture-and-replay for reproducing production issues locally, partial AppHost execution for component-level testing, and request redirection and mocking at the infrastructure layer. If you've ever wanted the same observability you get in production to be present while your tests run, that's exactly where this is heading.
+
+**Run Subsets** is the other major local development gap. Detached mode and `aspire resource start/stop` give you more manual control, but the goal is a first-class "run only these resources" experience — declare which slice of your application you want, and Aspire handles the rest. For large projects with 20+ resources, this will be transformational.
+
+**TypeScript AppHost is moving toward GA.** It's in preview today and the team is actively expanding integration coverage, improving error messages, and tuning performance. More polyglot export targets are coming too: Go, Java, and Rust code generation are on the roadmap, which means the 30+ integrations already exported to TypeScript will eventually reach the entire language spectrum.
+
+**Authentication integrations** — Entra ID, Keycloak, and Azure Easy Auth — are in active development. If setting up auth in your Aspire AppHost still feels like a gap, that's the next area getting first-class treatment.
+
+**Package manager distribution via Homebrew and WinGet** is nearly done and will land very soon, making `aspire` a one-command install for most developers.
+
+**Debugging in containers** remains one of the most-requested features on the tracker. It requires coordinated work across both Visual Studio and VS Code, and it's actively in progress.
+
+And for teams with distributed codebases: **multi-repo support** is on the radar, with the team acknowledging it as a consistent enterprise ask.
+
+The Aspire community — 600+ contributors, 2,400+ community issues filed — is as engaged as ever. The [Aspire GitHub discussions](https://github.com/microsoft/aspire/discussions) are the best place to follow the roadmap, flag priorities, and shape what gets built next.
+
+Aspire 13.2 wasn't the peak. It was the launchpad.
+
 ---
 
 ### Resources
