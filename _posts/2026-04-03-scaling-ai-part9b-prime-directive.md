@@ -17,7 +17,7 @@ In [Part I](/posts/scaling-ai-part9-prime-directive/), I laid out the threat mod
 
 Now for the part where we build the walls. Or, more accurately, the part where I admit I should have built the walls earlier and then show you the blueprints.
 
-I want to be upfront: some of what I'm describing here is deployed and battle-tested. Some of it is designed but not yet wired up. Some of it comes from community contributions to the [Squad framework](https://github.com/bradygaster/squad) — CI gates built after hitting exactly these problems in production. And some of it is informed by recent academic research that I'll cite throughout. I'll be clear about what's running in production versus what's still on the workbench.
+I want to be upfront: some of what I'm describing here is deployed and battle-tested. Some of it is designed but not yet wired up. Some of it comes from excellent work by Dina, a core Squad team member, who built several of the CI gates after hitting exactly these problems in production. And some of it is informed by recent academic research that I'll cite throughout. I'll be clear about what's running in production versus what's still on the workbench.
 
 Let's go layer by layer.
 
@@ -37,42 +37,20 @@ So the squad enforces a **lockout rule:**
 
 A *different* agent must do the revision. If that revision is also rejected, the revision author is *also* locked out, and a **third agent** must revise. Here's what that looks like in practice:
 
-```
- ┌──────────────┐
- │  Data writes  │
- │    code       │
- └──────┬───────┘
-        ▼
- ┌──────────────┐
- │ Worf reviews  │──── APPROVE ──→ ✅ Merge
- │ (security)    │
- └──────┬───────┘
-        │ REJECT
-        ▼
- ╔══════════════════════════════════════╗
- ║  🔒 Data is LOCKED OUT              ║
- ║  Cannot revise this artifact        ║
- ║  (Can still work on other tasks)    ║
- ╚══════════════════════════════════════╝
-        │
-        ▼
- ┌──────────────┐
- │ B'Elanna      │ ← DIFFERENT agent, fresh perspective
- │ revises code  │
- └──────┬───────┘
-        ▼
- ┌──────────────┐
- │ Worf reviews  │──── APPROVE ──→ ✅ Merge
- │ (re-review)   │
- └──────┬───────┘
-        │ REJECT again
-        ▼
- ╔══════════════════════════════════════╗
- ║  🔒 B'Elanna ALSO locked out        ║
- ║  THIRD agent must revise            ║
- ║  If all exhausted → escalate to     ║
- ║  human (you)                        ║
- ╚══════════════════════════════════════╝
+```mermaid
+flowchart TD
+    A["🖥️ Data writes code"] --> B{"🔍 Worf reviews\n(security)"}
+    B -->|✅ APPROVE| C["✅ Merge"]
+    B -->|❌ REJECT| D["🔒 Data is LOCKED OUT\nCannot revise this artifact"]
+    D --> E["🔧 B'Elanna revises code\n(different agent, fresh perspective)"]
+    E --> F{"🔍 Worf reviews\n(re-review)"}
+    F -->|✅ APPROVE| G["✅ Merge"]
+    F -->|❌ REJECT| H["🔒 B'Elanna ALSO locked out\nThird agent must revise\nIf all exhausted → escalate to human"]
+
+    style D fill:#fee,stroke:#c00,stroke-width:2px,color:#000
+    style H fill:#fee,stroke:#c00,stroke-width:2px,color:#000
+    style C fill:#efe,stroke:#0a0,stroke-width:2px,color:#000
+    style G fill:#efe,stroke:#0a0,stroke-width:2px,color:#000
 ```
 
 Why does this matter? Because without lockout, you get an infinite fix-reject loop where the agent learns to game the reviewer rather than fix the actual problem. With lockout, a fresh agent brings fresh perspective — and if nobody can satisfy the reviewer, **the human gets pulled in**, which is exactly the right escalation path.
@@ -105,25 +83,30 @@ Now here's the nuance — and this tripped me up when a team member asked: **COD
 
 This is where **GitHub's Copilot coding agent** becomes genuinely interesting from a security perspective. When Copilot picks up an issue, it operates under its own identity — `copilot[bot]` — not yours. That means CODEOWNERS *does* catch its changes. The PR shows a bot author, the review requirement triggers, and the human gate actually holds.
 
-```
- ┌─────────────────────────────────────────────────────────────┐
- │  Who is pushing?                                            │
- │                                                             │
- │  Your token (squad runs as you)                             │
- │    → CODEOWNERS: ⚠️  YOU are the owner                     │
- │    → Branch protection: ✅ Still requires PR review         │
- │    → Actions workflows: ✅ Still run regardless             │
- │                                                             │
- │  Copilot bot identity                                       │
- │    → CODEOWNERS: ✅ Bot ≠ owner, review required            │
- │    → Branch protection: ✅ Requires PR review               │
- │    → Actions workflows: ✅ Still run regardless             │
- │                                                             │
- │  Dedicated service account / workload identity              │
- │    → CODEOWNERS: ✅ Service ≠ owner, review required        │
- │    → Branch protection: ✅ Requires PR review               │
- │    → Actions workflows: ✅ Still run regardless             │
- └─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph YT["Your Token (squad runs as you)"]
+        direction TB
+        Y1["CODEOWNERS: ⚠️ YOU are the owner"]
+        Y2["Branch protection: ✅ Still requires PR review"]
+        Y3["Actions workflows: ✅ Still run regardless"]
+    end
+    subgraph CB["Copilot Bot Identity"]
+        direction TB
+        C1["CODEOWNERS: ✅ Bot ≠ owner, review required"]
+        C2["Branch protection: ✅ Requires PR review"]
+        C3["Actions workflows: ✅ Still run regardless"]
+    end
+    subgraph SA["Dedicated Service Account"]
+        direction TB
+        S1["CODEOWNERS: ✅ Service ≠ owner, review required"]
+        S2["Branch protection: ✅ Requires PR review"]
+        S3["Actions workflows: ✅ Still run regardless"]
+    end
+
+    style YT fill:#fff3cd,stroke:#ffc107,color:#000
+    style CB fill:#d4edda,stroke:#28a745,color:#000
+    style SA fill:#d4edda,stroke:#28a745,color:#000
 ```
 
 **Takeaway:** If you're running agents under your own identity, CODEOWNERS is necessary but not sufficient. You need the other layers — branch protection, CI gates, and approval gates — to compensate. The strongest setup is agents operating under their own identity (via GitHub Actions, Copilot agent, or a dedicated service account).
@@ -155,7 +138,7 @@ The combination of GitHub branch protection + ADO pipeline policies creates a **
 
 This is the layer that catches the stuff that *looks fine* but isn't. The slow drift. The helpful refactoring that quietly deletes three test files. The dependency update that sneaks in a pre-release. The "cleanup" PR that touches files it has no business touching.
 
-I'll be honest — I didn't build most of these gates. The Squad community did, after hitting exactly these problems in their own deployments. Researchers call it the **Trust-Authorization Mismatch** ([Shi et al., 2025](https://arxiv.org/abs/2512.06914)): static permissions can't track an agent's fluctuating runtime trustworthiness. Your CI gates are the runtime check that compensates for that gap.
+I'll be honest — I didn't build most of these gates. Dina did, after hitting exactly these problems in real deployments. Researchers call it the **Trust-Authorization Mismatch** ([Shi et al., 2025](https://arxiv.org/abs/2512.06914)): static permissions can't track an agent's fluctuating runtime trustworthiness. Your CI gates are the runtime check that compensates for that gap.
 
 Let me walk you through the ones that keep me sleeping at night. Well, sleeping *slightly better* at night.
 
@@ -213,34 +196,31 @@ Not every gate needs a dramatic backstory. These are the workhorses — merged, 
 | Concurrency controls | [#705](https://github.com/bradygaster/squad/pull/705) | Only one workflow instance per `concurrency` group. `cancel-in-progress: true` — stale runs get cancelled. Two agents, same issue? Queue up. |
 | PR readiness checks | [#752](https://github.com/bradygaster/squad/pull/752) | 7 automated checks per PR: single commit, not draft, branch up to date, Copilot review present, changeset included, no conflicts, CI passing. Check #4 is sneaky-brilliant — ensures *both* AI and human reviewed before merge. Two-key launch system. |
 
-```
-  ┌──────────────────────────────────────────────────────┐
-  │  CI Gate Stack                                        │
-  │                                                       │
-  │  Agent opens PR                                       │
-  │    ↓                                                  │
-  │  ✅ Test count ≥ baseline?                            │
-  │    ↓                                                  │
-  │  ✅ No pre-release dependencies?                      │
-  │    ↓                                                  │
-  │  ✅ Workspace lockfile consistent?                    │
-  │    ↓                                                  │
-  │  ✅ Public API surface unchanged?                     │
-  │    ↓                                                  │
-  │  ✅ Archival completed (hard gate)?                   │
-  │    ↓                                                  │
-  │  ✅ No .squad/ leakage in feature PRs?                │
-  │    ↓                                                  │
-  │  ✅ Bootstrap deps = node:* only?                     │
-  │    ↓                                                  │
-  │  ✅ PR readiness checklist (7 checks)?                │
-  │    ↓                                                  │
-  │  ✅ Concurrency slot available?                       │
-  │    ↓                                                  │
-  │  ➡️  Ready for human review                           │
-  │                                                       │
-  │  ANY gate fails → PR blocked, agent notified          │
-  └──────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    A["📋 Agent opens PR"] --> B{"✅ Test count ≥ baseline?"}
+    B --> C{"✅ No pre-release deps?"}
+    C --> D{"✅ Lockfile consistent?"}
+    D --> E{"✅ API surface unchanged?"}
+    E --> F{"✅ Archival completed?"}
+    F --> G{"✅ No .squad/ leakage?"}
+    G --> H{"✅ Bootstrap deps = node:* only?"}
+    H --> I{"✅ PR readiness (7 checks)?"}
+    I --> J{"✅ Concurrency slot?"}
+    J --> K["➡️ Ready for human review"]
+
+    B -->|❌ Fail| X["🚫 PR blocked\nAgent notified"]
+    C -->|❌ Fail| X
+    D -->|❌ Fail| X
+    E -->|❌ Fail| X
+    F -->|❌ Fail| X
+    G -->|❌ Fail| X
+    H -->|❌ Fail| X
+    I -->|❌ Fail| X
+    J -->|❌ Fail| X
+
+    style K fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#000
+    style X fill:#fee,stroke:#c00,stroke-width:2px,color:#000
 ```
 
 The pattern here is **defense against drift, not defense against malice.** These gates don't assume the agent is adversarial — they assume it's an enthusiastic optimizer that doesn't know when to stop. Think of it as childproofing your house: the kid isn't trying to burn the place down, but you still put covers on the electrical outlets.
@@ -261,37 +241,21 @@ That's the AX Approval Gate pattern. The agent works autonomously until it hits 
 
 Here's the full flow:
 
-```
-  ┌─────────────────────────────────────────────────────────┐
-  │  AX Approval Gate — Step by Step                         │
-  │                                                          │
-  │  1. Agent completes work                                 │
-  │     (code change, blog post, config update)              │
-  │     ↓                                                    │
-  │  2. Agent opens PR with preview/diff                     │
-  │     Labels: waiting-approval                             │
-  │     ↓                                                    │
-  │  3. Human reviews on their own schedule                  │
-  │     (hours later, next morning, whenever)                │
-  │     ↓                                                    │
-  │  ┌─────────── Decision Point ──────────┐                 │
-  │  │                                     │                 │
-  │  │  APPROVE                  REJECT    │                 │
-  │  │  Human adds label:        Human     │                 │
-  │  │  approved:ship            comments  │                 │
-  │  │     ↓                       ↓       │                 │
-  │  │  GitHub Action            Agent     │                 │
-  │  │  auto-merges              revises   │                 │
-  │  │  (squash + delete         (lockout  │                 │
-  │  │   branch)                  rules    │                 │
-  │  │     ↓                     apply!)   │                 │
-  │  │  CD triggers                        │                 │
-  │  └─────────────────────────────────────┘                 │
-  │                                                          │
-  │  Ralph monitors for staleness:                           │
-  │    24h with waiting-approval → reminder comment          │
-  │    72h → escalate to Picard (lead)                       │
-  └─────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    A["1️⃣ Agent completes work\n(code, blog, config)"] --> B["2️⃣ Agent opens PR with preview\nLabel: waiting-approval"]
+    B --> C["3️⃣ Human reviews\n(on their own schedule)"]
+    C -->|"✅ APPROVE\nHuman adds label: approved:ship"| D["GitHub Action auto-merges\n(squash + delete branch)"]
+    C -->|"❌ REJECT\nHuman comments"| E["Agent revises\n(lockout rules apply!)"]
+    D --> F["🚀 CD triggers"]
+    E --> B
+
+    R["📊 Ralph monitors staleness"] -.- B
+    R -.- |"24h → reminder comment\n72h → escalate to Picard"| B
+
+    style D fill:#d4edda,stroke:#28a745,color:#000
+    style E fill:#fff3cd,stroke:#ffc107,color:#000
+    style F fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#000
 ```
 
 **The agent never approves its own work. The human is the only entity that can add `approved:ship`.** That's not a convenience feature — it's a security boundary.
@@ -343,23 +307,12 @@ The key design choice: **fail closed, not open.** If the timeout hits, the opera
 
 ### Why Two Gates?
 
-```
-  ┌──────────────────────────────────────────────────────┐
-  │  Which gate do you need?                              │
-  │                                                       │
-  │  ASYNC (AX Pattern)          SYNC (Hand on Button)    │
-  │  ─────────────────           ────────────────────     │
-  │  Code changes                kubectl to prod          │
-  │  Blog posts                  Database migrations      │
-  │  Config updates              DNS changes              │
-  │  Documentation               Secret rotation          │
-  │  Dependency bumps             Infrastructure scaling   │
-  │                                                       │
-  │  Review window: hours        Review window: minutes    │
-  │  Fail mode: PR stays open    Fail mode: abort + alert │
-  │  Human effort: label click   Human effort: active wait │
-  └──────────────────────────────────────────────────────┘
-```
+|  | **ASYNC (AX Pattern)** | **SYNC (Hand on Button)** |
+|---|---|---|
+| **Use for** | Code changes, blog posts, config updates, documentation, dependency bumps | `kubectl` to prod, database migrations, DNS changes, secret rotation, infrastructure scaling |
+| **Review window** | Hours | Minutes |
+| **Fail mode** | PR stays open | Abort + alert |
+| **Human effort** | Label click | Active wait |
 
 Ralph monitors for staleness on async gates:
 - PRs with `waiting-approval` older than 24 hours get a reminder comment
@@ -373,24 +326,21 @@ The final layer is organizational, and it's the one I keep coming back to becaus
 
 In the squad's pipeline, every phase has a different actor — and each one is explicitly *blocked* from performing the adjacent phases:
 
-```
-  ┌──────────────────────────────────────────────────────┐
-  │  Separation of Duties — The Pipeline                  │
-  │                                                       │
-  │  DATA writes code                                     │
-  │    ↓                                                  │
-  │  WORF reviews (cannot be Data)                        │
-  │    ↓                                                  │
-  │  HUMAN approves (approved:ship label)                 │
-  │    ↓                                                  │
-  │  GITHUB ACTIONS deploys (automated, no agent access)  │
-  │    ↓                                                  │
-  │  RALPH monitors (cannot be author or reviewer)        │
-  │                                                       │
-  │  ❌ Data reviews Data's code → BLOCKED                │
-  │  ❌ Worf deploys after Worf reviews → BLOCKED         │
-  │  ❌ Any agent approves → BLOCKED (human only)         │
-  └──────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    A["🖥️ DATA writes code"] --> B["🔍 WORF reviews\n(cannot be Data)"]
+    B --> C["👤 HUMAN approves\n(approved:ship label)"]
+    C --> D["⚙️ GITHUB ACTIONS deploys\n(automated, no agent access)"]
+    D --> E["📊 RALPH monitors\n(cannot be author or reviewer)"]
+
+    A -.- X1["❌ Data reviews Data's code → BLOCKED"]
+    B -.- X2["❌ Worf deploys after reviewing → BLOCKED"]
+    C -.- X3["❌ Any agent approves → BLOCKED (human only)"]
+
+    style X1 fill:#fee,stroke:#c00,color:#000
+    style X2 fill:#fee,stroke:#c00,color:#000
+    style X3 fill:#fee,stroke:#c00,color:#000
+    style C fill:#e8f4fd,stroke:#0078d4,stroke-width:2px,color:#000
 ```
 
 **The agent that writes the code never reviews it. The agent that reviews it never deploys it. The human is the only one who can authorize deployment.** Five actors, five phases, zero overlap.
@@ -403,30 +353,26 @@ Why? Because in the current model, all agents share the same execution context �
 
 In the AKS model, each agent pod has its own workload identity with its own Azure RBAC scope:
 
-```
-  ┌─────────────────────────────────────────────────────────┐
-  │  AKS Pod-per-Agent Architecture                          │
-  │                                                          │
-  │  ┌──────────┐  ┌──────────┐  ┌──────────┐               │
-  │  │  Data     │  │  Worf    │  │  Ralph   │               │
-  │  │  Pod      │  │  Pod     │  │  Pod     │               │
-  │  │          │  │          │  │          │               │
-  │  │ Identity: │  │ Identity: │  │ Identity: │               │
-  │  │ data-wi   │  │ worf-wi   │  │ ralph-wi  │               │
-  │  │          │  │          │  │          │               │
-  │  │ Scope:    │  │ Scope:    │  │ Scope:    │               │
-  │  │ read/write│  │ read-only │  │ read +    │               │
-  │  │ code repos│  │ code repos│  │ monitor   │               │
-  │  │ + create  │  │ + security│  │ endpoints │               │
-  │  │ PRs       │  │ scanning  │  │ + alert   │               │
-  │  └──────────┘  └──────────┘  └──────────┘               │
-  │       │              │              │                     │
-  │       ▼              ▼              ▼                     │
-  │  ┌──────────────────────────────────────────────────┐    │
-  │  │  Shared: GitHub repo, but each identity has       │    │
-  │  │  different permissions (enforced by Azure RBAC)   │    │
-  │  └──────────────────────────────────────────────────┘    │
-  └─────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph AKS["☸️ AKS Cluster"]
+        subgraph DP["Data Pod"]
+            DI["🪪 Identity: data-wi\n📝 read/write code repos\n+ create PRs"]
+        end
+        subgraph WP["Worf Pod"]
+            WI["🪪 Identity: worf-wi\n🔒 read-only code repos\n+ security scanning"]
+        end
+        subgraph RP["Ralph Pod"]
+            RI["🪪 Identity: ralph-wi\n📊 read + monitor endpoints\n+ alert"]
+        end
+    end
+    DP --> GH["🐙 GitHub Repo\nEach identity has different permissions\n(enforced by Azure RBAC)"]
+    WP --> GH
+    RP --> GH
+
+    style DP fill:#e3f2fd,stroke:#1976d2,color:#000
+    style WP fill:#fce4ec,stroke:#c62828,color:#000
+    style RP fill:#fff3e0,stroke:#e65100,color:#000
 ```
 
 This is still experimental. We're running it on AKS free tier with KEDA-based autoscaling (KEDA = Kubernetes Event-Driven Autoscaler — it watches for GitHub events and spins pods up only when there's work) — agents spin up when work arrives and spin down when idle. But the security model is sound: if Data's pod is compromised via prompt injection, the attacker gets Data's permissions — not Worf's, not Ralph's, and not the human's.
@@ -439,32 +385,30 @@ The research backs this up. Bühler et al. ([2025](https://arxiv.org/abs/2510.21
 
 Here's the full defense stack, layer by layer:
 
-```
-┌─────────────────────────────────────────────────────┐
-│  Layer 5: Separation of Duties + Workload Identity   │
-│  Author ≠ Reviewer ≠ Approver ≠ Deployer             │
-│  Pod-per-agent with Azure RBAC (experimental)        │
-├─────────────────────────────────────────────────────┤
-│  Layer 4: Approval Gates                             │
-│  Async: AX pattern (PR + approved:ship label)        │
-│  Sync: fail-closed timeout (kubectl, DNS, DB)        │
-├─────────────────────────────────────────────────────┤
-│  Layer 3: CI Gates                                   │
-│  Test count guard · Hard-gate archival               │
-│  Workspace integrity · Prerelease guard              │
-│  Export smoke test · Concurrency controls            │
-│  .squad/ leakage detector · Bootstrap dep guard      │
-│  PR readiness checks (7 automated gates)             │
-├─────────────────────────────────────────────────────┤
-│  Layer 2: Immutable Guard Rails                      │
-│  CODEOWNERS · Branch protection                      │
-│  ADO pipeline policies · Workflow lockdown           │
-├─────────────────────────────────────────────────────┤
-│  Layer 1: Reviewer Lockout Protocol                  │
-│  Rejected? Different agent must revise.              │
-│  Rejected again? Third agent. No self-approval.      │
-│  Security + architecture review checklists enforced  │
-└─────────────────────────────────────────────────────┘
+```mermaid
+block-beta
+    columns 1
+    block:L5["🏛️ Layer 5: Separation of Duties + Workload Identity"]
+        L5a["Author ≠ Reviewer ≠ Approver ≠ Deployer  •  Pod-per-agent with Azure RBAC"]
+    end
+    block:L4["👤 Layer 4: Approval Gates"]
+        L4a["Async: AX pattern (PR + approved:ship label)  •  Sync: fail-closed timeout"]
+    end
+    block:L3["⚙️ Layer 3: CI Gates"]
+        L3a["Test count guard • Hard-gate archival • Workspace integrity • Prerelease guard • Export smoke test • Concurrency controls • .squad/ leakage detector • PR readiness (7 gates)"]
+    end
+    block:L2["📜 Layer 2: Immutable Guard Rails"]
+        L2a["CODEOWNERS • Branch protection • ADO pipeline policies • Workflow lockdown"]
+    end
+    block:L1["🔒 Layer 1: Reviewer Lockout Protocol"]
+        L1a["Rejected → different agent revises • Rejected again → third agent • No self-approval • Security + architecture checklists enforced"]
+    end
+
+    style L5 fill:#1a237e,color:#fff
+    style L4 fill:#283593,color:#fff
+    style L3 fill:#303f9f,color:#fff
+    style L2 fill:#3949ab,color:#fff
+    style L1 fill:#3f51b5,color:#fff
 ```
 
 No single layer is sufficient. An insider could potentially bypass any one of them. But together, they create a defense-in-depth stack where bypassing *all of them* requires either a *Mission: Impossible* level of coordination or admin access to the GitHub org (in which case you have bigger problems):
