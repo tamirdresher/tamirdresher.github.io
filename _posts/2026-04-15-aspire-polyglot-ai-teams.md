@@ -2,8 +2,10 @@
 layout: post
 title: "The Language Doesn't Matter Anymore — Aspire Polyglot and the AI Team That Actually Runs"
 date: 2026-04-15
-tags: [aspire, polyglot, ai-agents, squad, github-copilot, python, nodejs, distributed-systems, autonomy]
+tags: [aspire, polyglot, ai-agents, squad, github-copilot, python, nodejs, distributed-systems, autonomy, kubernetes, kind, platform-engineering]
 series: "Scaling AI-Native Software Engineering"
+draft: true
+published: false
 ---
 
 ## A Problem I Didn't Know I Had
@@ -193,6 +195,92 @@ That's the AI team I actually want. Not a collection of prompts I have to invoke
 
 ---
 
+## Aspire 13.2 and the Kind Resource: Kubernetes-in-Docker as an Aspire Primitive
+
+Since I drafted the sections above, Aspire 13.2 shipped — and alongside features like the TypeScript AppHost preview, there's something I've been quietly building with [Andrey Noskov](https://github.com/andrey-noskov) that I think changes who Aspire is *for*.
+
+We've been creating a **Kind resource** for Aspire. [Kind](https://kind.sigs.k8s.io/) — Kubernetes IN Docker — is the tool that lets you spin up a full, conformant Kubernetes cluster inside Docker containers on your local machine. No cloud provider. No VM. Just Docker and a real K8s API server.
+
+Our integration, `CommunityToolkit.Aspire.Hosting.Kind`, makes a Kind cluster a first-class Aspire resource. You add it to your AppHost with `AddKindCluster()`, and Aspire manages the entire lifecycle — creating the cluster on startup, health-checking it, wiring kubeconfig into dependent services, and optionally tearing it down when the AppHost stops.
+
+Here's what it looks like:
+
+```csharp
+var builder = DistributedApplication.CreateBuilder(args);
+
+// A local Kind cluster — Kubernetes in Docker, managed by Aspire
+var k8s = builder.AddKindCluster("dev-cluster")
+    .WithKubernetesVersion("v1.32.2")
+    .WithWorkerNodes(2)
+    .WithClusterLifetime(ClusterLifetime.Persistent);
+
+// Your operator controller — gets KUBECONFIG injected automatically
+var controller = builder.AddProject<Projects.TenantController>("tenant-controller")
+    .WithReference(k8s);
+
+// A Python CRD validation webhook
+var webhook = builder.AddPythonApp("admission-webhook", "../webhooks/admission", "main.py")
+    .WithReference(k8s);
+
+builder.Build().Run();
+```
+
+One `dotnet run`. The Kind cluster spins up, your operator gets a `KUBECONFIG` environment variable pointing at the cluster, your Python admission webhook connects to the same cluster, and everything shows up in the Aspire Dashboard — cluster health, controller logs, webhook traces, all of it.
+
+The builder API is designed to feel like every other Aspire resource:
+
+- **`WithKubernetesVersion("v1.32.2")`** — pin the cluster to a specific K8s version
+- **`WithWorkerNodes(2)`** — add worker nodes for realistic scheduling
+- **`WithClusterLifetime(ClusterLifetime.Persistent)`** — keep the cluster across AppHost restarts (great for long dev sessions)
+- **`WithReference(k8s)`** — inject `KUBECONFIG` and `K8S_CLUSTER_NAME` into any dependent resource, in any language
+
+Under the hood, we handle the gnarly bits: generating Kind config YAML, creating a container-compatible kubeconfig that replaces `127.0.0.1` with the control-plane container name (so your Docker-hosted services can actually reach the API server), managing the Docker network, pre-flight-checking that the Kind CLI is installed, and running health checks that verify the cluster is genuinely ready — not just "the container started."
+
+### Why This Matters: Platform Engineers Get a Dev Loop
+
+Here's the thing that excites me most about this work. **Aspire's audience just expanded dramatically.**
+
+Until now, Aspire was primarily for application developers — people building microservices, APIs, web apps. The dashboard shows your services, your databases, your message brokers. Great.
+
+But there's an entire class of engineers who build the infrastructure *under* those apps: platform engineers. The people writing Kubernetes operators, custom controllers, admission webhooks, CRD-based platform abstractions. Their daily work is `kubectl apply`, YAML templating, watching reconcile loops in terminal logs, and praying that the controller they just changed doesn't crash-loop when it hits a real cluster.
+
+Their dev loop has been terrible. To test a Kubernetes controller, you've historically needed to:
+
+1. Have a cluster running somewhere (or spin one up manually with `kind create cluster`)
+2. Apply your CRDs with `kubectl apply -f`
+3. Build and deploy your controller
+4. Tail logs with `kubectl logs -f`
+5. Manually verify resource states with `kubectl get`
+6. Tear everything down and start over when something breaks
+
+No dashboard. No distributed tracing. No health checks. No unified view of what's happening across your controller and the services it manages.
+
+With the Kind Aspire resource, that entire workflow becomes:
+
+1. `dotnet run`
+2. Open the Aspire Dashboard
+3. See your cluster, your controller, your webhooks — all as observable resources with health status, structured logs, and traces
+4. Change code, hot-reload, watch the reconcile loop adapt
+5. Use `aspire logs tenant-controller` or the MCP tools to let your AI agents inspect controller state
+
+**The cluster is just another resource in the graph.** It starts, it gets healthy, other things reference it, and Aspire watches all of it. The same pattern that makes distributed app development smooth now makes platform development smooth.
+
+### The AI Team Connection
+
+And here's where it loops back to Squad.
+
+If your agents are building platform tooling — controllers, operators, infrastructure-as-code — they can now run the full stack locally through Aspire. Data can write a controller, run `aspire resources` to see the Kind cluster come up, check health status, inspect the reconcile output. Seven can query the cluster's API server through the injected kubeconfig to verify that CRDs were applied correctly. Worf can scan the admission webhook for security issues and test them against the live cluster.
+
+The Kind resource turns Aspire from "the tool that runs your distributed app" into "the tool that runs your entire platform development environment." And that's exactly the kind of environment that autonomous AI agents need — observable, controllable, and runnable with a single command.
+
+### Where We Are
+
+The Kind hosting integration is being built in the open as part of the [Aspire Community Toolkit](https://github.com/andrey-noskov/aspire-kind). Andrey and I have been collaborating on the implementation — he's handling the YAML config generation and test infrastructure, I've been working on the lifecycle hooks, async patterns, and the docs. It's not shipped to NuGet yet, but the core is working: cluster creation, health checks, kubeconfig injection, worker node support, persistent cluster lifetime, and Docker network integration.
+
+If you're a platform engineer who's been jealous of how smooth the app-developer experience is with Aspire — this is being built for you. And if you want to contribute, the [feature branch](https://github.com/andrey-noskov/aspire-kind/tree/feature/kind-hosting) is where the action is.
+
+---
+
 ## Getting Started
 
 If you want to experiment with this, here's the actual starting point:
@@ -263,6 +351,8 @@ And I, for one, am here for it.
 - [Part 0: Organized by AI](/blog/2026/03/10/organized-by-ai) — the Squad series start
 - [Squad Framework](https://github.com/microsoft/squad) — open-source, if you want to build your own team
 - [My Aspire Workshop](https://github.com/tamirdresher/aspire-workshop) — 3-day hands-on, if you want to go deep on Aspire itself
+- [Aspire Community Toolkit — Kind Integration](https://github.com/andrey-noskov/aspire-kind/tree/feature/kind-hosting) — the Kind hosting resource we're building
+- [Kind (Kubernetes IN Docker)](https://kind.sigs.k8s.io/) — the upstream Kind project
 
 If you're building something like this — polyglot agents, Squad integration, autonomous services — I genuinely want to hear about it. Find me on [Twitter/X](https://twitter.com/tamirdresher) or [LinkedIn](https://www.linkedin.com/in/tamirdresher).
 
