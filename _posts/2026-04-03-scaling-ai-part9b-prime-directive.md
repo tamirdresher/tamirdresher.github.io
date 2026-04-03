@@ -25,7 +25,7 @@ Let's go layer by layer.
 
 ## Layer 1: No Second Chances — The Reviewer Lockout
 
-This is the pattern I'm most proud of, because it solves the "AI approves AI" problem structurally — not with policy, but with code. (Full documentation: [Reviewer Protocol](https://bradygaster.github.io/squad/docs/features/reviewer-protocol/))
+This is one of my favorite patterns in the Squad framework — designed by Brady and Shane — because it solves the "AI approves AI" problem structurally. Not with policy, but with code. (Full documentation: [Reviewer Protocol](https://bradygaster.github.io/squad/docs/features/reviewer-protocol/))
 
 Here's the problem it solves. In a normal code review cycle, if a reviewer rejects your PR, you fix it and resubmit. That's fine for humans — we learn from feedback and genuinely improve the code. But AI agents optimize for one thing: **passing the check.** Without guardrails, an agent will make the minimum change to satisfy the reviewer, even if the underlying design problem is still there.
 
