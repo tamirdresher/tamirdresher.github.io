@@ -5,7 +5,7 @@ date: 2026-04-03
 image: /assets/img/part9b-prime-directive.png
 tags: [ai-agents, squad, github-copilot, approval-gates, governance, security, ci-cd, reviewer-protocol, defense-in-depth, star-trek, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
-series_part: 9
+series_part: "9b"
 ---
 
 ![The Prime Directive Part II — Defense in depth for AI agent teams](/assets/img/part9b-prime-directive.png)
@@ -13,7 +13,7 @@ series_part: 9
 > *"Shields up. Red alert."*
 > — Every Starfleet captain, at the exact moment they realize talking isn't going to work
 
-In [Part I](/posts/scaling-ai-part9-prime-directive/), I laid out the threat model: the confused deputy evolved, the insider gaming the AI reviewer, the squad drifting its own directives, and supply chain attacks targeting the squad's context window. Four threats. Zero theoretical — all of them are natural consequences of giving AI agents real permissions. (Also, while writing Part I, the axios supply chain attack happened in real time. The universe has a flair for dramatic timing.)
+In [Part I](/blog/2026/04/03/scaling-ai-part9-prime-directive), I laid out the threat model: the confused deputy evolved, the insider gaming the AI reviewer, the squad drifting its own directives, and supply chain attacks targeting the squad's context window. Four threats. Zero theoretical — all of them are natural consequences of giving AI agents real permissions. (Also, while writing Part I, the axios supply chain attack happened in real time. The universe has a flair for dramatic timing.)
 
 Now for the part where we build the walls. Or, more accurately, the part where I admit I should have built the walls earlier and then show you the blueprints.
 
@@ -174,7 +174,7 @@ Three gates in one PR, because apparently we were having a "buy one get two free
 2. **Prerelease guard** — blocks `-alpha` and `-beta` version suffixes from reaching production. AI agents are aggressive optimizers. Newer version? Must be better! No, sometimes newer means "an attacker pushed a beta with a RAT."
 3. **Export smoke test** — verifies the package's public API surface hasn't changed unexpectedly
 
-Here's the sobering part — and I had to rewrite this paragraph after the axios incident happened while I was *literally writing this post*: the prerelease guard wouldn't have caught it. The poisoned `axios@1.14.1` was a full release, not a prerelease. But the **workspace integrity check** would have. The attack injected `plain-crypto-js@4.2.1` — a brand new dependency that never existed in the legitimate codebase. A lockfile diff check would have screamed: "A *new* dependency appeared that nobody imported anywhere in the source code!" *(Recall the full axios forensics from [Part I](/posts/scaling-ai-part9-prime-directive/#threat-3-the-supply-chain-is-the-new-attack-surface) — compromised maintainer creds, self-destructing RAT, OIDC provenance bypass.)*
+Here's the sobering part — and I had to rewrite this paragraph after the axios incident happened while I was *literally writing this post*: the prerelease guard wouldn't have caught it. The poisoned `axios@1.14.1` was a full release, not a prerelease. But the **workspace integrity check** would have. The attack injected `plain-crypto-js@4.2.1` — a brand new dependency that never existed in the legitimate codebase. A lockfile diff check would have screamed: "A *new* dependency appeared that nobody imported anywhere in the source code!" *(Recall the full axios forensics from [Part I](/blog/2026/04/03/scaling-ai-part9-prime-directive#threat-3-the-supply-chain-is-the-new-attack-surface) — compromised maintainer creds, self-destructing RAT, OIDC provenance bypass.)*
 
 That's why you need the full gate stack. Each gate catches a different failure mode. Security is a team sport, even when the team is made of YAML files.
 
@@ -483,7 +483,7 @@ The remaining edge cases? That's what keeps me building. And occasionally keeps 
 
 ---
 
-*This is Part 9b of [Scaling AI-Native Software Engineering](/tags/scaling-ai-native-software-engineering/), a series about building and running AI agent teams in real software projects. [Part 9a](/posts/scaling-ai-part9-prime-directive/) covered the threat model. Next up: something lighter. Probably.*
+*This is Part 9b of [Scaling AI-Native Software Engineering](/blog/tags/scaling-ai-native-software-engineering), a series about building and running AI agent teams in real software projects. [Part 9a](/blog/2026/04/03/scaling-ai-part9-prime-directive) covered the threat model. Next up: something lighter. Probably.*
 
 ---
 
