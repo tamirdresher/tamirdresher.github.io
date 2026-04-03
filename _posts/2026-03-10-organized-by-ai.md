@@ -331,7 +331,7 @@ Using Squad didn't just change how I work on my own repos — it changed how I c
 - **SubSquads** ([PR #272](https://github.com/bradygaster/squad/pull/272)) — Renamed and restructured how nested squad teams work
 - **Upstream & Watch commands** ([PR #280](https://github.com/bradygaster/squad/pull/280)) — Wired up the watch loop and upstream sync natively in the CLI
 - **Test resilience** ([PR #283](https://github.com/bradygaster/squad/pull/283)) — Improved test stability across CI environments
-- **Remote Control** — The [squad start --tunnel](/2026/02/26/squad-remote-control.html) feature that lets you control your Squad from your phone
+- **Remote Control** — The [squad start --tunnel](/blog/2026/02/26/squad-remote-control.html) feature that lets you control your Squad from your phone
 
 These contributions weren't planned. They emerged from daily use — I'd hit a limitation, my Squad would research a solution, Data would implement it, and I'd submit the PR upstream. The boundary between "using a tool" and "building a tool" dissolved completely.
 

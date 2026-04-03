@@ -16,7 +16,7 @@ I spend a lot of time driving. During those drives, I often open ChatGPT on my p
 
 The problem? When Roo hits a decision point and needs my input, it just... stops. By the time I get home 40 minutes later, I've lost all that potential progress. The agent was ready to work, I was available to answer questions, but we had no way to communicate.
 
-I'd already given my AI agent [eyes with Playwright MCP](/2025/11/17/give-your-ai-coding-agent-eyes-with-playwright-mcp.html). Why not give it a mouth and ears too?
+I'd already given my AI agent [eyes with Playwright MCP](/blog/2025/11/17/give-your-ai-coding-agent-eyes-with-playwright-mcp.html). Why not give it a mouth and ears too?
 
 ## See It In Action
 
@@ -383,7 +383,7 @@ Before VoiceMCP, you needed to be at your desk, ready to respond to prompts. Now
 
 ### From Text-Only to Multimodal
 
-I previously wrote about [giving AI agents eyes with Playwright MCP](/2025/11/17/give-your-ai-coding-agent-eyes-with-playwright-mcp.html). Now they have:
+I previously wrote about [giving AI agents eyes with Playwright MCP](/blog/2025/11/17/give-your-ai-coding-agent-eyes-with-playwright-mcp.html). Now they have:
 - **Eyes** - Can see and interact with web applications
 - **Voice** - Can speak to you and hear your responses
 - **Hands** - Can write code and execute commands
@@ -537,7 +537,7 @@ Voice-enabled AI agents aren't science fiction—they're practical tools that so
 - **Reduce context switching** - No need to constantly check on your agent
 - **Enable hands-free workflows** - Safer and more convenient
 
-Combined with visual capabilities from [Playwright MCP](/2025/11/17/give-your-ai-coding-agent-eyes-with-playwright-mcp.html), we're moving toward truly multimodal AI pair programming. Your agent can see your application, hear your voice, and speak back to you—creating a collaboration experience that feels remarkably natural.
+Combined with visual capabilities from [Playwright MCP](/blog/2025/11/17/give-your-ai-coding-agent-eyes-with-playwright-mcp.html), we're moving toward truly multimodal AI pair programming. Your agent can see your application, hear your voice, and speak back to you—creating a collaboration experience that feels remarkably natural.
 
 The code is open source, the setup takes about 30 minutes, and the productivity gains are immediate. If you're already using AI coding agents, adding voice communication is the next logical step.
 
@@ -549,5 +549,5 @@ Now if you'll excuse me, I need to drive home and check on what my agent has bee
 
 ## Related Posts
 
-- [Give Your AI Coding Agent Eyes: Integrating Playwright MCP for Visual Testing](/2025/11/17/give-your-ai-coding-agent-eyes-with-playwright-mcp.html)
-- [Scaling Your AI Development Team with Git Worktrees](/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html)
+- [Give Your AI Coding Agent Eyes: Integrating Playwright MCP for Visual Testing](/blog/2025/11/17/give-your-ai-coding-agent-eyes-with-playwright-mcp.html)
+- [Scaling Your AI Development Team with Git Worktrees](/blog/2025/10/20/scaling-your-ai-development-team-with-git-worktrees.html)

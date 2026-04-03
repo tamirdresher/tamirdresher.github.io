@@ -10,7 +10,7 @@ tags: [aspire, squad, ai-agents, github-copilot, mcp, polyglot, distributed-syst
 > *"Agents can't look at a screen. They need programmatic access to system state. Aspire MCP gives them exactly that."*
 > — me, after watching five agents simultaneously query different aspects of the same running AppHost
 
-I've been using Aspire since before it was cool. I wrote about [solving npm authentication headaches](/2025/11/15/seamless-private-npm-feeds-in-dotnet-aspire.html) back in November 2025. I wrote about [port isolation for parallel AI development](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html) in December. I teach Aspire workshops. I have eight Aspire repos on GitHub. I'm a fan.
+I've been using Aspire since before it was cool. I wrote about [solving npm authentication headaches](/blog/2025/11/15/seamless-private-npm-feeds-in-dotnet-aspire.html) back in November 2025. I wrote about [port isolation for parallel AI development](/blog/2025/12/16/scaling-ai-agents-with-aspire-isolation.html) in December. I teach Aspire workshops. I have eight Aspire repos on GitHub. I'm a fan.
 
 But here's what I didn't expect: **Aspire was designed to simplify distributed development for humans, but it turns out it's even more useful for AI agents**.
 
@@ -28,7 +28,7 @@ When you run an Aspire AppHost and connect Squad to the MCP server, agents get a
 
 **System-wide visibility:**
 - `aspire-list_resources` — see all running services, their state, endpoints, health status
-- `aspire-list_apphosts` — list all running AppHost instances (useful when working with [worktrees](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html))
+- `aspire-list_apphosts` — list all running AppHost instances (useful when working with [worktrees](/blog/2025/12/16/scaling-ai-agents-with-aspire-isolation.html))
 
 **Observability:**
 - `aspire-list_console_logs` — read stdout from any resource (containers, projects, executables)
@@ -269,7 +269,7 @@ That's it. No MCP proxy. No port allocation. No settings.json files. Just CLI co
 
 ### Why This is Better for Agents
 
-The MCP approach (what I described earlier in this post) works great, and in 13.2 it got even better. Remember the custom MCP proxy script I wrote for [port isolation with worktrees](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html)? **That's now built into Aspire itself.** The `aspire start --isolated` flag handles port isolation out of the box — separate ports, separate dashboard, no conflicts between worktrees. No more custom proxy scripts. Just `aspire start --isolated` and your agents connect.
+The MCP approach (what I described earlier in this post) works great, and in 13.2 it got even better. Remember the custom MCP proxy script I wrote for [port isolation with worktrees](/blog/2025/12/16/scaling-ai-agents-with-aspire-isolation.html)? **That's now built into Aspire itself.** The `aspire start --isolated` flag handles port isolation out of the box — separate ports, separate dashboard, no conflicts between worktrees. No more custom proxy scripts. Just `aspire start --isolated` and your agents connect.
 
 The CLI approach is simpler: agents just run shell commands. Works in CI/CD environments. Works on teammate machines. Works on DevBoxes. No per-environment MCP configuration.
 
@@ -355,7 +355,7 @@ This auto-detects your agent environment and creates the right config. For Copil
 }
 ```
 
-No custom proxy scripts needed — `aspire mcp start` handles endpoint discovery, port coordination, and session management natively. If you're working with [worktrees](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html), it handles the dynamic port allocation that I previously needed a custom proxy for.
+No custom proxy scripts needed — `aspire mcp start` handles endpoint discovery, port coordination, and session management natively. If you're working with [worktrees](/blog/2025/12/16/scaling-ai-agents-with-aspire-isolation.html), it handles the dynamic port allocation that I previously needed a custom proxy for.
 
 **3. Watch agents query the system:**
 
@@ -370,8 +370,8 @@ Open a GitHub issue, assign it to an agent (e.g., Data), and watch the agent use
 - [Aspire CLI Reference](https://aspire.dev/install-aspire-cli/) — install and use the CLI
 - [My Aspire Workshop](https://github.com/tamirdresher/aspire-workshop) — 3-day hands-on course
 - [Squad Framework](https://github.com/microsoft/squad) — open-source autonomous AI team
-- [Scaling AI Agents with Aspire: Port Isolation](/2025/12/16/scaling-ai-agents-with-aspire-isolation.html) — my previous Aspire post (foundation for this one)
-- [Seamless Private NPM Feeds in Aspire](/2025/11/15/seamless-private-npm-feeds-in-dotnet-aspire.html) — polyglot support in practice
+- [Scaling AI Agents with Aspire: Port Isolation](/blog/2025/12/16/scaling-ai-agents-with-aspire-isolation.html) — my previous Aspire post (foundation for this one)
+- [Seamless Private NPM Feeds in Aspire](/blog/2025/11/15/seamless-private-npm-feeds-in-dotnet-aspire.html) — polyglot support in practice
 - [Part 1: Your First AI Engineering Team](/blog/2026/03/11/scaling-ai-part1-first-team) — how I set up Squad
 
 If you're experimenting with Aspire + Squad, I'd love to hear what you find. Tag me on [Twitter/X](https://twitter.com/tamirdresher) or [LinkedIn](https://www.linkedin.com/in/tamirdresher) or open a discussion in the Squad repo.
