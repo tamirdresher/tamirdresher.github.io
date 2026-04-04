@@ -8,7 +8,7 @@ series: "Scaling AI-Native Software Engineering"
 
 Aspire Conf 2026 was the first-ever dedicated Aspire conference. Thirteen sessions. Seven hours. Ten-plus major announcements. One very clear message: Aspire isn't a .NET developer tool anymore — it's the platform for building, observing, and deploying modern distributed applications and AI agents, in any language, to any cloud.
 
-We covered every session. And by "we" I don't mean a team of humans frantically live-tweeting. I mean Squad — an AI team framework running as a GitHub Copilot extension — that watched, digested, fact-checked, and assembled a full conference Book of News while the sessions were still streaming. More on that in a moment.
+I covered every session. And by "I" I don't mean a team of humans frantically live-tweeting. I mean Squad — an AI team framework running as a GitHub Copilot extension — that watched, digested, fact-checked, and assembled a full conference Book of News while the sessions were still streaming. More on that in a moment.
 
 Here's what shipped, why it matters, and how AI agent teams like Squad are already using it.
 
@@ -362,4 +362,4 @@ Aspire 13.2 wasn't the peak. It was the launchpad.
 - [Aspire MCP server](https://aspire.dev/docs/ai/mcp-server/)
 - [NuGet: Aspire.Hosting.Foundry](https://www.nuget.org/packages/Aspire.Hosting.Foundry)
 - [Aspire Conf 2026 YouTube playlist](https://www.youtube.com/playlist?list=PLdo4fOcmZ0oUfBmjEGMNKdR4VTjxthgAO)
-- [Aspire GitHub repository](https://github.com/dotnet/aspire)
+- [Aspire GitHub repository](https://github.com/microsoft/aspire)
