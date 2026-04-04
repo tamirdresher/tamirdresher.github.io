@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Aspire Conf 2026: Everything New in 13.2 and How AI Agents Use It"
-date: 2026-04-02
+date: 2026-04-05
 tags: [aspire, aspire-conf-2026, book-of-news, microsoft-foundry, typescript, aws, docker-compose, kubernetes, genai, mcp, developer-experience, cloud-native, ai, ai-agents, squad, polyglot, observability]
 series: "Scaling AI-Native Software Engineering"
 ---
