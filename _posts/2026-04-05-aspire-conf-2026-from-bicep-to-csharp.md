@@ -18,7 +18,7 @@ Here's what shipped, why it matters, and how AI agent teams like Squad are alrea
 
 Before diving into the features, let me tell you how this post came to be — because the process itself demonstrates why Aspire matters for AI agents.
 
-We pointed Squad at the Aspire Conf YouTube playlist and said: "Create a Book of News." Here's what happened:
+I pointed Squad at the Aspire Conf YouTube playlist and said: "Create a Book of News." Here's what happened:
 
 1. **Squad downloaded all 13 session transcripts** from the conference
 2. **Troi** (the blogger agent) wrote structured digests for each session, extracting key announcements, demo timecodes, and speaker quotes
@@ -170,7 +170,7 @@ At the conference, Pierce and Mike demonstrated an AI agent in VS Code using MCP
 
 Luke Parker then showed how OpenCode uses Aspire as the shared observability surface for both human developers and AI agents. Same dashboard, same traces, same data — but AI agents can consume it programmatically while humans look at the same information visually.
 
-**Why this matters for Squad:** We're already using the Aspire MCP server in our development workflow. When Data (the code agent) is investigating a bug, it can query live traces from the running application instead of guessing from static code analysis. The agent goes from "I think this endpoint is slow" to "this endpoint took 3.2 seconds because the database query at span `db-query-7` returned 14,000 rows." That's the difference between a helpful suggestion and a precise diagnosis.
+**Why this matters for Squad:** I'm already using the Aspire MCP server in my development workflow. When Data (the code agent) is investigating a bug, it can query live traces from the running application instead of guessing from static code analysis. The agent goes from "I think this endpoint is slow" to "this endpoint took 3.2 seconds because the database query at span `db-query-7` returned 14,000 rows." That's the difference between a helpful suggestion and a precise diagnosis.
 
 ---
 
