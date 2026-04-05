@@ -2,7 +2,7 @@
 layout: post
 title: "This Is the Best Framework and Azure Service You're Probably Not Using"
 date: 2026-04-10
-tags: [azure, durable-task-framework, durable-functions, orchestration, workflows, background-jobs, dotnet]
+tags: [azure, durable-task-sdk, durable-task-scheduler, durable-functions, orchestration, workflows, background-jobs, dotnet]
 ---
 
 I've been circling this technology for almost a decade. Stick with me.
@@ -19,7 +19,7 @@ Conductor was the right call. DSL-based, language-agnostic, proven at Netflix sc
 
 But here's the thing that makes me laugh now: while I was tuning Redis persistence modes and writing custom event bridges and debugging why a single slow HTTP Task response would starve an entire queue — **the technology I wrote about in 2017 was quietly growing up**.
 
-The Durable Task Framework evolved from a beta curiosity into a standalone SDK. First-class support for .NET, Python, Java, JavaScript. Battle-tested at Microsoft scale. And now? Microsoft launched the **Durable Task Scheduler** as a fully managed Azure service — and the same engine is [powering AI agent orchestrations](https://learn.microsoft.com/en-us/agent-framework/integrations/azure-functions) in the **Microsoft Agent Framework**. Because of course it is.
+The Durable Task engine evolved from a beta curiosity into a family of modern **Durable Task SDKs** — .NET, Python, Java, JavaScript, and soon Go. (Don't confuse these with the original [Durable Task Framework](https://github.com/azure/durabletask), which is the legacy .NET-only predecessor.) Battle-tested at Microsoft scale. And now? Microsoft launched the **Durable Task Scheduler** as a fully managed Azure service — a backend that works with *both* Durable Functions and the standalone Durable Task SDKs — and the same engine is [powering AI agent orchestrations](https://learn.microsoft.com/en-us/agent-framework/integrations/azure-functions) in the **Microsoft Agent Framework**. Because of course it is.
 
 It solves **exactly** the problems I spent months wrestling with at Payoneer. The queue starvation? Built-in activity queues per task type. The Redis memory footprint from storing workflow definitions in every instance? Managed state. The idempotency concerns? Checkpointing model handles it. The worker SDK complexity? Just write C# that looks like regular async code.
 
@@ -27,7 +27,7 @@ You can't make this stuff up.
 
 And here's the weirdest part: **almost nobody knows this exists.**
 
-I talk to .NET developers all the time. They know Azure Functions. They've heard of Durable Functions. But mention "Durable Task Framework" or "Durable Task Scheduler" and I get blank stares. Which is *wild*, because this is the exact same engine powering Durable Functions under the hood. It's open source. It's battle-tested at massive scale. It solves problems that every distributed system eventually faces.
+I talk to .NET developers all the time. They know Azure Functions. They've heard of Durable Functions. But mention "Durable Task SDKs" or "Durable Task Scheduler" and I get blank stares. Which is *wild*, because this is the exact same engine powering Durable Functions under the hood. It's open source. It works in .NET, Python, Java, JavaScript, and soon Go. It solves problems that every distributed system eventually faces.
 
 So let me tell you about the best framework and Azure service you're probably not using.
 
@@ -166,23 +166,21 @@ The framework is **open source** (https://github.com/Azure/durabletask). You can
 
 ## Enter the Durable Task Scheduler: The Missing Piece
 
-Here's where it gets really good. Microsoft recently launched the **Durable Task Scheduler** as a fully managed Azure service. Think of it as the orchestration engine extracted into its own service.
+Here's where it gets really good. Microsoft recently launched the **Durable Task Scheduler** as a fully managed Azure service. Think of it as the orchestration engine extracted into its own managed backend.
 
-Before, if you wanted to run orchestrations, you had two choices:
-1. **Azure Functions** (managed, but tightly coupled to Functions runtime)
-2. **Self-hosted** (flexible, but you manage storage, scaling, monitoring)
+The story is actually pretty clean now: it doesn't matter where you're hosting your workloads.
 
-Now there's a third option: **Durable Task Scheduler**.
+If you're on **Azure Functions**, you can use the **Durable Functions extension** — same programming model you already know — and point it at the Durable Task Scheduler instead of Azure Storage, SQL, or Netherite. You get managed state, automatic scaling, and built-in dashboards without changing how you write orchestrations.
 
-It's a managed backend that handles:
+If you're running on **containers, VMs, or Kubernetes**, you use the **[Durable Task SDKs](https://github.com/microsoft/durabletask-dotnet)** directly — available for .NET, Python, Java, JavaScript, and soon Go. Same engine, same reliability guarantees, no Azure Functions dependency.
+
+Either way, the Durable Task Scheduler handles:
 - State persistence (no need to configure storage accounts)
 - Automatic scaling (handles millions of orchestrations)
-- Monitoring and diagnostics (built-in dashboards)
+- Monitoring and diagnostics ([built-in dashboards](https://learn.microsoft.com/en-us/azure/durable-task/scheduler/durable-task-scheduler-dashboard?pivots=az-cli#monitor-orchestration-progress-and-execution-history))
 - Fault tolerance (orchestrations survive failures)
 
-You write code against the Durable Task SDK, point it at the Durable Task Scheduler, and you get all the benefits of a managed service without being locked into Azure Functions.
-
-Here's what that looks like:
+Here's what the standalone SDK approach looks like:
 
 ```csharp
 var builder = new HostBuilder()
@@ -287,7 +285,7 @@ The orchestration can literally wait for days for a user to click a button. The 
 A side-by-side comparison showing the same workflow implemented with:
 - Hangfire (manual state, queuing, retry logic)
 - Quartz.NET (cron-based, not workflow-friendly)
-- Durable Task Framework (clean, declarative)
+- Durable Task SDK (clean, declarative)
 
 ### 5. **Deployment Examples**
 How to run this on:
@@ -301,15 +299,15 @@ How to run this on:
 
 Good question. I think it's a combination of factors:
 
-1. **Naming Confusion**: "Durable Functions," "Durable Task Framework," "Durable Task Scheduler" — people think they're all the same thing or don't understand the differences.
+1. **Naming Confusion**: "Durable Functions," "Durable Task Framework," "Durable Task SDKs," "Durable Task Scheduler" — it's a lot of "Durable" and people either think they're all the same thing or give up trying to untangle them. Here's the cheat sheet: **Durable Task Framework** is the legacy .NET-only predecessor. The modern **Durable Task SDKs** are multi-language and what you should use today. **Durable Functions** uses the same engine inside Azure Functions. And **Durable Task Scheduler** is the managed backend that any of them can use.
 
-2. **Hidden in Plain Sight**: Most developers encounter Durable Functions first and assume that's the only way to use this pattern. They don't realize the underlying framework is available independently.
+2. **Hidden in Plain Sight**: Most developers encounter Durable Functions first and assume that's the only way to use this pattern. They don't realize the underlying engine is available as standalone SDKs for .NET, Python, Java, JavaScript, and soon Go — no Functions runtime required.
 
 3. **Perceived Complexity**: The async/await orchestration model looks weird the first time you see it. "Wait, I can just `await` a 30-minute timer? That doesn't make sense!" (It does. It's brilliant.)
 
 4. **Documentation Fragmentation**: Microsoft's docs are getting better, but there's still a lot of "if you want X, read this doc; if you want Y, read that doc; if you want Z, good luck."
 
-But once you get past these hurdles, this is **the** way to build reliable workflows in .NET. It's not just for Azure. It's not just for serverless. It's a general-purpose orchestration framework that happens to have a world-class managed backend option.
+But once you get past these hurdles, this is **the** way to build reliable workflows. Durable Functions for Azure Functions. Durable Task SDKs for everything else. Both can leverage the Durable Task Scheduler as a managed backend. It's not just for Azure. It's not just for serverless. It's a general-purpose orchestration engine that happens to have a world-class managed backend option.
 
 
 
@@ -317,7 +315,7 @@ But once you get past these hurdles, this is **the** way to build reliable workf
 
 ## Where I See This Fitting
 
-Having lived through building a production Conductor deployment at Payoneer — tuning Redis persistence, debugging queue starvation, writing custom worker SDKs for hundreds of thousands of concurrent workflows — I can tell you exactly where the Durable Task Framework shines.
+Having lived through building a production Conductor deployment at Payoneer — tuning Redis persistence, debugging queue starvation, writing custom worker SDKs for hundreds of thousands of concurrent workflows — I can tell you exactly where the Durable Task SDKs shine.
 
 The first place my brain goes is multi-step payment processing. The exact stuff we were doing at Payoneer. Same fan-out patterns, same retry semantics, same survival guarantees. But here's the thing — instead of learning a DSL and maintaining separate workflow definitions in JSON or YAML, you just write plain C# that looks like regular async code. That alone would have saved us weeks of onboarding new developers who had to learn Conductor's definition model before they could touch a workflow.
 
@@ -327,7 +325,7 @@ Human-in-the-loop workflows are where it gets really elegant. Orchestrations tha
 
 And then — because the universe apparently has a sense of humor about my career — there's AI agent orchestration. The Microsoft Agent Framework runs on this same engine (see "The Cosmic Joke Continues" below). Same orchestration primitives, same durable execution model, solving entirely different problems. The workflow engine I needed for payments in 2019 is now powering AI agents in 2026. I genuinely couldn't have predicted that.
 
-If I were starting that Payoneer project today with a .NET stack? I'd absolutely evaluate the Durable Task Framework with the Scheduler backend. The code-first approach maps to how .NET developers already think. And I wouldn't have to tune Redis fsync intervals at 2 AM.
+If I were starting that Payoneer project today with a .NET stack? I'd absolutely evaluate the Durable Task SDKs with the Scheduler backend. The code-first approach maps to how .NET developers already think. And I wouldn't have to tune Redis fsync intervals at 2 AM.
 
 ---
 
@@ -390,7 +388,7 @@ The cosmic joke keeps getting funnier.
 
 You can see the whole picture in the [Durable Task Scheduler dashboard](https://learn.microsoft.com/en-us/azure/durable-task/scheduler/durable-task-scheduler-dashboard?pivots=az-cli#monitor-orchestration-progress-and-execution-history). Same observability, same metrics, whether you're orchestrating payment flows or AI reasoning chains.
 
-Supports C# (.NET 8.0+) and Python (3.10+) with Azure Functions. Runs anywhere Azure Functions runs. Scales like Azure Functions scales.
+Supports C# (.NET 8.0+) and Python (3.10+) with Azure Functions — and .NET, Python, Java, JavaScript, and soon Go via the standalone SDKs. Runs anywhere. Scales as far as you need.
 
 If you're building multi-agent systems or just want your AI agent to survive a server restart without losing its train of thought, this is worth a serious look:
 - [Official announcement](https://techcommunity.microsoft.com/blog/appsonazureblog/bulletproof-agents-with-the-durable-task-extension-for-microsoft-agent-framework/4467122)
@@ -405,7 +403,7 @@ Same framework. Different problems. All the way down.
 
 ## The Bottom Line
 
-If you're building distributed systems in .NET, you need to know about the Durable Task Framework and Durable Task Scheduler. It's not a niche tool. It's not just for Azure Functions. It's a fundamental pattern for reliable workflows that happens to have first-class support in Azure.
+If you're building distributed systems, you need to know about the Durable Task SDKs and Durable Task Scheduler. It's not a niche tool. It's not just for Azure Functions. It's a fundamental pattern for reliable workflows — in .NET, Python, Java, JavaScript, and soon Go — that happens to have first-class support in Azure.
 
 Stop manually building orchestrations with job queues and database tables. Stop writing custom retry logic. Stop reinventing the wheel.
 
@@ -417,8 +415,10 @@ Use the framework that Microsoft built, open-sourced, and uses internally at sca
 
 **Core Durable Task Resources:**
 - [What is Durable Task? (Official Docs)](https://learn.microsoft.com/en-us/azure/azure-functions/durable/what-is-durable-task)
-- [Durable Task Framework GitHub](https://github.com/Azure/durabletask)
+- [Durable Task .NET SDK (Modern)](https://github.com/microsoft/durabletask-dotnet) — .NET, Python, Java, JS, soon Go
+- [Durable Task Framework (Legacy, .NET only)](https://github.com/Azure/durabletask)
 - [Durable Task Scheduler Docs](https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-task-scheduler/durable-task-scheduler)
+- [Durable Task Scheduler Dashboard](https://learn.microsoft.com/en-us/azure/durable-task/scheduler/durable-task-scheduler-dashboard?pivots=az-cli#monitor-orchestration-progress-and-execution-history)
 - [Durable Functions Patterns](https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-overview?tabs=in-process%2Cnodejs-v3%2Cv1-model&pivots=csharp)
 
 **Agent Framework Integration:**
