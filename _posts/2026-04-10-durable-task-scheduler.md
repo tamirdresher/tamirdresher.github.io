@@ -19,7 +19,7 @@ Conductor was the right call. DSL-based, language-agnostic, proven at Netflix sc
 
 But here's the thing that makes me laugh now: while I was tuning Redis persistence modes and writing custom event bridges and debugging why a single slow HTTP Task response would starve an entire queue — **the technology I wrote about in 2017 was quietly growing up**.
 
-The Durable Task Framework evolved from a beta curiosity into a standalone SDK. First-class support for .NET, Python, Java, JavaScript. Battle-tested at Microsoft scale. And now? Microsoft launched the **Durable Task Scheduler** as a fully managed Azure service.
+The Durable Task Framework evolved from a beta curiosity into a standalone SDK. First-class support for .NET, Python, Java, JavaScript. Battle-tested at Microsoft scale. And now? Microsoft launched the **Durable Task Scheduler** as a fully managed Azure service — and the same engine is [powering AI agent orchestrations](https://learn.microsoft.com/en-us/agent-framework/integrations/azure-functions) in the **Microsoft Agent Framework**. Because of course it is.
 
 It solves **exactly** the problems I spent months wrestling with at Payoneer. The queue starvation? Built-in activity queues per task type. The Redis memory footprint from storing workflow definitions in every instance? Managed state. The idempotency concerns? Checkpointing model handles it. The worker SDK complexity? Just write C# that looks like regular async code.
 
@@ -158,6 +158,7 @@ Great question. Here's the thing: **Durable Functions IS built on the Durable Ta
 - You need complete control over hosting and scaling
 - You're building a hybrid or multi-cloud solution
 - You have an existing .NET app and want to add workflow orchestration without Azure Functions
+- You're building AI agent systems that need durable state management (yes, [the Microsoft Agent Framework does exactly this](https://learn.microsoft.com/en-us/agent-framework/integrations/azure-functions))
 
 The framework is **open source** (https://github.com/Azure/durabletask). You can run it anywhere. You can use Azure Storage, SQL Server, or the new **Durable Task Scheduler** as the backend.
 
@@ -366,6 +367,8 @@ Having lived through building a production Conductor deployment at Payoneer — 
 2. **Fan-out/fan-in at scale**: What we built with custom worker SDKs and bulk processing logic becomes 50 lines of orchestration code. The coordination that required careful queue management? Built in.
 
 3. **Human-in-the-loop workflows**: Orchestrations that wait for approval with timeout escalations — a first-class pattern. The framework doesn't care if it waits five minutes or five days. No queue starvation debugging required.
+
+4. **AI agent orchestration**: This is the one that broke my brain a little. The **[Microsoft Agent Framework](https://github.com/microsoft/agent-framework)** has a [durable task extension](https://learn.microsoft.com/en-us/agent-framework/integrations/azure-functions) for building stateful AI agents and multi-agent workflows. Same checkpointing. Same fault tolerance. Same scaling patterns. The technology I used for "don't accidentally charge someone twice" now solves "don't lose your AI agent's reasoning mid-conversation." I wrote about this framework in 2017. I built workflow orchestration at Payoneer. And now the same underlying tech is coordinating AI agents. The cosmic joke keeps getting funnier.
 
 If I were starting that Payoneer project today with a .NET stack? I'd absolutely evaluate the Durable Task Framework with the Scheduler backend. The code-first approach maps to how .NET developers already think. And I wouldn't have to tune Redis fsync intervals at 2 AM.
 
