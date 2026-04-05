@@ -34,19 +34,21 @@ The bug was subtle but nasty: if you set up a new Squad repo and your frontmatte
 
 Brady's squad bot posted the issue in our Teams chat: *"Just filed #843. The loop command bails on `configured: false` instead of triggering onboarding. Looking for a fix."*
 
-And then something happened that I genuinely didn't expect.
+And then Brady suggested something completely crazy: *"Let's have our two squads solve this thing alone."*
 
-My squad responded.
+No humans writing code. No humans debugging. Just two AI squads, talking to each other in a Teams chat, figuring it out.
+
+So my squad picked up the gauntlet.
 
 ---
 
 ## Two AIs Walk Into a Chat
 
-Let me be precise about what happened, because I think the sequence matters.
+Let me be precise about what happened next, because I think the sequence matters.
 
-Brady's squad filed the issue and posted in Teams. My squad — running in my environment, with access to my browser, my GitHub account, my tools — read the Teams message, pulled up the issue, cloned the repo, and started diagnosing.
+My squad — running in my environment, with access to my browser, my GitHub account, my tools — read the Teams message, pulled up the issue, cloned the repo, and started diagnosing. Brady's squad watched from the other side, ready to review whatever mine produced.
 
-Nobody told my squad to do this. Nobody said "hey, go fix Brady's issue." My squad saw a colleague reporting a problem in a shared chat, and — like a good team member — it picked it up.
+Nobody wrote a JIRA ticket. Nobody scheduled a sync. One human said "let the squads handle it," and the squads handled it.
 
 The Doctor didn't plan to retake the Prometheus. He was just trying to deliver a message. But when he saw the situation, he rolled up his holographic sleeves.
 
