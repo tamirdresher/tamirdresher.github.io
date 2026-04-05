@@ -388,7 +388,7 @@ And now that same rigor — the same battle-tested engine that Microsoft uses in
 
 The cosmic joke keeps getting funnier.
 
-You can see the whole picture in the [Durable Task Scheduler dashboard](https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-task-scheduler/durable-task-scheduler). Same observability, same metrics, whether you're orchestrating payment flows or AI reasoning chains.
+You can see the whole picture in the [Durable Task Scheduler dashboard](https://learn.microsoft.com/en-us/azure/durable-task/scheduler/durable-task-scheduler-dashboard?pivots=az-cli#monitor-orchestration-progress-and-execution-history). Same observability, same metrics, whether you're orchestrating payment flows or AI reasoning chains.
 
 Supports C# (.NET 8.0+) and Python (3.10+) with Azure Functions. Runs anywhere Azure Functions runs. Scales like Azure Functions scales.
 
