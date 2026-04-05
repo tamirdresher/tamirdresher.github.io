@@ -311,52 +311,9 @@ Good question. I think it's a combination of factors:
 
 But once you get past these hurdles, this is **the** way to build reliable workflows in .NET. It's not just for Azure. It's not just for serverless. It's a general-purpose orchestration framework that happens to have a world-class managed backend option.
 
----
 
-## The Honest Reality
 
-This isn't a silver bullet. There are scenarios where Hangfire or Quartz.NET is still the right choice:
 
-- **Use Hangfire if**: You need simple fire-and-forget jobs with a nice dashboard, and you're okay with your database as a queue.
-- **Use Quartz.NET if**: You need complex cron scheduling, enterprise clustering, and precise timing guarantees.
-- **Use Durable Task Framework if**: You need workflows — multi-step processes with state, retries, compensation, external events, or anything that could run longer than a few minutes.
-
-But if you're building a system where you're manually stitching together background jobs into workflows, tracking state in your database, and writing custom retry logic? You're reinventing the Durable Task Framework. Stop. Use the thing that's already built and battle-tested.
-
----
-
-## Getting Started
-
-Here's the fastest path to trying this out:
-
-### 1. **Start with Durable Functions** (easiest)
-If you're new to this, start with Durable Functions. It's the fastest way to see the orchestration model in action:
-
-```bash
-# Create a new Durable Functions app
-func init MyDurableFunctionsApp --worker-runtime dotnet-isolated
-cd MyDurableFunctionsApp
-func new --template "Durable Functions orchestration" --name OrderWorkflow
-
-# Run it locally
-func start
-```
-
-Microsoft's [Durable Functions quickstart](https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-create-first-csharp) is excellent.
-
-### 2. **Try the Durable Task SDK** (for self-hosting)
-If you want to run outside Azure Functions, check out the [Durable Task SDK samples](https://github.com/Azure/durabletask):
-
-```bash
-git clone https://github.com/Azure/durabletask.git
-cd durabletask/samples
-dotnet run
-```
-
-### 3. **Explore Durable Task Scheduler** (managed backend)
-The Durable Task Scheduler is in GA for dedicated SKU and public preview for consumption SKU. Check out the [official docs](https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-task-scheduler/durable-task-scheduler) for setup instructions.
-
----
 
 ## Where I See This Fitting
 
@@ -368,9 +325,81 @@ Having lived through building a production Conductor deployment at Payoneer — 
 
 3. **Human-in-the-loop workflows**: Orchestrations that wait for approval with timeout escalations — a first-class pattern. The framework doesn't care if it waits five minutes or five days. No queue starvation debugging required.
 
-4. **AI agent orchestration**: This is the one that broke my brain a little. The **[Microsoft Agent Framework](https://github.com/microsoft/agent-framework)** has a [durable task extension](https://learn.microsoft.com/en-us/agent-framework/integrations/azure-functions) for building stateful AI agents and multi-agent workflows. Same checkpointing. Same fault tolerance. Same scaling patterns. The technology I used for "don't accidentally charge someone twice" now solves "don't lose your AI agent's reasoning mid-conversation." I wrote about this framework in 2017. I built workflow orchestration at Payoneer. And now the same underlying tech is coordinating AI agents. The cosmic joke keeps getting funnier.
+4. **AI agent orchestration**: The Microsoft Agent Framework runs on this same engine (see "The Cosmic Joke Continues" below). Same orchestration primitives solving entirely different problems.
 
 If I were starting that Payoneer project today with a .NET stack? I'd absolutely evaluate the Durable Task Framework with the Scheduler backend. The code-first approach maps to how .NET developers already think. And I wouldn't have to tune Redis fsync intervals at 2 AM.
+
+---
+
+## The Cosmic Joke Continues
+
+Remember when I said this technology has been quietly growing up? Here's the part that broke my brain a little.
+
+In January 2026, Microsoft announced the **[durable task extension for the Microsoft Agent Framework](https://techcommunity.microsoft.com/blog/appsonazureblog/bulletproof-agents-with-the-durable-task-extension-for-microsoft-agent-framework/4467122)** is now in public preview. And it brings exactly what you'd expect: durable execution, distributed execution, fault tolerance — except instead of orchestrating payment workflows, it's orchestrating **AI agents**.
+
+Same engine. Same checkpointing model. Same "write it like regular code" pattern. But now it's solving:
+
+- "Don't lose the agent's reasoning mid-conversation if the server crashes"
+- "Pause for human input without burning serverless compute for hours"
+- "Coordinate multiple specialized agents with predictable, repeatable execution"
+- "Scale from thousands of concurrent agent sessions to zero"
+
+Microsoft calls it the **4D's**: Durable, Distributed, Deterministic, Developer-friendly.
+
+That last one is not marketing speak. Look at the Python example:
+
+```python
+from agent_framework.agents import Agent
+from agent_framework.azure_functions import AgentFunctionApp
+
+agent = Agent(
+    id="my-agent",
+    model="gpt-4",
+    instructions="You are a helpful assistant."
+)
+
+app = AgentFunctionApp(agents=[agent])
+```
+
+That's it. That's a durable AI agent with automatic session management, crash recovery, and distributed execution. The framework handles persistence. The Durable Task Scheduler backend handles scaling. You write agent logic.
+
+The C# version is equally clean:
+
+```csharp
+builder.Services
+    .AddDurableAgents()
+    .ConfigureDurableAgents(options =>
+    {
+        options.AddAgent("my-agent", agent =>
+        {
+            agent.UseAzureOpenAI("gpt-4");
+            agent.WithInstructions("You are a helpful assistant.");
+        });
+    });
+```
+
+Under the hood, each agent is implemented as a **durable entity** — a stateful actor that maintains conversation context across executions. The same technology that made payment workflows survive process crashes now makes AI agents survive them. The same fan-out patterns I used for batch processing now coordinate specialized agents (one for research, one for code generation, one for fact-checking).
+
+And the human-in-the-loop pattern I showed earlier? That's a first-class feature now. An agent can wait for a user to reply, costing you nothing while it waits, then resume exactly where it left off. Try building that yourself with raw OpenAI API calls and tell me how your state management is going.
+
+Here's the thing that makes me laugh: at Payoneer, we spent months building reliability patterns into workflow orchestration. Queue starvation debugging. Checkpoint-and-replay validation. Idempotency guarantees. Because financial transactions don't get second chances.
+
+And now that same rigor — the same battle-tested engine that Microsoft uses internally at massive scale — is what makes AI agents reliable enough for production. The technology I wrote about in 2017 for serverless workflows is now powering agent frameworks. The problems we solved at Payoneer ("survive crashes," "coordinate parallel work," "wait indefinitely without wasting resources") are the exact problems AI agent systems face.
+
+The cosmic joke keeps getting funnier.
+
+You can see the whole picture in the [Durable Task Scheduler dashboard](https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-task-scheduler/durable-task-scheduler). Same observability, same metrics, whether you're orchestrating payment flows or AI reasoning chains.
+
+Supports C# (.NET 8.0+) and Python (3.10+) with Azure Functions. Runs anywhere Azure Functions runs. Scales like Azure Functions scales.
+
+If you're building multi-agent systems or just want your AI agent to survive a server restart without losing its train of thought, this is worth a serious look:
+- [Official announcement](https://techcommunity.microsoft.com/blog/appsonazureblog/bulletproof-agents-with-the-durable-task-extension-for-microsoft-agent-framework/4467122)
+- [Agent Framework docs](https://learn.microsoft.com/en-us/agent-framework/integrations/azure-functions)
+- [Durable extension overview](https://aka.ms/durable-extension-for-af)
+- [C# samples](https://aka.ms/durable-extension-csharp-samples)
+- [Python samples](https://aka.ms/durable-extension-python-samples)
+
+Same framework. Different problems. All the way down.
 
 ---
 
@@ -386,10 +415,18 @@ Use the framework that Microsoft built, open-sourced, and uses internally at sca
 
 **Want to dive deeper?** Here are the resources I wish someone had handed me earlier:
 
+**Core Durable Task Resources:**
 - [What is Durable Task? (Official Docs)](https://learn.microsoft.com/en-us/azure/azure-functions/durable/what-is-durable-task)
 - [Durable Task Framework GitHub](https://github.com/Azure/durabletask)
 - [Durable Task Scheduler Docs](https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-task-scheduler/durable-task-scheduler)
 - [Durable Functions Patterns](https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-overview?tabs=in-process%2Cnodejs-v3%2Cv1-model&pivots=csharp)
+
+**Agent Framework Integration:**
+- [Bulletproof Agents announcement](https://techcommunity.microsoft.com/blog/appsonazureblog/bulletproof-agents-with-the-durable-task-extension-for-microsoft-agent-framework/4467122)
+- [Agent Framework + Durable Task docs](https://learn.microsoft.com/en-us/agent-framework/integrations/azure-functions)
+- [Durable extension overview](https://aka.ms/durable-extension-for-af)
+- [C# samples](https://aka.ms/durable-extension-csharp-samples)
+- [Python samples](https://aka.ms/durable-extension-python-samples)
 
 If you're already using this and I've missed something important, or if you have your own workflow orchestration war stories (Conductor, Temporal, Hangfire, home-grown state machines — I've seen them all), I'd love to hear them. Find me on [Twitter/X](https://twitter.com/tamirdresher) or [LinkedIn](https://www.linkedin.com/in/tamirdresher).
 
