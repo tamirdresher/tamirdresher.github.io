@@ -32,8 +32,8 @@ Here's what actually happens now:
 4. Opens Wix Dashboard in a browser, creates the product with a Hebrew name, Hebrew description, correct category, mandatory legal disclaimers, and the uploaded photo
 5. Replies in Spanish: "Hola! Ya subí el producto 🎉"
 
-![An incoming email mixing Spanish instructions with Hebrew product names](/assets/ai-family-store/linkedin-1-incoming-email.png)
-*The email — Spanish instructions, Hebrew product names, and an attached photo. The agent takes it from here.*
+![An email in Spanish requesting summer board uploads, with two colorful kindergarten board photos attached and Hebrew product name לוח לגן](/assets/ai-family-store/linkedin-1-incoming-email.png)
+*The email — Spanish instructions, Hebrew product names, two product photos attached. The agent takes it from here.*
 
 No code deployed. No Wix API integration. No app. Just a browser automation agent that reads email, understands context in three languages, and does the actual work.
 
