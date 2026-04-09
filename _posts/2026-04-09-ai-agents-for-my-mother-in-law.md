@@ -10,7 +10,7 @@ My mother-in-law makes sponge puppets. Hedgehogs, ice cream cones, crocodiles, a
 
 Her name is Adriana. She was born in Argentina, lives in Israel. She speaks Hebrew, but Spanish is her language — it's where she thinks, argues, and prices sponge fish hats. Usually my wife translates for her when she needs something done in Hebrew.
 
-I built her a Wix store: [teivathadimion.com](https://teivathadimion.com) — תיבת הדמיון, "Box of Imagination." All in Hebrew, because that's the market. And then the real problem started.
+We built her a Wix store: [teivathadimion.com](https://teivathadimion.com) — תיבת הדמיון, "Box of Imagination." My wife and I set it up together — all in Hebrew, because that's the market. And then the real problem started.
 
 She sends me product photos over email. In Spanish. With prices in shekels. And descriptions like "Helado americano 120 שקל."
 
@@ -26,14 +26,14 @@ Not a chatbot. Not a "let me help you use Wix" assistant. A fully autonomous tea
 
 Here's what actually happens now:
 
-1. Adriana emails a photo of a new puppet to tdsquadai@gmail.com
+1. Adriana emails a photo of a new puppet to a dedicated Gmail address
 2. An AI agent checks Gmail every 3 minutes
 3. It downloads the image, reads the Spanish email for the product name and price
 4. Opens Wix Dashboard in a browser, creates the product with a Hebrew name, Hebrew description, correct category, mandatory legal disclaimers, and the uploaded photo
 5. Replies to Adriana in Spanish: "Hola Adriana! Ya subí el producto 🎉"
 
-![Adriana's email in Spanish with a product photo](/assets/ai-mother-in-law-store/linkedin-1-adriana-email-spanish.png)
-*Adriana's email — Spanish description, shekel price, product photo attached. The agent takes it from here.*
+![Adriana's email in Spanish with a puppet photo — "Agua 120 שקל" visible](/assets/ai-mother-in-law-store/linkedin-1-adriana-email-spanish.png)
+*Adriana's email — a puppet photo, "Agua 120 שקל," and Spanish text. The agent takes it from here.*
 
 No code deployed. No Wix API integration. No app. Just a browser automation agent that reads email, understands context in three languages, and does the actual work.
 
@@ -190,11 +190,7 @@ Each product has a Hebrew name, Hebrew description, price in shekels, at least o
 
 Here's the thing that gets me every time. Adriana has no idea she's talking to an AI.
 
-She thinks I'm the one on the other end of that email — that I'm sitting at my computer, diligently uploading her sponge hedgehogs to Wix, translating her descriptions into Hebrew, setting prices, choosing categories. She thinks I'm very responsive and very helpful.
-
-My wife is suspicious. She knows me. She knows I'm not that helpful. "Since when do you answer emails within three minutes?" she asked once. I changed the subject.
-
-I'm not going to correct either of them.
+She thinks I'm the one on the other end of that email — that I'm sitting at my computer, diligently uploading her sponge hedgehogs to Wix, translating her descriptions into Hebrew, setting prices, choosing categories.
 
 The funniest confirmation was when the agent handled the big correction batch — deleting four products, recreating them as a bundle, updating three prices, renaming a product, and replacing a photo — all from one email thread. Adriana's response: "Dale perfecto!"
 
