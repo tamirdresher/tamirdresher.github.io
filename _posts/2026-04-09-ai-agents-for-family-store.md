@@ -39,8 +39,8 @@ No code deployed. No Wix API integration. No app. Just a browser automation agen
 
 Across multiple sessions, it created **114 products**. Sponge fish hats. Hanukkah boards with separate candles. A vegetable garden set. Finger puppets. Story books. Summer activity boards. And it handled corrections — "delete those four, keep only the set," "rename צלחות to פלטות," "wrong photo, replace it."
 
-![AI's confirmation reply in Spanish](/assets/ai-family-store/linkedin-2-agent-reply.png)
-*The agent replies in Spanish — because that's what she prefers. She has no idea she's talking to a machine.*
+![The AI agent's reply in Spanish — listing all completed corrections: renames, deletions, and new uploads](/assets/ai-family-store/linkedin-2-agent-reply.png)
+*The agent replies in Spanish with a detailed summary of all corrections made — renames, deletions, bundle creation. Signed "Squad AI."*
 
 ---
 
