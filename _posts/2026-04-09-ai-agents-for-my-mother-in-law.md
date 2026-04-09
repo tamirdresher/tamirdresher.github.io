@@ -32,14 +32,14 @@ Here's what actually happens now:
 4. Opens Wix Dashboard in a browser, creates the product with a Hebrew name, Hebrew description, correct category, mandatory legal disclaimers, and the uploaded photo
 5. Replies in Spanish: "Hola! Ya subí el producto 🎉"
 
-![Email in Spanish with a puppet photo — "Agua 120 שקל" visible](/assets/ai-family relative-store/linkedin-1-adriana-email-spanish.png)
+![Email in Spanish with a puppet photo — "Agua 120 שקל" visible](/assets/ai-mother-in-law-store/linkedin-1-adriana-email-spanish.png)
 *The email — a puppet photo, "Agua 120 שקל," and Spanish text. The agent takes it from here.*
 
 No code deployed. No Wix API integration. No app. Just a browser automation agent that reads email, understands context in three languages, and does the actual work.
 
 Across multiple sessions, it created **114 products**. Sponge fish hats. Hanukkah boards with separate candles. A vegetable garden set. Finger puppets. Story books. Summer activity boards. And it handled corrections — "delete those four, keep only the set," "rename צלחות to פלטות," "wrong photo, replace it."
 
-![AI's confirmation reply in Spanish](/assets/ai-family relative-store/linkedin-2-ai-reply-spanish.png)
+![AI's confirmation reply in Spanish](/assets/ai-mother-in-law-store/linkedin-2-ai-reply-spanish.png)
 *The agent replies in Spanish — because that's what she prefers. She has no idea she's talking to a machine.*
 
 ---
@@ -166,7 +166,7 @@ All of these corrections happened through email. She never opened Wix. She never
 
 ## 114 Products and Counting
 
-![Wix dashboard showing 114 products](/assets/ai-family relative-store/linkedin-3-wix-products-hebrew.png)
+![Wix dashboard showing 114 products](/assets/ai-mother-in-law-store/linkedin-3-wix-products-hebrew.png)
 *114 products on the Wix Dashboard — all created, categorized, and priced by AI agents from Spanish emails*
 
 Over multiple sessions, the agents processed her emails and built out a full product catalog. The categories include:
@@ -181,7 +181,7 @@ Over multiple sessions, the agents processed her emails and built out a full pro
 
 Each product has a Hebrew name, Hebrew description, price in shekels, at least one photo, and the required legal disclaimers. The agent didn't just translate — it wrote product descriptions that sound like a real Hebrew e-commerce listing. "בובת ספוג קיפוד בעבודת יד — מתאימה לגני ילדים, פעוטונים ומתנות ליום הולדת" isn't something Google Translate would produce.
 
-![The live store at teivathadimion.com](/assets/ai-family relative-store/linkedin-4-live-store-hebrew.png)
+![The live store at teivathadimion.com](/assets/ai-mother-in-law-store/linkedin-4-live-store-hebrew.png)
 *The live store — teivathadimion.com. All Hebrew, all created from Spanish emails. The customers have no idea.*
 
 ---
