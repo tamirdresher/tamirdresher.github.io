@@ -32,14 +32,14 @@ Here's what actually happens now:
 4. Opens Wix Dashboard in a browser, creates the product with a Hebrew name, Hebrew description, correct category, mandatory legal disclaimers, and the uploaded photo
 5. Replies in Spanish: "Hola! Ya subí el producto 🎉"
 
-![Email in Spanish with a puppet photo — "Agua 120 שקל" visible](/assets/ai-mother-in-law-store/linkedin-1-adriana-email-spanish.png)
-*The email — a puppet photo, "Agua 120 שקל," and Spanish text. The agent takes it from here.*
+![An incoming email mixing Spanish instructions with Hebrew product names](/assets/ai-family-store/linkedin-1-incoming-email.png)
+*The email — Spanish instructions, Hebrew product names, and an attached photo. The agent takes it from here.*
 
 No code deployed. No Wix API integration. No app. Just a browser automation agent that reads email, understands context in three languages, and does the actual work.
 
 Across multiple sessions, it created **114 products**. Sponge fish hats. Hanukkah boards with separate candles. A vegetable garden set. Finger puppets. Story books. Summer activity boards. And it handled corrections — "delete those four, keep only the set," "rename צלחות to פלטות," "wrong photo, replace it."
 
-![AI's confirmation reply in Spanish](/assets/ai-mother-in-law-store/linkedin-2-ai-reply-spanish.png)
+![AI's confirmation reply in Spanish](/assets/ai-family-store/linkedin-2-agent-reply.png)
 *The agent replies in Spanish — because that's what she prefers. She has no idea she's talking to a machine.*
 
 ---
@@ -107,7 +107,7 @@ The fix was teaching the agent to filter images by size — anything under a rea
 
 ### The CC Problem
 
-At one point, She started CC'ing someone on her emails. The agent's reply would go to all recipients, which was fine — except it confused the reply chain and the agent started processing the same email thread multiple times. Duplicate products everywhere.
+At one point, she started CC'ing someone on her emails. The agent's reply would go to all recipients, which was fine — except it confused the reply chain and the agent started processing the same email thread multiple times. Duplicate products everywhere.
 
 The fix was tracking processed email IDs so the agent wouldn't re-process threads it had already handled.
 
@@ -142,23 +142,11 @@ The agent:
 
 From a single email thread. Four deletions, one creation, one confirmation. Dale perfecto.
 
-### Price Corrections
+The other corrections were just as smooth — each one driven by a single email:
 
-"Los tres últimos productos deben ser 40 en vez de 30." (The last three products should be ₪40 instead of ₪30.)
-
-The agent opened each product in the Wix editor, updated the price from ₪30 to ₪40, saved, and replied with a summary. Three products, three price changes, one email.
-
-### The Rename
-
-"Cambié de opinión — las צלחות deben ser פלטות." (I changed my mind — the plates should be platters.)
-
-This one is fun because it mixes languages mid-sentence. She writes in Spanish but uses Hebrew for the product names because those are what they're called on the store. The agent understood perfectly — found the product called "צלחות," renamed it to "פלטות," and confirmed in Spanish.
-
-### Photo Replacements
-
-"La foto del cocodrilo está mal, usa esta." (The crocodile photo is wrong, use this one.) Attached: a new photo.
-
-The agent found the crocodile product, removed the old photo, uploaded the new one, and confirmed.
+- **Price corrections** — "The last three products should be ₪40 instead of ₪30." Three products updated, one reply.
+- **Rename** — "Cambié de opinión — las צלחות deben ser פלטות." Spanish and Hebrew mixed mid-sentence. The agent found the product, renamed it, confirmed in Spanish.
+- **Photo replacement** — "The crocodile photo is wrong, use this one." Old photo removed, new one uploaded, done.
 
 All of these corrections happened through email. She never opened Wix. She never logged into anything. She just sent emails in Spanish describing what she wanted, and it happened.
 
@@ -166,7 +154,7 @@ All of these corrections happened through email. She never opened Wix. She never
 
 ## 114 Products and Counting
 
-![Wix dashboard showing 114 products](/assets/ai-mother-in-law-store/linkedin-3-wix-products-hebrew.png)
+![Wix dashboard showing 114 products](/assets/ai-family-store/linkedin-3-wix-products.png)
 *114 products on the Wix Dashboard — all created, categorized, and priced by AI agents from Spanish emails*
 
 Over multiple sessions, the agents processed her emails and built out a full product catalog. The categories include:
@@ -181,7 +169,7 @@ Over multiple sessions, the agents processed her emails and built out a full pro
 
 Each product has a Hebrew name, Hebrew description, price in shekels, at least one photo, and the required legal disclaimers. The agent didn't just translate — it wrote product descriptions that sound like a real Hebrew e-commerce listing. "בובת ספוג קיפוד בעבודת יד — מתאימה לגני ילדים, פעוטונים ומתנות ליום הולדת" isn't something Google Translate would produce.
 
-![The live store at teivathadimion.com](/assets/ai-mother-in-law-store/linkedin-4-live-store-hebrew.png)
+![The live store at teivathadimion.com](/assets/ai-family-store/linkedin-4-live-store.png)
 *The live store — teivathadimion.com. All Hebrew, all created from Spanish emails. The customers have no idea.*
 
 ---
@@ -217,12 +205,6 @@ The trilingual pipeline isn't a technical demo. It's a real person running a rea
 **Don't let a human do a machine's work.**
 
 My family relative knows what she made, what it costs, and how to take a photo. Everything else is glue. And I'd rather have a machine handle the glue than spend my evenings uploading sponge crocodiles to Wix.
-
----
-
-## The Broader Lesson
-
-We talk a lot about AI agents replacing developers, writing code, reviewing PRs. And that's fine — those are valid use cases. But they're also the obvious ones. Every AI company is optimizing for developer productivity because developers are the ones building the tools.
 
 The real unlock is when AI agents help the people who would never, ever use developer tools. The people who communicate through email, think in a different language than the one their business operates in, and have deep domain expertise but zero interest in learning product management UIs.
 
