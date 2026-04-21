@@ -2,7 +2,7 @@
 layout: post
 title: "Safety Protocols Offline — Using AI Squads to Test the Things That Actually Break"
 date: 2026-04-20
-tags: [ai-agents, squad, github-copilot, testing, validation, e2e, star-trek, holodeck, adversarial-testing]
+tags: [ai-agents, squad, github-copilot, testing, validation, e2e, star-trek, holodeck, adversarial-testing, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
 series_part: 11
 image: /assets/scaling-ai-part11-holodeck-testing/holodeck-testing-hero.jpg
