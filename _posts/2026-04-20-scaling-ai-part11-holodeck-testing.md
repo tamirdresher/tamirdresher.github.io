@@ -88,16 +88,7 @@ git log --all --oneline
 
 Simple enough. But here's what's actually happening:
 
-```
-┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌─────────┐
-│   Template   │───▶│  Disposable  │───▶│ Squad Session │───▶│  Git State   │───▶│  PASS / │
-│    Change    │    │    Repo      │    │  (Real LLM)  │    │ Verification │    │  FAIL   │
-└──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘    └─────────┘
-       │                   │                   │                    │
-  You edit a          Fresh clone,         Copilot CLI          Check commits,
-  coordinator         no leftover         runs with the         file contents,
-  prompt              state               new template          branch state
-```
+![Testing Pipeline Flow — from template change through disposable repo, squad session, git state verification, to pass/fail verdict](/assets/scaling-ai-part11-holodeck-testing/testing-pipeline-flow.svg)
 
 A real agent is receiving the prompt, interpreting the coordinator template you just modified, making decisions, writing to files, committing to branches. You're not asserting that the template *parses correctly*. You're asserting that it *behaves correctly when an LLM reads it in a live session*.
 
@@ -204,18 +195,7 @@ You're not testing "does our code call the right endpoint." You're testing "does
 
 The thing that makes this real — as opposed to a clever idea I sketch on a Sunday and never revisit — is integrating the test crew into the same PR loop Ralph already runs.
 
-```
-┌───────────┐     ┌───────────┐     ┌───────────────┐     ┌───────────────┐     ┌──────────┐
-│  PR Opens │────▶│  Ralph    │────▶│  Spawn Test   │────▶│ Run Sessions  │────▶│ Verdict  │
-│ (staging) │     │  Detects  │     │  Crew Agent   │     │ + Collect     │     │ → PR     │
-│           │     │           │     │  (persona)    │     │ Evidence      │     │ Comment  │
-└───────────┘     └───────────┘     └───────────────┘     └───────────────┘     └──────────┘
-                                                                                     │
-                                                                              ┌──────┴──────┐
-                                                                              │             │
-                                                                          ✅ PASS       ❌ FAIL
-                                                                          PR ready      PR blocked
-```
+![PR Loop Integration — PR opens, Ralph detects, spawns test crew, runs sessions, verdict gates the PR](/assets/scaling-ai-part11-holodeck-testing/pr-loop-integration.svg)
 
 Ralph's watch loop picks up a PR opened against staging. It spawns a test crew agent with the persona configured for that area of the system. The test crew runs its sessions, captures evidence, writes a verdict to `.squad/test-results/`. The verdict gets posted as a PR comment. If the verdict is FAIL, the PR is blocked.
 
@@ -285,22 +265,9 @@ Here's something I didn't say in PR #1022, because I wasn't ready to say it yet:
 
 Specifically: **Squad HQ can spawn entire ephemeral squads.**
 
-```
-┌──────────┐     ┌─────────────────────────────────────────┐     ┌──────────┐
-│          │     │         EPHEMERAL RED TEAM               │     │          │
-│ Picard   │────▶│  ┌──────────┐ ┌──────────┐ ┌─────────┐ │────▶│ Results  │
-│ HQ       │     │  │ Security │ │ Race     │ │ Logic   │ │     │ commit + │
-│          │     │  │ Probe    │ │ Condition│ │ Abuser  │ │     │ verdict  │
-│ (spawns) │     │  │          │ │ Hunter   │ │         │ │     │          │
-│          │     │  └──────────┘ └──────────┘ └─────────┘ │     │ → PR     │
-│          │     │         ⏱️ 30 min time limit            │     │ comment  │
-│          │     └─────────────────────────────────────────┘     └──────────┘
-│          │                                                          │
-│          │◀─────────────────────────────────────────────────────────┘
-│          │     Read verdict, gate PR if CRITICAL
-└──────────┘
-                 After mission: agents dissolve ☠️
-```
+![Ephemeral Red Team — Picard HQ spawns security probe, race condition hunter, and logic abuser with 30 min limit, results gate the PR](/assets/scaling-ai-part11-holodeck-testing/ephemeral-red-team.svg)
+
+*After mission: agents dissolve* ☠️
 
 Not persistent agent teams. Temporary crews with a specific mission, a time limit, and instructions to find everything wrong with your system before it ships. They do the job. They dissolve. They leave evidence.
 
