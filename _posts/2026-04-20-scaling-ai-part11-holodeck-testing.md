@@ -86,7 +86,20 @@ cat .squad/agents/scribe/history.md
 git log --all --oneline
 ```
 
-Simple enough. But here's what's actually happening: a real agent is receiving the prompt, interpreting the coordinator template you just modified, making decisions, writing to files, committing to branches. You're not asserting that the template *parses correctly*. You're asserting that it *behaves correctly when an LLM reads it in a live session*.
+Simple enough. But here's what's actually happening:
+
+```
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌─────────┐
+│   Template   │───▶│  Disposable  │───▶│ Squad Session │───▶│  Git State   │───▶│  PASS / │
+│    Change    │    │    Repo      │    │  (Real LLM)  │    │ Verification │    │  FAIL   │
+└──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘    └─────────┘
+       │                   │                   │                    │
+  You edit a          Fresh clone,         Copilot CLI          Check commits,
+  coordinator         no leftover         runs with the         file contents,
+  prompt              state               new template          branch state
+```
+
+A real agent is receiving the prompt, interpreting the coordinator template you just modified, making decisions, writing to files, committing to branches. You're not asserting that the template *parses correctly*. You're asserting that it *behaves correctly when an LLM reads it in a live session*.
 
 That distinction is the whole game. Templates aren't code. The LLM is the interpreter. And the only way to test an interpreter is to run something through it.
 
@@ -191,6 +204,19 @@ You're not testing "does our code call the right endpoint." You're testing "does
 
 The thing that makes this real — as opposed to a clever idea I sketch on a Sunday and never revisit — is integrating the test crew into the same PR loop Ralph already runs.
 
+```
+┌───────────┐     ┌───────────┐     ┌───────────────┐     ┌───────────────┐     ┌──────────┐
+│  PR Opens │────▶│  Ralph    │────▶│  Spawn Test   │────▶│ Run Sessions  │────▶│ Verdict  │
+│ (staging) │     │  Detects  │     │  Crew Agent   │     │ + Collect     │     │ → PR     │
+│           │     │           │     │  (persona)    │     │ Evidence      │     │ Comment  │
+└───────────┘     └───────────┘     └───────────────┘     └───────────────┘     └──────────┘
+                                                                                     │
+                                                                              ┌──────┴──────┐
+                                                                              │             │
+                                                                          ✅ PASS       ❌ FAIL
+                                                                          PR ready      PR blocked
+```
+
 Ralph's watch loop picks up a PR opened against staging. It spawns a test crew agent with the persona configured for that area of the system. The test crew runs its sessions, captures evidence, writes a verdict to `.squad/test-results/`. The verdict gets posted as a PR comment. If the verdict is FAIL, the PR is blocked.
 
 The test crew becomes a required reviewer. Not a human reviewer. A *crew member who actually used the thing*.
@@ -258,6 +284,23 @@ I know which one I pick. 🟩⬛
 Here's something I didn't say in PR #1022, because I wasn't ready to say it yet: the test crew pattern isn't just for testing Squad templates. It's a general-purpose mechanism for spawning AI agents with adversarial intent — and once you see it that way, a whole category of scenarios opens up.
 
 Specifically: **Squad HQ can spawn entire ephemeral squads.**
+
+```
+┌──────────┐     ┌─────────────────────────────────────────┐     ┌──────────┐
+│          │     │         EPHEMERAL RED TEAM               │     │          │
+│ Picard   │────▶│  ┌──────────┐ ┌──────────┐ ┌─────────┐ │────▶│ Results  │
+│ HQ       │     │  │ Security │ │ Race     │ │ Logic   │ │     │ commit + │
+│          │     │  │ Probe    │ │ Condition│ │ Abuser  │ │     │ verdict  │
+│ (spawns) │     │  │          │ │ Hunter   │ │         │ │     │          │
+│          │     │  └──────────┘ └──────────┘ └─────────┘ │     │ → PR     │
+│          │     │         ⏱️ 30 min time limit            │     │ comment  │
+│          │     └─────────────────────────────────────────┘     └──────────┘
+│          │                                                          │
+│          │◀─────────────────────────────────────────────────────────┘
+│          │     Read verdict, gate PR if CRITICAL
+└──────────┘
+                 After mission: agents dissolve ☠️
+```
 
 Not persistent agent teams. Temporary crews with a specific mission, a time limit, and instructions to find everything wrong with your system before it ships. They do the job. They dissolve. They leave evidence.
 
