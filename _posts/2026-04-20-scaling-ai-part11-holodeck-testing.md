@@ -5,6 +5,7 @@ date: 2026-04-20
 tags: [ai-agents, squad, github-copilot, testing, validation, e2e, star-trek, holodeck, adversarial-testing]
 series: "Scaling AI-Native Software Engineering"
 series_part: 11
+image: /assets/scaling-ai-part11-holodeck-testing/holodeck-testing-hero.jpg
 ---
 
 > *"Computer, in the Holmesian style, create an adversary capable of defeating Data."*
@@ -13,7 +14,9 @@ series_part: 11
 > *"Program testing can be used to show the presence of bugs, but never to show their absence."*
 > — Edsger W. Dijkstra, "Notes on Structured Programming" (1970)
 
-[Part 7b](/blog/2026/03/23/scaling-ai-part7b-git-notes) tackled the state problem — orphan branches, git notes, the whole elegant mess of storing squad memory without polluting your commit history. The system was working. The state persisted. Everything was fine.
+![Holodeck Testing — AI agents validating your system before production does](/assets/scaling-ai-part11-holodeck-testing/holodeck-testing-hero.jpg)
+
+[Part 7b](/blog/2026/03/23/scaling-ai-part7b-git-notes) tackledthe state problem — orphan branches, git notes, the whole elegant mess of storing squad memory without polluting your commit history. The system was working. The state persisted. Everything was fine.
 
 And then I had to change a coordinator template.
 
