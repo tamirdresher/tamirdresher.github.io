@@ -16,7 +16,7 @@ image: /assets/scaling-ai-part11-holodeck-testing/holodeck-testing-hero.jpg
 
 ![Holodeck Testing — AI agents validating your system before production does](/assets/scaling-ai-part11-holodeck-testing/holodeck-testing-hero.jpg)
 
-[Part 7b](/blog/2026/03/23/scaling-ai-part7b-git-notes) tackledthe state problem — orphan branches, git notes, the whole elegant mess of storing squad memory without polluting your commit history. The system was working. The state persisted. Everything was fine.
+[Part 7b](/blog/2026/03/23/scaling-ai-part7b-git-notes) tackled the state problem — orphan branches, git notes, the whole elegant mess of storing squad memory without polluting your commit history. The system was working. The state persisted. Everything was fine.
 
 And then I had to change a coordinator template.
 
