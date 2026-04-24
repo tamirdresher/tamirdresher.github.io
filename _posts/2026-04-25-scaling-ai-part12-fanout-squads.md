@@ -5,13 +5,13 @@ date: 2026-04-25
 tags: [ai-agents, squad, github-copilot, fan-out, dynamic-squads, distributed-systems, star-trek]
 series: "Scaling AI-Native Software Engineering"
 series_part: 12
-image: /assets/scaling-ai-part12-fanout-squads/fanout-squads-hero.jpg
+image: /assets/scaling-ai-part12-fanout-squads/fanout-squads-hero.png
 ---
 
 > *"Nine women can't make a baby in one month."*
 > — Fred Brooks, *The Mythical Man-Month*
 
-![Fan-out squads hero image](/assets/scaling-ai-part12-fanout-squads/fanout-squads-hero.jpg)
+![Fan-out squads hero image](/assets/scaling-ai-part12-fanout-squads/fanout-squads-hero.png)
 
 In Part 11, I showed you how to build a Holodeck — a testing environment where AI agents play adversarial personas and tell you what breaks. By the end of that post, I teased what comes next: squads that don't just *test* things, but squads that *spawn other squads*.
 
