@@ -11,8 +11,6 @@ image: /assets/scaling-ai-part12-fanout-squads/fanout-squads-hero.png
 > *"Nine women can't make a baby in one month."*
 > — Fred Brooks, *The Mythical Man-Month*
 
-![Fan-out squads hero image](/assets/scaling-ai-part12-fanout-squads/fanout-squads-hero.png)
-
 In Part 11, I showed you how to build a Holodeck — a testing environment where AI agents play adversarial personas and tell you what breaks. By the end of that post, I teased what comes next: squads that don't just *test* things, but squads that *spawn other squads*.
 
 This post isn't a retrospective on something I built. It's an attempt to formalize a pattern I keep seeing in conversations — one that I think changes how we think about multi-agent systems entirely.
