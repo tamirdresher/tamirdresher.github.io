@@ -2,7 +2,7 @@
 layout: post
 title: "Call to Arms — When Squads Spawn Squads"
 date: 2026-04-25
-tags: [ai-agents, squad, github-copilot, fan-out, dynamic-squads, distributed-systems, star-trek]
+tags: [ai-agents, squad, github-copilot, fan-out, dynamic-squads, distributed-systems, star-trek, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
 series_part: 12
 image: /assets/scaling-ai-part12-fanout-squads/fanout-squads-hero.png
