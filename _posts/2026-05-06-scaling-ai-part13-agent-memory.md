@@ -5,6 +5,7 @@ date: 2026-05-06
 tags: [ai-agents, squad, agent-memory, software-architecture, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
 series_part: 13
+image: /assets/scaling-ai-part13-agent-memory/agent-memory-hero.png
 ---
 
 
