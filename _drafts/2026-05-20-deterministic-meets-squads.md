@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "When Boring Meets Brilliant — Combining Deterministic Workflows with AI Squads"
+title: "Make It So — But Let the Computer Handle the Math"
 date: 2026-05-20
 tags: [durable-task-scheduler, ai-agents, squad, microsoft-agent-framework, aspire, workflows, distributed-systems, dotnet, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
@@ -8,261 +8,240 @@ series_part: 14
 image: /assets/deterministic-meets-squads/aspire-dashboard-squad.png
 ---
 
-![The Aspire dashboard showing Squad, Foundry, and the demo running healthy side-by-side](/assets/deterministic-meets-squads/aspire-dashboard-squad.png)
+![The Aspire dashboard showing Squad, Foundry, and the demo running healthy](/assets/deterministic-meets-squads/aspire-dashboard-squad.png)
 
-I wrote a post about the Durable Task Scheduler three months ago. Stick with me — because I left something out.
+*"Computer, what is the current stardate?"* — Every Starfleet officer, not because the ship's computer is smart, but because it's fast, exact, and it has never in the history of the franchise said "well, I think the answer is probably around stardate 47634.44 but I'm not entirely sure."
 
-It wasn't intentional. I was so deep in the history of it (2017 Azure Durable Functions, then years at Payoneer debugging Netflix Conductor at scale, then the slow realization that the technology I'd written about in 2017 had quietly grown up) that by the time I got to the end, I had one paragraph about AI agents. One paragraph. For what is honestly the most interesting part.
+Nobody asks the ship's computer whether to negotiate with the Romulans. That's Picard's job. They ask it for precise data — sensor readings, crew locations, power consumption, warp trajectory. Sub-second. The same answer every time. No tokens burned. No rate limits hit.
 
-The paragraph said something like: "and by the way, the Microsoft Agent Framework can use DTS as a backend for durable agent workflows." I meant it as a teaser. What I should have written is: this is *the* unlock. This is why all of it matters.
+Here's the question I keep hearing from developers building AI systems: **where does the line go between what the AI does and what code does — and how do you actually wire them together?**
 
-So here's the follow-up I owe you.
-
-* * *
-
-## Two Camps, One Problem
-
-Here's the tension I kept bumping into over the last year.
-
-On one side: **deterministic workflows**. Durable Task Scheduler, Conductor, Temporal, Step Functions — take your pick. Same input, same output. Every time. You get checkpointing, idempotency, fan-out, human-in-the-loop pauses, observability dashboards, and horizontal scale across services. You know exactly what ran, when it ran, and what it returned. If it crashes, it picks up where it left off. It's boring in the best possible way. I spent years at Payoneer building on top of Conductor, and *boring* is a feature. Boring means your on-call doesn't get paged at 2am because the payment workflow randomly forgot where it was.
-
-On the other side: **non-deterministic AI agents**. Squads, LLM-driven reasoning, multi-agent systems. Brilliant on open-ended judgment work. Feed a Squad agent a production incident report and it'll reason over the evidence, form hypotheses, and come back with a root-cause diagnosis that would have taken your on-call engineer 45 minutes of log spelunking to assemble. That's genuinely impressive. But: it's non-deterministic. Two identical inputs might produce subtly different outputs. Retrying is expensive (you're burning LLM tokens and time). Hallucinations are real. You can't just replay a failed Squad step the same way you replay a failed database write.
-
-For a while, the industry seemed to think you had to *choose*. Either you build a reliable deterministic workflow and accept that it can't reason, or you build an AI system that can reason and accept that it's a reliability wildcard.
-
-That framing is wrong.
+That question has a good answer. This post is it.
 
 * * *
 
-## The Composition Pattern
+## The False Choice
 
-You don't choose. You compose.
+For a while, the conversation in our industry seemed to frame this as a binary. Either you build a reliable, deterministic system — clear logic, predictable outputs, boring in all the right ways. Or you build an AI-powered system that reasons and adapts and handles messy real-world inputs. Pick one.
 
-Here's the unlock: **the non-determinism is sandboxed inside one workflow step**. The workflow itself stays deterministic, observable, and replayable. Each step in the workflow can be:
+The implication was that these are mutually exclusive. Smart systems are unreliable. Reliable systems are dumb.
 
-- A **deterministic activity** — a DB write, an API call, a schema validation, a correlation check. Runs the same way every time. No LLM involved. Zero token cost.
-- OR an **intelligent Squad step** — a multi-agent team that reasons over structured input, may call tools, may consult sub-agents, and produces structured output.
+The Enterprise runs on neither of those extremes, and it's the most capable ship in the quadrant. Picard makes the call. The ship's computer runs the math. Engineering follows procedures. Worf handles threat assessment. The crew handles novel situations; the automated systems handle the routine. Each tool gets used for what it's actually good at. Nobody asks the computer whether to violate the Prime Directive, and Picard never personally calculates the warp trajectory.
 
-The durable engine doesn't care which kind of step it is. It checkpoints *after* each one. It retries on failure. It survives crashes. And the *output* of a Squad step — a structured verdict, a triage decision, a generated artifact — becomes the *deterministic input* to the next step.
+**That division of labor is the architecture this post is about.** Not AI *or* code, but AI *and* code, composed deliberately.
 
-![Diagram: The Composition Pattern](/assets/deterministic-meets-squads/diagram-1-composition-pattern.png)
-<!-- DIAGRAM-BRIEF: Horizontal pipeline showing: [Incident Input] → dashed box labeled "🤖 Squad Triage (non-deterministic)" → solid box labeled "⚙️ Correlate (deterministic)" → dashed box labeled "🤖 Squad Diagnose (non-deterministic)" → [Action]. Above each step, a checkpoint icon (floppy disk or similar) with the label "durable engine saves state." Below each box, show the C# type flowing between steps: IncidentInput → IncidentTriage → IncidentCorrelation → IncidentDiagnosis. Use dashed borders for non-deterministic steps and solid borders for deterministic ones. Color: dashed = warm purple, solid = teal. Overall horizontal flow, clean, no clutter. -->
+* * *
 
-Let me show you exactly what this looks like in code.
+## What AI Is Actually Good At
 
-I've been building a demo that runs Squad agents as participants in the Microsoft Agent Framework's workflow engine. The example that really nails the pattern is an **incident-response workflow** with three chained bindings:
+Some problems don't have a deterministic answer. You can't write a function for them because the inputs are messy, the problem space is open-ended, and the right answer depends on judgment, context, and reasoning — things no lookup table can give you.
 
-**Step 1 — Squad Triage (non-deterministic):**
+- "Read this production incident report and tell me what's likely wrong."
+- "Here are 20 customer messages. Which ones are complaining about the same underlying issue?"
+- "This contract changed three ways. Does any of it affect our SLA obligations?"
+
+These are "Number One, what do you make of this?" problems. Riker doesn't compute an answer. He evaluates the situation, draws on experience, considers context you didn't explicitly give him, and gives you his judgment. An LLM does the same thing.
+
+### When to reach for AI
+
+AI steps earn their cost when the work requires:
+
+- **Open-ended reasoning** over unstructured or semi-structured input
+- **Hypothesis formation** when you don't have a lookup table
+- **Adaptation to novel situations** that no hardcoded rule would have anticipated
+- Producing a **structured verdict** — triage result, diagnosis, classification, risk assessment — from fuzzy evidence
+
+That last bullet matters: the output of your AI step should be *typed and structured*. Define the output type — `IncidentTriage`, `ComplianceVerdict`, `ClassificationResult` — and have the AI produce it. That structure is what the downstream deterministic step consumes. If your AI step is producing prose and your next step is parsing it for keywords, the interface is wrong.
+
+* * *
+
+## What Code Is Actually Good At
+
+*"Computer, locate Commander Riker."*
+
+Sub-second. Deterministic. The same answer every time. Zero tokens. No rate-limit exposure. No possibility that the answer comes back as "Lieutenant Commander Riker is probably in Engineering, I think."
+
+### When to reach for code
+
+Deterministic C# earns its place when:
+
+- The logic is a **database lookup, API call, schema validation, or idempotency check**
+- You need the step to be **exactly reproducible on retry** — same input, same output, always
+- The logic is something you could unit-test
+- The output will be **cited in a compliance audit**
+- You can't afford a 500ms–3 second latency hit on what is effectively a glorified `if` statement
+
+The deterministic step is not just a cost-saver. It's a guarantee. "We ran the compliance check deterministically and it passed" means something. "The AI said it looked fine" means considerably less when a regulator asks.
+
+* * *
+
+## Why Not Just Run Everything Through the AI?
+
+Good question. Let's do the math.
+
+**Tokens cost money.** Every LLM step burns input tokens (your prompt, the context you pass) plus output tokens (everything the model generates back). If you have a 7-step workflow and 5 of those steps could be plain C# — data lookups, validation, correlation — but you route them all through an LLM anyway, you're paying 5× for work that costs single-digit milliseconds in code.
+
+**Latency stacks fast.** A single LLM call is typically 500ms to 3 seconds. Five sequential LLM calls = 2.5 to 15 seconds of coordination overhead before any real work happens. A deterministic C# step runs in under 10 milliseconds. Stack enough unnecessary AI steps and you've built a slow pipeline for reasons that have nothing to do with the complexity of the problem.
+
+**Rate limits are real.** Every provider enforces TPM (tokens per minute) and RPM (requests per minute) caps. In a hot workflow with many concurrent instances, unnecessary LLM calls eat into those caps fast. When you hit a 429, your retry logic re-spends *both* time and tokens. Unnecessary LLM steps are rate-limit landmines buried in your workflow.
+
+**Determinism matters for correctness.** "Look up the customer's tier" is a database query. The answer is Gold, Silver, or Bronze — it's in the database, it's exact, and it's free. Routing that through an LLM introduces the possibility of a wrong answer where the right answer was always deterministic. You've made the system less correct and more expensive at the same time.
+
+**Auditability is non-negotiable in some domains.** A regulator asking "why did your system flag this transaction for review?" deserves a traceable answer with inputs, outputs, and a deterministic function you can point to. "The LLM decided" is not an acceptable answer in a compliance review.
+
+Here's the concrete number: if your workflow runs **10,000 times a day** and you replace 4 unnecessary LLM steps with C# functions, you've eliminated **40,000 LLM calls**. That's your rate-limit headroom, your latency budget, and a non-trivial line item on your inference bill — every single day.
+
+Use AI for judgment. Use code for everything else.
+
+* * *
+
+## The Pattern: The Sandwich
+
+The pattern is simple enough to show before any framework code:
 
 ```csharp
-var triageBinding = new FunctionExecutor<IncidentInput, IncidentTriage>(
-    "triage",
-    async (incident, context, ct) =>
-    {
-        var triageText = await DemoRuntime.RunAgentAsync(
-            squad,
-            BuildTriagePrompt(incident),
-            ct);
+// Step 1 — let the AI read the incident and tell us what kind of problem this is
+TriageVerdict verdict = await squad.RunAsync(incidentReport);
 
-        var triage = ParseTriage(triageText, incident);
-        latestTriage = triage;
+// Step 2 — plain old C#. No AI. Deterministic. Free.
+// Correlate the triage against recent logs, rank hypotheses by confidence.
+EvidenceBundle evidence = CorrelateEvidence(verdict, recentLogs);
 
-        await context.YieldOutputAsync(triage, ct);
-        return triage;
-    }).BindExecutor();
+// Step 3 — let the AI reason over the *pre-ranked* evidence, not the raw noise
+DiagnosisResult diagnosis = await squad.RunAsync(BuildDiagnosisPrompt(evidence));
 ```
 
-A Squad agent reads the raw incident input, reasons over it, and outputs a structured `IncidentTriage`: severity, affected components, candidate hypotheses. Non-deterministic. The Squad is doing real reasoning here.
+AI call → C# function → AI call. That's the sandwich.
 
-**Step 2 — Deterministic Correlation (no LLM):**
+Notice what the middle step does. It doesn't just save money and time — it *improves* the quality of step 3. Instead of feeding the AI a raw dump of logs and hoping it picks out the relevant signals, the deterministic step does the bookkeeping: correlate evidence, compute confidence scores, rank hypotheses, trim noise. The AI in step 3 receives a curated, pre-ranked context. Less noise, better judgment.
 
-```csharp
-var correlateBinding = new FunctionExecutor<IncidentTriage, IncidentCorrelation>(
-    "correlate",
-    (triage, context, ct) =>
-    {
-        var correlation = new IncidentCorrelation(
-            [
-                new RootCauseHypothesis(
-                    1,
-                    "Pricing-cache TTL reduction amplified cache misses and exposed Redis shard-2 latency.",
-                    0.72,
-                    ["log-2", "log-3", "change-1", "change-3"]),
-                new RootCauseHypothesis(
-                    2,
-                    "Redis shard-2 replacement introduced a hot shard or connection instability.",
-                    0.21,
-                    ["log-3", "change-3"]),
-                // ...
-            ],
-            ["log-2", "log-3", "change-1", "change-3"]);
+![Diagram: The AI / Deterministic / AI sandwich — typed data flows between steps](/assets/deterministic-meets-squads/diagram-1-composition-pattern.png)
 
-        return correlation;
-    }).BindExecutor();
-```
-
-Pure code. Takes the `IncidentTriage`, runs deterministic correlation against recent incident evidence — computes feature vectors, ranks hypotheses by confidence, decides which evidence is relevant. Not a single LLM call. Zero tokens. Same input will always produce the same output.
-
-**Step 3 — Squad Diagnosis (non-deterministic, but with correlated context):**
-
-```csharp
-var diagnoseBinding = new FunctionExecutor<IncidentCorrelation, IncidentDiagnosis>(
-    "diagnose",
-    async (correlation, context, ct) =>
-    {
-        var triage = latestTriage ?? throw new InvalidOperationException(
-            "Triage must complete before diagnosis.");
-
-        var diagnosisText = await DemoRuntime.RunAgentAsync(
-            squad,
-            BuildDiagnosisPrompt(input, triage, correlation),
-            ct);
-
-        var diagnosis = ParseDiagnosis(diagnosisText, triage, correlation);
-        await context.YieldOutputAsync(diagnosis, ct);
-        return diagnosis;
-    }).BindExecutor();
-```
-
-Another Squad agent. But now it's not reasoning from scratch over raw logs — it's reasoning over *pre-correlated, ranked, high-confidence evidence*. The deterministic step did the bookkeeping work so the non-deterministic step can focus on judgment. That's a much better use of LLM reasoning capacity.
-
-And the workflow composition:
-
-```csharp
-var workflow = new WorkflowBuilder(triageBinding)
-    .WithName("incident-analysis-brain")
-    .WithDescription("Synthetic incident brain: Squad triage -> deterministic correlate -> Squad diagnose.")
-    .AddEdge(triageBinding, correlateBinding)
-    .AddEdge(correlateBinding, diagnoseBinding)
-    .WithOutputFrom(triageBinding, correlateBinding, diagnoseBinding)
-    .Build();
-```
-
-That's it. Three steps. Two Squad (non-det), one deterministic. Chained in sequence. The whole thing runs as a single observable workflow.
-
-(You can see the full `IncidentExample.cs` in [the demo repo](https://github.com/tamirdresher_microsoft/squad-agent-framework-demo).)
+The dashed boxes are AI steps — non-deterministic, expensive when misused, powerful when used correctly. The solid box is deterministic C#. Data types flow between them: `IncidentInput` → `TriageVerdict` → `EvidenceBundle` → `DiagnosisResult`. That's the entire pattern.
 
 * * *
 
-## Why The Workflow Stays Deterministic (Even When Steps Aren't)
+## The Same Demo, In Real Code
 
-I know what you're thinking. "Tamir, if two of your three steps are non-deterministic, how do you call this a deterministic workflow?"
+The [squad-agent-framework-demo](https://github.com/tamirdresher_microsoft/squad-agent-framework-demo) implements this as an incident-response workflow. Three steps. Two Squad. One deterministic. Here's the conceptual shape from `IncidentExample.cs`:
 
-Fair. Let me be precise.
+### Step 1 — Squad Triage (non-deterministic)
 
-The *workflow engine* is deterministic. After every step — Squad or otherwise — the engine checkpoints the output. If the process crashes after step 1 completes, it doesn't re-run step 1. It reads the checkpointed `IncidentTriage` and picks up at step 2. If step 3 fails with a transient error and needs to be retried, it re-runs step 3 with the *exact same* `IncidentCorrelation` input that it received the first time. The non-determinism is real, but it's *bounded*. Each retry of a Squad step is isolated to that step. The rest of the workflow is untouched.
+A Squad agent reads the raw incident report and produces a structured `IncidentTriage`. Which components are affected? What are the candidate hypotheses? The AI is doing what it's good at: reasoning over unstructured incident evidence with no predefined answer key.
 
-This is the crucial difference between a Squad step failing inside a workflow and a Squad agent failing in isolation. In isolation, you've lost everything. In a workflow, you've lost at most one step, and the engine knows exactly where to resume.
+### Step 2 — Deterministic Correlation (no LLM)
 
-![Diagram: Why the Workflow Stays Deterministic](/assets/deterministic-meets-squads/diagram-2-determinism-spine.png)
-<!-- DIAGRAM-BRIEF: A horizontal row of 5 workflow "boxes" (steps), labeled alternately det/non-det. A horizontal bar running the full width under all boxes, labeled "Checkpointed by the durable engine after every step." Each box has a small checkpoint icon on its right edge. Show one box (the non-det Squad step) with a lightning bolt indicating a failure/retry. Arrow shows it re-runs from the checkpoint boundary, NOT from the beginning of the workflow. The overall visual message: the spine is deterministic even if individual boxes are not. Color scheme: deterministic boxes in teal, non-deterministic in warm purple, checkpoint bar in gray. Clean, flat design. -->
+Pure C#. Takes the `IncidentTriage` and runs a correlation against the known evidence set — ranks root-cause hypotheses by confidence (0.72 for the most likely, 0.21 for the second, 0.07 for the third), identifies which log lines are relevant, packages everything into an `IncidentCorrelation`. No LLM involved. No tokens. Same input always produces the same output.
 
-There's a reason DTS charges by step completion, not by total tokens or wall-clock time. Every completed step is a checkpoint. Every checkpoint is a guarantee. That's the mental model.
+### Step 3 — Squad Diagnosis (non-deterministic, but with curated context)
 
-* * *
-
-## Across Services, At Scale
-
-Here's where things get interesting for real production systems.
-
-Everything I've described so far runs in-process in the demo — `InProcessExecution.Default.RunAsync(...)` — which is intentional for a demo. But the same workflow composition code works with the Durable Task Scheduler as the backend. Swap one line of configuration, and your workflow now:
-
-- Runs **across services** — the Correlate step can be hosted in Service B, the Diagnose Squad can be hosted in Service C, and the orchestration manages the whole thing from a managed DTS backend
-- **Survives process restarts, deployments, even region failovers** — state is externalized to DTS, not held in memory
-- **Scales horizontally** — you can run dozens of concurrent incident-analysis workflows, each checkpointed independently
-- Is **observable in the DTS dashboard** — you can see every running workflow, every step, its status, its input/output history
-
-Think about the architectural implication. Your order service emits a fulfillment event. DTS picks it up, kicks off an orchestration. Step 1: a deterministic enrichment task in the fulfillment service adds shipping address and inventory data. Step 2: a Squad agent in a separate service reasons over the enriched order and decides whether it triggers any compliance flags. Step 3: back in the order service, a deterministic activity writes the compliance verdict to the database and sends a webhook. Three services, two deterministic steps, one non-deterministic Squad step. One workflow. One checkpoint log. One observability dashboard.
-
-![Diagram: Cross-Service Fan-Out at Scale](/assets/deterministic-meets-squads/diagram-3-cross-service.png)
-<!-- DIAGRAM-BRIEF: Three service boxes arranged in a row: "Service A (Order API)", "Service B (Fulfillment)", "Service C (Compliance Squad)". Below all three: a horizontal "DTS Orchestration" bar with a checkpoint at each step transition. Flow: Service A emits event → DTS starts workflow → Step 1 (deterministic enrichment in Service B) → Step 2 (Squad reasoning in Service C) → Step 3 (deterministic DB write back in Service A). Arrows connecting the steps pass through the DTS bar, indicating the durable engine holds state across all service boundaries. Show the DTS dashboard icon (optional) above the orchestration bar. Clean, flat design. -->
-
-The Microsoft [Bulletproof Agents announcement](https://techcommunity.microsoft.com/blog/appsonazureblog/bulletproof-agents-with-the-durable-task-extension-for-microsoft-agent-framework/4467122) covers the production story for this. Worth reading if you want the full picture of how DTS plugs into the Microsoft Agent Framework in production.
-
-* * *
-
-## Why The Demo Uses Aspire
-
-The demo runs with `dotnet run --project Squad.AgentFramework.Demo.AppHost`, and Aspire handles the rest. Here's the AppHost:
+Another Squad agent. But now it isn't reasoning from scratch over a firehose of raw logs — it's reasoning over pre-ranked, pre-correlated, high-confidence evidence. The deterministic step did the bookkeeping so the AI step can focus on judgment.
 
 ```csharp
-var foundry = builder.AddAzureAIFoundry("foundry")
-    .RunAsFoundryLocal();
-
-var chat = foundry.AddDeployment("chat", "phi-3.5-mini", "1", "Microsoft");
-
-builder.AddProject<Projects.Squad_AgentFramework_Demo>("squad-agent-framework-demo")
-    .WithEnvironment("SQUAD_AF_PROVIDER", "foundry-local")
-    .WithReference(chat)
-    .WaitFor(chat);
+// The shape of the three-step workflow — simplified to show the idea
+var triage      = await squad.RunTriageAsync(incidentInput);          // AI step
+var correlation = CorrelateEvidence(triage, incidentEvidence);        // Deterministic C#
+var diagnosis   = await squad.RunDiagnosisAsync(triage, correlation); // AI step
 ```
 
-Three lines and Aspire has wired up a local Foundry LLM, configured the chat connection, and told the demo project to wait until the model is ready before starting. The demo app gets `ConnectionStrings__chat` injected automatically. You don't set `SQUAD_AF_ENDPOINT`, `SQUAD_AF_DEPLOYMENT`, or `SQUAD_AF_API_KEY` anywhere. Aspire injects the contract; the app reads it.
+The full source — including the `FunctionExecutor<>` wrappers that wire each step into the Microsoft Agent Framework workflow engine — is in the demo repo. The wrappers are framework plumbing (think of them as the wiring harness, not the engine). The shape above is what matters.
 
-I know this seems like a small thing. It isn't. In a system where you're composing deterministic and non-deterministic steps, the *configuration* of the non-deterministic side (which LLM provider? which model? which endpoint?) is exactly the kind of detail that becomes friction in production. When that friction is handled by the orchestration layer — which Aspire effectively is — you can focus on the composition instead of the plumbing.
+Running this under Aspire gives you visibility into everything in real time. The AppHost wires up a local Foundry LLM and injects the connection into the demo project automatically — no manual `SQUAD_AF_ENDPOINT`, `SQUAD_AF_DEPLOYMENT`, or `SQUAD_AF_API_KEY` needed.
 
-![Aspire dashboard showing Squad, Foundry, and the demo all running healthy](/assets/deterministic-meets-squads/aspire-resources.png)
+![The Aspire dashboard — Squad, Foundry, and the demo all healthy and connected](/assets/deterministic-meets-squads/aspire-dashboard-squad.png)
 
-The Aspire dashboard shows what's running. You can see `foundry`, `chat`, and `squad-agent-framework-demo` all in a healthy state. That's the full stack: LLM backend, model deployment, and your workflow host — all orchestrated, all observable, all wired together automatically.
+You get `foundry`, `chat`, and `squad-agent-framework-demo` all healthy in one dashboard. LLM backend, model deployment, and your workflow host — orchestrated, wired, observable.
 
-And when you want to watch what's actually happening during a workflow run, the Console logs tab shows you the Copilot SDK session events in real time:
+The console logs show the non-deterministic side in action:
 
-![Aspire Console logs showing live Copilot SDK session events from the Foundry Local LLM call](/assets/deterministic-meets-squads/aspire-traces-detail.png)
+![Aspire console trace — live Copilot SDK session events from the Squad agent reasoning over incident evidence](/assets/deterministic-meets-squads/aspire-traces-detail.png)
 
-Those are real trace lines from `TraceCopilotEvent` — you can see the Squad agent's session lifecycle as it reasons over the incident evidence. That observability is free when you run under Aspire. It's not wired up to OpenTelemetry OTLP (yet — that's a separate topic), but for local development, it's exactly what you need to understand what your non-deterministic steps are actually doing.
+Those are real `TraceCopilotEvent` lines — the Squad agent's session lifecycle as it reasons over the incident. That's your window into the non-deterministic step while everything around it stays fully observable.
+
+And a look at all running resources:
+
+![Aspire resources view — foundry, chat model, and demo project all running healthy](/assets/deterministic-meets-squads/aspire-resources.png)
 
 * * *
 
-## The Cheat Sheet
+## What If the Process Crashes Mid-Sandwich?
 
-I know some of you are already building workflows and wondering where the line is. Here's how I think about it:
+Good news: the sandwich is durable.
 
-### Make a step deterministic when:
+The Microsoft Agent Framework workflow engine checkpoints after every step. If the process crashes between step 2 and step 3, it doesn't re-run step 1 or step 2. It reads the checkpointed output of step 2 and resumes at step 3. The non-determinism is real, but it's *bounded* — each Squad step can be retried in isolation, with the same input it received the first time. The rest of the workflow is untouched.
 
-- The logic is pure bookkeeping: DB writes, API calls, schema validation, idempotency checks
-- You need the step to be **exactly reproducible** on retry with zero token cost
+This is the critical difference between a Squad step failing inside a workflow versus failing in isolation. In isolation: you've lost everything and don't know where you were. Inside a workflow: you've lost at most one step, the engine knows exactly where to resume, and the retry is scoped precisely.
+
+The [Durable Task Scheduler](https://www.tamirdresher.com/blog/2026/04/07/durable-task-scheduler) is the backend that makes this work. It externalizes workflow state, so process restarts, deployments, and transient failures don't lose progress. The Microsoft devblogs post on [Durable Workflows in Microsoft Agent Framework](https://devblogs.microsoft.com/dotnet/durable-workflows-in-microsoft-agent-framework/) covers the executor model, workflow builder, and replay semantics in full detail — highly recommend reading it alongside this post.
+
+![Diagram: The deterministic checkpoint spine — retry boundaries are per-step, not per-workflow](/assets/deterministic-meets-squads/diagram-2-determinism-spine.png)
+
+Starfleet probably learned this after the third time the ship's computer lost a critical process mid-execution and had to restart the entire warp diagnostic from scratch. Checkpoints exist for a reason.
+
+* * *
+
+## What If the Workflow Spans Services?
+
+The same pattern works when your steps live in different services.
+
+When you swap the in-process runner for DTS as the backend, workflow state is externalized to the DTS store — not held in memory. The triage step can run in Service A. The deterministic correlation step can run in Service B. The diagnosis step can run in Service C. The DTS orchestration holds state across all service boundaries, checkpointing at every transition.
+
+The practical shape: your order service emits a fulfillment event. DTS kicks off a workflow. A deterministic enrichment step in the fulfillment service adds shipping data. A Squad agent in a compliance service reasons over the enriched order. A deterministic step in the order service writes the verdict to the database and sends a webhook. Three services. One workflow. One checkpoint log. One Aspire dashboard showing every step's status.
+
+![Diagram: Cross-service workflow — three services connected through the DTS orchestration spine](/assets/deterministic-meets-squads/diagram-3-cross-service.png)
+
+The upgrade path from the in-process demo to a full distributed DTS-backed deployment is one configuration change. The [Bulletproof Agents announcement](https://techcommunity.microsoft.com/blog/appsonazureblog/bulletproof-agents-with-the-durable-task-extension-for-microsoft-agent-framework/4467122) covers the production story.
+
+* * *
+
+## Where the Line Actually Goes — A Cheat Sheet
+
+Here's the decision rule for any individual step:
+
+**Route it to code when:**
+
+- It's a lookup, API call, schema validation, or idempotency check
 - The input-to-output mapping is a function you could unit-test
-- Performance and cost predictability matter (deterministic steps are cheap and fast)
+- The output needs to be cited in a compliance audit
+- It touches money, security decisions, or authorization logic
+- You need the output to be *identical* on retry
 
-### Make a step a Squad when:
+**Route it to AI when:**
 
-- The work requires **open-ended judgment** — triage, diagnosis, risk assessment, anomaly classification
-- The input is unstructured or semi-structured (natural language, log text, documents)
-- The output is a **verdict or hypothesis** that a downstream deterministic step will act on
-- You need the step to **adapt to novel inputs** that no hardcoded rule could handle
+- The input is unstructured or the problem requires open-ended judgment
+- You need it to adapt to novel situations no rule would handle
+- You're producing a structured verdict that downstream code will act on
+- The question is "what does this mean?" not "what is this equal to?"
 
-The key principle: **Squad steps produce structured output that deterministic steps consume**. If your Squad step is producing unstructured free text that the next step has to parse, you're doing it wrong. Define the output type (`IncidentTriage`, `ComplianceVerdict`, `RootCauseHypothesis`) and have the Squad step produce it. Then the deterministic step can process it reliably.
+**Wrap AI steps in deterministic guard rails when:**
 
-* * *
+- The output drives a money transfer, a security decision, or a compliance action
+- You need to produce an audit trail
+- You need to bound the cost of retries
 
-## What I Wish I'd Said In The DTS Post
-
-[When I wrote about the Durable Task Scheduler](/blog/2026/04/07/durable-task-scheduler), I focused mostly on the mechanics of durable workflows — checkpointing, the replay model, the comparison with Hangfire and Conductor, the "use DTS when" cheat sheet. All of that stands.
-
-But I ended the post with one paragraph about AI agents and then moved on. What I should have said is: the reason DTS matters *for AI systems* isn't just that it gives your agents durable state. It's that it gives you a **composition model** where you can mix agents and code, where the non-determinism is bounded and auditable, where you get production-grade reliability without sacrificing the judgment capabilities of an intelligent Squad.
-
-The fan-out patterns from [Part 12 of this series](/blog/2026/04/25/scaling-ai-part12-fanout-squads) apply here too. You can fan out to *multiple* Squad teams in parallel, have each run its own non-deterministic reasoning, and then aggregate their outputs in a deterministic step. The durable engine handles the fan-out, the timeout, the "wait for all of them" join. You just write the composition.
-
-And yes, this scales. The same code that runs in-process in the demo runs against DTS in production. The upgrade path is one config change.
+The core principle: **AI steps produce structured output that deterministic steps consume**. The handoff is typed, explicit, and deterministic on the boundary. The non-determinism stays inside the box, not on the wire.
 
 * * *
 
 ## The Bottom Line
 
-If you're building AI systems and you're not thinking about workflow composition, you're going to hit the reliability wall. Maybe not in the demo. Probably in the first production incident.
+So, where does the line go?
 
-The pattern is this: **use deterministic steps where logic is a function, use Squad steps where logic is judgment, and use a durable workflow engine to compose them both**. DTS is the engine. Microsoft Agent Framework is the composition model. Aspire is the dev-time orchestration. And `IncidentExample.cs` is the template.
+The line goes wherever the *nature of the problem* tells you it should. If the problem is a judgment call — open-ended, fuzzy, novel — that's an AI step. If the problem is a function — exact, repeatable, auditable — that's code. The durable workflow engine is the composition layer that lets you mix them freely, checkpoint after each one, and recover gracefully from failures on either side.
 
-Start there. Build a three-step workflow. Make two steps deterministic, one a Squad. Run it. Watch the Aspire dashboard. Then scale it up.
+The Enterprise is extraordinarily effective *because of* its division of labor, not despite it. The computer handles what the computer handles. Picard handles what Picard handles. The crew is remarkable precisely because nobody's job overlaps with anyone else's in ways that create confusion.
 
-Now go compose something durable. 🚀
+"Computer, run the diagnostic." Deterministic. Sub-second. Free.
+
+"Number One, what do you make of this?" Judgment. Slow. Necessary.
+
+Make it so.
 
 * * *
 
 **Want to dive deeper?**
 
-- [Durable Task Scheduler — The Workflow Engine You're Not Using](/blog/2026/04/07/durable-task-scheduler) — Part 1: the DTS story, Payoneer war story, comparison table, and how to get started
-- [Scaling AI Part 12: Fan-Out with Squads](/blog/2026/04/25/scaling-ai-part12-fanout-squads) — parallel Squad composition and the fan-out/fan-in pattern
-- [Bulletproof Agents with the Durable Task Extension for Microsoft Agent Framework](https://techcommunity.microsoft.com/blog/appsonazureblog/bulletproof-agents-with-the-durable-task-extension-for-microsoft-agent-framework/4467122) — the official Microsoft announcement
-- [squad-agent-framework-demo](https://github.com/tamirdresher_microsoft/squad-agent-framework-demo) — the demo repo with `IncidentExample.cs`, `WorkflowExample.cs`, and Aspire AppHost
-- [Microsoft Agent Framework docs](https://learn.microsoft.com/en-us/agent-framework/) — the full framework documentation
+- [Durable Task Scheduler — The Workflow Engine You're Not Using](https://www.tamirdresher.com/blog/2026/04/07/durable-task-scheduler) — the DTS story, the Payoneer war story, comparison table, and how to get started
+- [Durable Workflows in Microsoft Agent Framework](https://devblogs.microsoft.com/dotnet/durable-workflows-in-microsoft-agent-framework/) — the deep dive on executors, workflow builders, and the replay model
+- [Bulletproof Agents with the Durable Task Extension for Microsoft Agent Framework](https://techcommunity.microsoft.com/blog/appsonazureblog/bulletproof-agents-with-the-durable-task-extension-for-microsoft-agent-framework/4467122) — the official production DTS + MAF announcement
+- [squad-agent-framework-demo](https://github.com/tamirdresher_microsoft/squad-agent-framework-demo) — the demo repo with `IncidentExample.cs` and the Aspire AppHost
