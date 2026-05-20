@@ -5,7 +5,7 @@ date: 2026-05-20
 tags: [durable-task-scheduler, ai-agents, squad, microsoft-agent-framework, aspire, workflows, incident-response, dotnet, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
 series_part: 14
-image: /assets/deterministic-meets-squads/diagram-2-determinism-spine.png
+image: /assets/deterministic-meets-squads/hero-bridge-squad.png
 ---
 
 > *"Make it work, make it right, make it fast."*
