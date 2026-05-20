@@ -323,7 +323,7 @@ The [Durable Task Scheduler post](https://www.tamirdresher.com/blog/2026/04/07/d
 
 ## Three Layers of Telemetry, One Dashboard
 
-What started as "we wired up OTel, it works" became, across four PRs, a genuinely satisfying story about how the Copilot SDK had the observability story all along — we just had to flip three switches and stub our toe on one TLS issue.
+What started as "we wired up OTel, it works" became a genuinely satisfying story about how the Copilot SDK had the observability story all along — we just had to flip three switches and stub our toe on one TLS issue.
 
 **Layer one** is free the moment you run via Aspire AppHost. Aspire injects `OTEL_EXPORTER_OTLP_ENDPOINT` into every project it manages. The OTel setup in `Program.cs` picks it up:
 
@@ -343,7 +343,7 @@ That's `Squad.AgentFramework.Demo` — the workflow's own `ActivitySource`, emit
 
 ![Aspire Traces view — workflow.build OTel trace from the incident-response run](/assets/deterministic-meets-squads/aspire-trace-workflow.png)
 
-**Layer two** landed in [PR #7](https://github.com/tamirdresher/squad-agent-framework-demo/pull/7). The `SquadAgent` .NET wrapper now registers its own `ActivitySource("Squad.AgentFramework.SquadAgent")` and a paired `Meter`. Every call through the wrapper emits spans — `SquadAgent.CreateSession`, `SquadAgent.Run`, session serialize/deserialize across DTS checkpoints — and records metrics: `runs_started`, `runs_completed`, `run_duration_ms`, `sessions_created`. Before PR #7 the wrapper ran silently: you could see the workflow had a Squad step, but the interior was dark. PR #7 lit it up.
+**Layer two** is the `SquadAgent` .NET wrapper, which registers its own `ActivitySource("Squad.AgentFramework.SquadAgent")` and a paired `Meter`. Every call through the wrapper emits spans — `SquadAgent.CreateSession`, `SquadAgent.Run`, session serialize/deserialize across DTS checkpoints — and records metrics: `runs_started`, `runs_completed`, `run_duration_ms`, `sessions_created`. The wrapper used to run silently: you could see the workflow had a Squad step, but the interior was dark. This layer lit it up.
 
 ![Aspire trace tree showing SquadAgent spans nested under the workflow](/assets/deterministic-meets-squads/aspire-trace-tree-with-squadagent.png)
 
@@ -351,10 +351,10 @@ That's `Squad.AgentFramework.Demo` — the workflow's own `ActivitySource`, emit
 
 **Layer three** is where it gets interesting — and honest. I had been assuming the GitHub Copilot SDK was a black box from an OTel perspective. No way to get spans out of what was happening inside the Copilot CLI sessions. Turns out I was wrong, and I have [Laurent Kempe](https://laurentkempe.com) to thank for setting me straight. He pointed me at the [Copilot SDK's own observability docs](https://github.com/github/copilot-sdk/blob/main/docs/observability/opentelemetry.md). The SDK has had built-in OTel support all along. We just had to wire it.
 
-The wiring goes in `EnsureInnerAsync`, right where the `CopilotClient` is constructed — [PR #8](https://github.com/tamirdresher/squad-agent-framework-demo/pull/8):
+The wiring goes in `EnsureInnerAsync`, right where the `CopilotClient` is constructed:
 
 ```csharp
-// SquadAgent.cs — EnsureInnerAsync: wiring the Copilot SDK's native OTel (PR #8)
+// SquadAgent.cs — EnsureInnerAsync: wiring the Copilot SDK's native OTel
 copilotClient = new CopilotClient(new CopilotClientOptions
 {
     Telemetry = new TelemetryConfig
@@ -370,10 +370,10 @@ That's it. The Copilot CLI's own spans now export via OTLP and link to the .NET 
 
 The story is: **the Copilot SDK had this all along — we just had to flip three switches.**
 
-**A wrinkle worth a paragraph.** Aspire's local dev environment uses a self-signed TLS certificate for its OTLP endpoint. The .NET OTLP exporter handles this gracefully. The Node.js OTLP exporter inside the GitHub Copilot CLI does not — it rejects the cert and spans stop flowing, silently. You stare at two layers instead of three and wonder what happened. The fix is a single line on the Aspire resource — [PR #9](https://github.com/tamirdresher/squad-agent-framework-demo/pull/9):
+**A wrinkle worth a paragraph.** Aspire's local dev environment uses a self-signed TLS certificate for its OTLP endpoint. The .NET OTLP exporter handles this gracefully. The Node.js OTLP exporter inside the GitHub Copilot CLI does not — it rejects the cert and spans stop flowing, silently. You stare at two layers instead of three and wonder what happened. The fix is a single line on the Aspire resource:
 
 ```csharp
-// AppHost.cs — NODE_TLS_REJECT_UNAUTHORIZED for local Aspire dev only (PR #9)
+// AppHost.cs — NODE_TLS_REJECT_UNAUTHORIZED for local Aspire dev only
 builder.AddProject<Projects.Squad_AgentFramework_Demo>("squad-agent-framework-demo")
     .WithEnvironment("DTS_ENDPOINT", dts.GetEndpoint("scheduler"))
     .WithEnvironment("NODE_TLS_REJECT_UNAUTHORIZED", "0")  // ⚠️ local Aspire dev only
@@ -382,7 +382,7 @@ builder.AddProject<Projects.Squad_AgentFramework_Demo>("squad-agent-framework-de
 
 The comment is explicit: local Aspire development only. Do not copy this into production config. But you *will* hit this exact issue if you run the demo against a stock Aspire setup and wonder why the third layer of spans never arrives — this is why.
 
-After all four PRs, the Aspire Traces tab shows all three source names side by side: `Squad.AgentFramework.Demo` for the workflow layer, `Squad.AgentFramework.SquadAgent` for the .NET wrapper layer, and the Copilot CLI's own spans as children underneath — one unified trace from workflow orchestration down to the model call.
+The Aspire Traces tab shows all three source names side by side: `Squad.AgentFramework.Demo` for the workflow layer, `Squad.AgentFramework.SquadAgent` for the .NET wrapper layer, and the Copilot CLI's own spans as children underneath — one unified trace from workflow orchestration down to the model call.
 
 <!-- TODO: replace with aspire-trace-tree-three-layer-telemetry.png once B'Elanna captures the full three-layer trace tree screenshot -->
 
