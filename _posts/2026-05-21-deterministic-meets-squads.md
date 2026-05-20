@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Make It So — But Let the Computer Handle the Math"
-date: 2026-05-20
+title: "Make It So — Composing Deterministic Workflows with Non-Deterministic AI Squads"
+date: 2026-05-21
 tags: [durable-task-scheduler, ai-agents, squad, microsoft-agent-framework, aspire, workflows, incident-response, dotnet, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
 series_part: 14
-image: assets/deterministic-meets-squads/hero-bridge-squad.png
+image: /assets/deterministic-meets-squads/hero-bridge-squad.png
 ---
 
 > *"Make it work, make it right, make it fast."*
@@ -73,7 +73,7 @@ The pattern is: AI does the judgment call. Code does the data gathering. AI does
 
 That division of labor is the architecture this post is about. It shows up clearly in incident response, but it's the same pattern in compliance review, content moderation, financial risk — anywhere judgment and precise retrieval need to interleave. AI *and* code, composed deliberately. Not AI *or* code.
 
-![Diagram: the AI / deterministic / AI composition — typed data flows between steps](assets/diagram-1-composition-pattern.png)
+![Diagram: the AI / deterministic / AI composition — typed data flows between steps](/assets/deterministic-meets-squads/diagram-1-composition-pattern.png)
 
 * * *
 
@@ -313,11 +313,11 @@ Two lines of AppHost wiring. The `DTS_ENDPOINT` is injected into the demo projec
 
 Here's what B'Elanna's real end-to-end run looked like in the DTS dashboard:
 
-![DTS orchestrations view — dafx-incident-response Completed in 1m 57s, 16 activities](assets/dts-dashboard-orchestration.png)
+![DTS orchestrations view — dafx-incident-response Completed in 1m 57s, 16 activities](/assets/deterministic-meets-squads/dts-dashboard-orchestration.png)
 
 `dafx-incident-response`. Completed. 1 minute 57 seconds. 16 activities. That's the full workflow: triage, three enrichment cycles (the loop fired all the way to the cap), external comms, database-squad analysis, mitigation, and the three diagnosis passes — each one a DTS activity.
 
-![DTS execution timeline — 16 activities across 3 loop iterations, all checkpointed](assets/dts-execution-detail.png)
+![DTS execution timeline — 16 activities across 3 loop iterations, all checkpointed](/assets/deterministic-meets-squads/dts-execution-detail.png)
 
 The timeline makes the loop iterations visible. Each pass through enrich → externalComms → subsystem squad → mitigate → diagnose is its own set of checkpointed activities. If the process had restarted anywhere in that 117 seconds, DTS would have resumed from the last completed activity. No rerun. No data loss. No "oops, the AI triage ran twice and got different subsystem classifications."
 
@@ -327,7 +327,7 @@ The [Durable Task Scheduler post](https://www.tamirdresher.com/blog/2026/04/07/d
 
 ## Three Layers of Telemetry, One Dashboard
 
-What started as "we wired up OTel, it works" became a genuinely satisfying story about how the Copilot SDK had the observability story all along — we just had to flip three switches and stub our toe on one TLS issue.
+What started as "we wired up OTel, it works" became a genuinely satisfying story about how the Copilot SDK had the observability story all along — we just had to flip three switches and stub our toe on two issues (TLS certs and protocol mismatch).
 
 **Layer one** is free the moment you run via Aspire AppHost. Aspire injects `OTEL_EXPORTER_OTLP_ENDPOINT` into every project it manages. The OTel setup in `Program.cs` picks it up:
 
@@ -343,15 +343,15 @@ using var tracerProvider = !string.IsNullOrWhiteSpace(otlpEndpoint)
 
 That's `Squad.AgentFramework.Demo` — the workflow's own `ActivitySource`, emitting the `workflow.build` trace that shows the full executor chain as it runs. All four resources visible in the same Aspire dashboard from the moment you type `dotnet run`.
 
-![Aspire Resources view — dts, foundry, chat, and squad-agent-framework-demo all Running](assets/aspire-resources-v3.png)
+![Aspire Resources view — dts, foundry, chat, and squad-agent-framework-demo all Running](/assets/deterministic-meets-squads/aspire-resources-v3.png)
 
-![Aspire Traces view — workflow.build OTel trace from the incident-response run](assets/aspire-trace-workflow.png)
+![Aspire Traces view — workflow.build OTel trace from the incident-response run](/assets/deterministic-meets-squads/aspire-trace-workflow.png)
 
 **Layer two** is the `SquadAgent` .NET wrapper, which registers its own `ActivitySource("Squad.AgentFramework.SquadAgent")` and a paired `Meter`. Every call through the wrapper emits spans — `SquadAgent.CreateSession`, `SquadAgent.Run`, session serialize/deserialize across DTS checkpoints — and records metrics: `runs_started`, `runs_completed`, `run_duration_ms`, `sessions_created`. The wrapper used to run silently: you could see the workflow had a Squad step, but the interior was dark. This layer lit it up.
 
-![Aspire trace tree showing SquadAgent spans nested under the workflow](assets/aspire-trace-tree-with-squadagent.png)
+![Aspire trace tree showing SquadAgent spans nested under the workflow](/assets/deterministic-meets-squads/aspire-trace-tree-with-squadagent.png)
 
-![Aspire metrics panel — SquadAgent run counts, durations, and session metrics](assets/aspire-metrics-squadagent.png)
+![Aspire metrics panel — SquadAgent run counts, durations, and session metrics](/assets/deterministic-meets-squads/aspire-metrics-squadagent.png)
 
 **Layer three** is where it gets interesting — and honest. I had been assuming the GitHub Copilot SDK was a black box from an OTel perspective. No way to get spans out of what was happening inside the Copilot CLI sessions. Turns out I was wrong, and I have [Laurent Kempe](https://laurentkempe.com) to thank for setting me straight. He pointed me at the [Copilot SDK's own observability docs](https://github.com/github/copilot-sdk/blob/main/docs/observability/opentelemetry.md). The SDK has had built-in OTel support all along. We just had to wire it.
 
@@ -370,25 +370,31 @@ copilotClient = new CopilotClient(new CopilotClientOptions
 
 That's it. The Copilot CLI's own spans now export via OTLP and link to the .NET parent activity via W3C trace-context propagation. Open a trace in Aspire and you'll see `SquadAgent.Run` as the parent, with the Copilot CLI's internal spans as children underneath.
 
-![Aspire trace tree showing all three layers: workflow spans, SquadAgent spans, and Copilot SDK native spans](assets/aspire-trace-tree-copilot-sdk-telemetry.png)
+![Aspire trace tree showing all three layers: SquadAgent.Run wrapping invoke_agent and chat model spans from the Copilot SDK](/assets/deterministic-meets-squads/aspire-trace-tree-three-layer-telemetry.png)
 
 The story is: **the Copilot SDK had this all along — we just had to flip three switches.**
 
-**A wrinkle worth a paragraph.** Aspire's local dev environment uses a self-signed TLS certificate for its OTLP endpoint. The .NET OTLP exporter handles this gracefully. The Node.js OTLP exporter inside the GitHub Copilot CLI does not — it rejects the cert and spans stop flowing, silently. You stare at two layers instead of three and wonder what happened. The fix is a single line on the Aspire resource:
+**A wrinkle worth a paragraph — actually two.** Aspire's local dev environment uses a self-signed TLS certificate for its OTLP endpoint. The .NET OTLP exporter handles this gracefully. The Node.js OTLP exporter inside the GitHub Copilot CLI does not — it rejects the cert and spans stop flowing, silently. You stare at two layers instead of three and wonder what happened.
+
+The second wrinkle is a protocol mismatch. Aspire's default OTLP endpoint speaks gRPC only. The Copilot SDK's `TelemetryConfig.ExporterType` only supports `otlp-http` (HTTP/protobuf) — it cannot speak gRPC at all. So even after fixing TLS, the SDK's spans hit a gRPC-only endpoint and silently fail. The fix is enabling both OTLP protocols on the Aspire dashboard: gRPC on port 21021 for .NET, HTTP/protobuf on port 21022 for the Copilot SDK.
 
 ```csharp
-// AppHost.cs — NODE_TLS_REJECT_UNAUTHORIZED for local Aspire dev only
+// AppHost.cs — dual-protocol OTLP + TLS workaround for local Aspire dev
+Environment.SetEnvironmentVariable(
+    "ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "https://localhost:21022");
+
 builder.AddProject<Projects.Squad_AgentFramework_Demo>("squad-agent-framework-demo")
     .WithEnvironment("DTS_ENDPOINT", dts.GetEndpoint("scheduler"))
-    .WithEnvironment("NODE_TLS_REJECT_UNAUTHORIZED", "0")  // ⚠️ local Aspire dev only
+    .WithEnvironment("NODE_TLS_REJECT_UNAUTHORIZED", "0")        // ⚠️ local Aspire dev only
+    .WithEnvironment("COPILOT_OTLP_HTTP_ENDPOINT", "https://localhost:21022")  // SDK → HTTP/protobuf
     .WaitFor(dts);
 ```
 
-The comment is explicit: local Aspire development only. Do not copy this into production config. But you *will* hit this exact issue if you run the demo against a stock Aspire setup and wonder why the third layer of spans never arrives — this is why.
+Both comments are explicit: local Aspire development only. Do not copy this into production config. But you *will* stub your toe on both issues if you run the demo against a stock Aspire setup and wonder why the third layer of spans never arrives — this is why.
 
 The Aspire Traces tab shows all three source names side by side: `Squad.AgentFramework.Demo` for the workflow layer, `Squad.AgentFramework.SquadAgent` for the .NET wrapper layer, and the Copilot CLI's own spans as children underneath — one unified trace from workflow orchestration down to the model call.
 
-<!-- TODO: replace with aspire-trace-tree-three-layer-telemetry.png once B'Elanna captures the full three-layer trace tree screenshot -->
+
 
 One gap that remains: token-usage counters. Copilot SDK 1.0.0-beta.2 doesn't yet expose a `Usage` property on responses, so the wrapper can track run counts and durations but not tokens consumed. I opened [bradygaster/squad#1144](https://github.com/bradygaster/squad/issues/1144) to start a conversation with the Squad team about a shared telemetry contract — a common span schema the Squad CLI, the C# wrapper, and any future wrappers could all emit interchangeably. Right now it's DIY per wrapper; #1144 is where that conversation lives.
 
