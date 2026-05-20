@@ -18,6 +18,12 @@ I keep getting the same question from developers building AI-native systems: **w
 
 This post answers that question with a real, running demo. Not a toy example — a nine-executor durable workflow, running on a live DTS container via Aspire, with screenshots to prove it.
 
+But here's what makes this more than another workflow post. When the AI side of that line needs more than a single model call — when you actually need **judgment**, specialization, memory of past decisions, the way a real on-call **expert team** does — what you're reaching for isn't just "an LLM." It's a team with charters, routing, and history. That's [Squad](https://github.com/bradygaster/squad): named agents with specialized context, decision records, multi-repo knowledge, and a track record of handling the messy reasoning parts of engineering work — the stuff that doesn't reduce to a single well-posed question.
+
+Squad's normal home is its own CLI process, its own runtime, its own event loop. Microsoft Agent Framework lives in its own world — `AIAgent` base types, typed executors, durable orchestration. Two excellent worlds that didn't know each other existed.
+
+This post is also the story of how we bridged them. **Squad now wears the MAF uniform.** It's an `AIAgent` you drop into any durable workflow alongside deterministic executors and DTS-backed checkpointing. Picard delegates to the expert squad; the expert squad plugs into the same workflow engine as the database lookups and the external-comms calls; the whole thing survives process restarts because DTS has the checkpoint. One ship, one chain of command, one Aspire dashboard.
+
 * * *
 
 ## It's Not Science Fiction Anymore — This Is Your On-Call Rotation
@@ -69,6 +75,84 @@ The pattern is: AI does the judgment call. Code does the data gathering. AI does
 That division of labor is the architecture this post is about. It shows up clearly in incident response, but it's the same pattern in compliance review, content moderation, financial risk — anywhere judgment and precise retrieval need to interleave. AI *and* code, composed deliberately. Not AI *or* code.
 
 ![Diagram: the AI / deterministic / AI composition — typed data flows between steps](/assets/deterministic-meets-squads/diagram-1-composition-pattern.png)
+
+* * *
+
+## Squad, Now Wearing the MAF Uniform
+
+MAF gives you a beautifully clean `AIAgent` abstraction: any class that extends it can be dropped into a workflow executor, passed to another executor's constructor, composed with conditional edges, and have its session checkpointed across process restarts by DTS. The trick is making Squad — which normally lives in the CLI, driving its own event loop — *be* one of those agents. That's what `SquadAgent.cs` in the demo does.
+
+The class declaration is the whole story in one line:
+
+```csharp
+// SquadAgent.cs — class declaration
+internal sealed class SquadAgent : AIAgent, IAsyncDisposable
+{
+    private AIAgent? inner = null;
+    private CopilotClient? copilotClient = null;
+
+    public SquadAgent(
+        string id,
+        string name,
+        string description,
+        bool traceEvents = false,
+        string? tracePath = null) { ... }
+}
+```
+
+`SquadAgent` extends `AIAgent` from `Microsoft.Agents.AI`. Internally it holds a lazily-initialized `GitHubCopilotAgent` from `Microsoft.Agents.AI.GitHub.Copilot` — the package that wraps GitHub Copilot SDK sessions and exposes them behind the standard `AIAgent` interface. `EnsureInnerAsync` is the lazy initializer: it creates a `CopilotClient`, starts it, and wraps it in a `GitHubCopilotAgent` configured to route requests to the `"Squad"` agent:
+
+```csharp
+// SquadAgent.cs — lazy Copilot SDK initialization
+private async ValueTask<AIAgent> EnsureInnerAsync(CancellationToken cancellationToken)
+{
+    if (inner is not null)
+    {
+        return inner;
+    }
+
+    copilotClient = new CopilotClient();
+    await copilotClient.StartAsync(cancellationToken);
+
+    inner = new GitHubCopilotAgent(
+        copilotClient,
+        new SessionConfig()
+        {
+            Agent = "Squad",
+            OnPermissionRequest = PermissionHandler.ApproveAll,
+            OnEvent = traceEvents ? TraceCopilotEvent : null,
+            Streaming = traceEvents,
+            IncludeSubAgentStreamingEvents = traceEvents
+        });
+
+    return inner;
+}
+```
+
+Every `AIAgent` override — `CreateSessionCoreAsync`, `RunCoreAsync`, `RunCoreStreamingAsync` — delegates through to this `inner` `GitHubCopilotAgent`. The MAF workflow engine sees a standard `AIAgent`. Squad is on the other end.
+
+The non-trivial part is durability. When DTS checkpoints a workflow mid-run, the MAF engine calls `SerializeSessionAsync` to capture session state; when the workflow resumes after a crash or restart, it calls `DeserializeSessionAsync` to restore it. `SquadAgent` passes both operations through to the inner agent — which means the Copilot SDK session itself is part of the checkpoint:
+
+```csharp
+// SquadAgent.cs — session checkpoint/restore for DTS durability
+protected override ValueTask<JsonElement> SerializeSessionCoreAsync(
+    AgentSession session,
+    JsonSerializerOptions? jsonSerializerOptions = null,
+    CancellationToken cancellationToken = default) =>
+    (inner ?? throw new InvalidOperationException("Create a SquadAgent session before serializing it."))
+        .SerializeSessionAsync(session, jsonSerializerOptions, cancellationToken);
+
+protected override ValueTask<AgentSession> DeserializeSessionCoreAsync(
+    JsonElement serializedState,
+    JsonSerializerOptions? jsonSerializerOptions = null,
+    CancellationToken cancellationToken = default) =>
+    (inner ?? throw new InvalidOperationException("Create a SquadAgent session before deserializing it."))
+        .DeserializeSessionAsync(serializedState, jsonSerializerOptions, cancellationToken);
+```
+
+This is why the DTS timeline can show three full loop iterations across a 117-second run without re-running the earlier triage step: Squad's session was checkpointed alongside the MAF workflow state. Process restarts between loop iterations just mean DTS replays from the last checkpoint — Squad session included.
+
+Once Squad is a MAF `AIAgent`, every composition pattern in the MAF docs works with Squad as a participant: sequential workflows, fan-out/fan-in, conditional edges, human-in-the-loop, distributed runtime. The incident workflow below is one example. The same `SquadAgent` drops equally cleanly into an Azure Function, a Container App, or any other host where you can run a MAF workflow — if MAF can orchestrate it, Squad can be the AI side of it.
 
 * * *
 
@@ -260,7 +344,9 @@ No manual `OTEL_EXPORTER_OTLP_ENDPOINT` needed — Aspire injects it. Workflow s
 
 ![Aspire Traces view — workflow.build OTel trace from the incident-response run](/assets/deterministic-meets-squads/aspire-trace-workflow.png)
 
-Honest note: in this demo the pipeline emits workflow-level spans — the `workflow.build` trace you see above. Per-executor spans, individual timings for each of the nine executors, would need an explicit `ActivitySource.StartActivity` call inside each `HandleAsync`. The pipe is wired and open; pour more granular telemetry into it any time.
+The trace above was captured before [PR #7](https://github.com/tamirdresher_microsoft/squad-agent-framework-demo/pull/7), so it shows workflow-level spans from the MAF pipeline only — the `workflow.build` trace from `IncidentExample.DemoActivitySource`. That was the gap: the C# `SquadAgent` wrapper ran silently from an OTel perspective. You could see the workflow ran a Squad step; you couldn't see what happened inside it. PR #7 closed that. The wrapper now registers its own `ActivitySource("Squad.AgentFramework.SquadAgent")` and a paired `Meter`, both flowing into the same OTLP pipeline that Aspire is already watching. The next full E2E run will show both sources side by side in the Traces tab — workflow orchestration spans from MAF and Squad agent spans (runs, session lifecycle, durations, success/error counts) in a single unified view.
+
+One gap remains: token-usage counters. Copilot SDK 1.0.0-beta.2 doesn't yet expose a `Usage` property on responses, so the `SquadAgent` wrapper can track run counts and durations but not tokens consumed. I opened [bradygaster/squad#1144](https://github.com/bradygaster/squad/issues/1144) to start a conversation with the Squad team about a shared telemetry contract — a common span schema the Squad CLI, the C# wrapper, and any future language wrappers could all emit interchangeably. Right now it's DIY per wrapper; #1144 is the conversation about making that a real contract.
 
 Squad itself also has a native Aspire integration. Run `squad aspire` from the CLI and it pulls the Aspire dashboard container and configures the OTLP endpoint automatically — agent spawns, token usage, session metrics, errors, all streamed in real time. Set `OTEL_EXPORTER_OTLP_ENDPOINT` to point the Squad CLI at the same Aspire instance already watching your workflow and everything — MAF workflow spans and Squad agent spans — shows up in the same dashboard under their respective service names. The dual-dashboard story (Aspire for .NET spans, DTS dashboard for task-hub orchestration view) becomes a tri-layer view when you add Squad CLI telemetry on top.
 
