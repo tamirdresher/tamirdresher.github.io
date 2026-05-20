@@ -1,7 +1,7 @@
 ---
 layout: post
-title: "Make It So — But Let the Computer Handle the Math"
-date: 2026-05-20
+title: "Make It So — Composing Deterministic Workflows with Non-Deterministic AI Squads"
+date: 2026-05-21
 tags: [durable-task-scheduler, ai-agents, squad, microsoft-agent-framework, aspire, workflows, incident-response, dotnet, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
 series_part: 14
@@ -327,7 +327,7 @@ The [Durable Task Scheduler post](https://www.tamirdresher.com/blog/2026/04/07/d
 
 ## Three Layers of Telemetry, One Dashboard
 
-What started as "we wired up OTel, it works" became a genuinely satisfying story about how the Copilot SDK had the observability story all along — we just had to flip three switches and stub our toe on one TLS issue.
+What started as "we wired up OTel, it works" became a genuinely satisfying story about how the Copilot SDK had the observability story all along — we just had to flip three switches and stub our toe on two issues (TLS certs and protocol mismatch).
 
 **Layer one** is free the moment you run via Aspire AppHost. Aspire injects `OTEL_EXPORTER_OTLP_ENDPOINT` into every project it manages. The OTel setup in `Program.cs` picks it up:
 
@@ -370,25 +370,31 @@ copilotClient = new CopilotClient(new CopilotClientOptions
 
 That's it. The Copilot CLI's own spans now export via OTLP and link to the .NET parent activity via W3C trace-context propagation. Open a trace in Aspire and you'll see `SquadAgent.Run` as the parent, with the Copilot CLI's internal spans as children underneath.
 
-![Aspire trace tree showing all three layers: workflow spans, SquadAgent spans, and Copilot SDK native spans](assets/aspire-trace-tree-copilot-sdk-telemetry.png)
+![Aspire trace tree showing all three layers: SquadAgent.Run wrapping invoke_agent and chat model spans from the Copilot SDK](assets/deterministic-meets-squads/aspire-trace-tree-three-layer-telemetry.png)
 
 The story is: **the Copilot SDK had this all along — we just had to flip three switches.**
 
-**A wrinkle worth a paragraph.** Aspire's local dev environment uses a self-signed TLS certificate for its OTLP endpoint. The .NET OTLP exporter handles this gracefully. The Node.js OTLP exporter inside the GitHub Copilot CLI does not — it rejects the cert and spans stop flowing, silently. You stare at two layers instead of three and wonder what happened. The fix is a single line on the Aspire resource:
+**A wrinkle worth a paragraph — actually two.** Aspire's local dev environment uses a self-signed TLS certificate for its OTLP endpoint. The .NET OTLP exporter handles this gracefully. The Node.js OTLP exporter inside the GitHub Copilot CLI does not — it rejects the cert and spans stop flowing, silently. You stare at two layers instead of three and wonder what happened.
+
+The second wrinkle is a protocol mismatch. Aspire's default OTLP endpoint speaks gRPC only. The Copilot SDK's `TelemetryConfig.ExporterType` only supports `otlp-http` (HTTP/protobuf) — it cannot speak gRPC at all. So even after fixing TLS, the SDK's spans hit a gRPC-only endpoint and silently fail. The fix is enabling both OTLP protocols on the Aspire dashboard: gRPC on port 21021 for .NET, HTTP/protobuf on port 21022 for the Copilot SDK.
 
 ```csharp
-// AppHost.cs — NODE_TLS_REJECT_UNAUTHORIZED for local Aspire dev only
+// AppHost.cs — dual-protocol OTLP + TLS workaround for local Aspire dev
+Environment.SetEnvironmentVariable(
+    "ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "https://localhost:21022");
+
 builder.AddProject<Projects.Squad_AgentFramework_Demo>("squad-agent-framework-demo")
     .WithEnvironment("DTS_ENDPOINT", dts.GetEndpoint("scheduler"))
-    .WithEnvironment("NODE_TLS_REJECT_UNAUTHORIZED", "0")  // ⚠️ local Aspire dev only
+    .WithEnvironment("NODE_TLS_REJECT_UNAUTHORIZED", "0")        // ⚠️ local Aspire dev only
+    .WithEnvironment("COPILOT_OTLP_HTTP_ENDPOINT", "https://localhost:21022")  // SDK → HTTP/protobuf
     .WaitFor(dts);
 ```
 
-The comment is explicit: local Aspire development only. Do not copy this into production config. But you *will* hit this exact issue if you run the demo against a stock Aspire setup and wonder why the third layer of spans never arrives — this is why.
+Both comments are explicit: local Aspire development only. Do not copy this into production config. But you *will* stub your toe on both issues if you run the demo against a stock Aspire setup and wonder why the third layer of spans never arrives — this is why.
 
 The Aspire Traces tab shows all three source names side by side: `Squad.AgentFramework.Demo` for the workflow layer, `Squad.AgentFramework.SquadAgent` for the .NET wrapper layer, and the Copilot CLI's own spans as children underneath — one unified trace from workflow orchestration down to the model call.
 
-<!-- TODO: replace with aspire-trace-tree-three-layer-telemetry.png once B'Elanna captures the full three-layer trace tree screenshot -->
+
 
 One gap that remains: token-usage counters. Copilot SDK 1.0.0-beta.2 doesn't yet expose a `Usage` property on responses, so the wrapper can track run counts and durations but not tokens consumed. I opened [bradygaster/squad#1144](https://github.com/bradygaster/squad/issues/1144) to start a conversation with the Squad team about a shared telemetry contract — a common span schema the Squad CLI, the C# wrapper, and any future wrappers could all emit interchangeably. Right now it's DIY per wrapper; #1144 is where that conversation lives.
 
