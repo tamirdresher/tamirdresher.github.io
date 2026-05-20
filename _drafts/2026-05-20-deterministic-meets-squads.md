@@ -5,14 +5,13 @@ date: 2026-05-20
 tags: [durable-task-scheduler, ai-agents, squad, microsoft-agent-framework, aspire, workflows, incident-response, dotnet, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
 series_part: 14
-image: /assets/deterministic-meets-squads/aspire-resources-v3.png
+image: /assets/deterministic-meets-squads/diagram-2-determinism-spine.png
 ---
 
-![Aspire dashboard showing all four resources running: dts, foundry, chat, and squad-agent-framework-demo](/assets/deterministic-meets-squads/aspire-resources-v3.png)
+> *"Make it work, make it right, make it fast."*
+> — Kent Beck
 
-*"A starship's computer does not hesitate. It does not speculate. It computes, precisely, and hands the result to the officers who must decide what to do with it."*
-
-Nobody debates this. The Enterprise's computer doesn't decide whether to lower shields in hostile territory — that's Picard's call. But it calculates the shield power distribution, the precise mass of the anomaly, and the warp trajectory to intercept it in time. Deterministic. Exact. Millisecond-fast. Different tools for fundamentally different kinds of work.
+Beck's three-step rule was about code quality, but it cuts even deeper when you're wiring AI into durable workflows. The "make it work" part is easy — you can route everything through an LLM and it'll *work*. "Make it right" is where the architecture actually lives. The Enterprise's computer doesn't decide whether to lower shields in hostile territory — that's Picard's call. But it calculates the shield power distribution, the precise mass of the anomaly, and the warp trajectory to intercept it in time. Deterministic. Exact. Millisecond-fast. Different tools for fundamentally different kinds of work.
 
 I keep getting the same question from developers building AI-native systems: **where does the line go between what the AI does and what code does?** Not philosophically — practically. When an alert fires and someone has to figure out what's broken, gather data from three sources, loop in a third party, apply a mitigation, and check whether it worked — where exactly does the AI go in that flow, and where does it stay out?
 
@@ -158,7 +157,7 @@ Once Squad is a MAF `AIAgent`, every composition pattern in the MAF docs works w
 
 ## The Real Demo: A Durable Incident-Response Workflow
 
-The [squad-agent-framework-demo](https://github.com/tamirdresher_microsoft/squad-agent-framework-demo) implements this as a complete, runnable incident-response workflow. Nine executors. AI where it earns it. Pure C# where it doesn't. DTS backing every step. Here's the full workflow graph from the source comments:
+The [squad-agent-framework-demo](https://github.com/tamirdresher/squad-agent-framework-demo) implements this as a complete, runnable incident-response workflow. Nine executors. AI where it earns it. Pure C# where it doesn't. DTS backing every step. Here's the full workflow graph from the source comments:
 
 ```
 triage
@@ -322,16 +321,14 @@ The [Durable Task Scheduler post](https://www.tamirdresher.com/blog/2026/04/07/d
 
 * * *
 
-## One Dashboard to Watch It All
+## Three Layers of Telemetry, One Dashboard
 
-When you run via Aspire AppHost, something nice happens for free. All four resources — `dts`, `foundry`, `chat`, and `squad-agent-framework-demo` — appear in the same dashboard. DTS is running. Foundry is running. The LLM deployment is healthy. Your app is waiting on both before it starts.
+What started as "we wired up OTel, it works" became, across four PRs, a genuinely satisfying story about how the Copilot SDK had the observability story all along — we just had to flip three switches and stub our toe on one TLS issue.
 
-![Aspire Resources view — dts, foundry, chat, and squad-agent-framework-demo all Running](/assets/deterministic-meets-squads/aspire-resources-v3.png)
-
-The OTel pipeline in `Program.cs` picks up `OTEL_EXPORTER_OTLP_ENDPOINT` from the Aspire-injected environment and starts sending workflow spans:
+**Layer one** is free the moment you run via Aspire AppHost. Aspire injects `OTEL_EXPORTER_OTLP_ENDPOINT` into every project it manages. The OTel setup in `Program.cs` picks it up:
 
 ```csharp
-// Program.cs — OTel SDK registration
+// Program.cs — OTel SDK registration (layer 1: workflow orchestration)
 using var tracerProvider = !string.IsNullOrWhiteSpace(otlpEndpoint)
     ? Sdk.CreateTracerProviderBuilder()
           .AddSource(IncidentExample.DemoActivitySource.Name)
@@ -340,15 +337,58 @@ using var tracerProvider = !string.IsNullOrWhiteSpace(otlpEndpoint)
     : null;
 ```
 
-No manual `OTEL_EXPORTER_OTLP_ENDPOINT` needed — Aspire injects it. Workflow spans start flowing to the Traces tab immediately.
+That's `Squad.AgentFramework.Demo` — the workflow's own `ActivitySource`, emitting the `workflow.build` trace that shows the full executor chain as it runs. All four resources visible in the same Aspire dashboard from the moment you type `dotnet run`.
+
+![Aspire Resources view — dts, foundry, chat, and squad-agent-framework-demo all Running](/assets/deterministic-meets-squads/aspire-resources-v3.png)
 
 ![Aspire Traces view — workflow.build OTel trace from the incident-response run](/assets/deterministic-meets-squads/aspire-trace-workflow.png)
 
-The trace above was captured before [PR #7](https://github.com/tamirdresher_microsoft/squad-agent-framework-demo/pull/7), so it shows workflow-level spans from the MAF pipeline only — the `workflow.build` trace from `IncidentExample.DemoActivitySource`. That was the gap: the C# `SquadAgent` wrapper ran silently from an OTel perspective. You could see the workflow ran a Squad step; you couldn't see what happened inside it. PR #7 closed that. The wrapper now registers its own `ActivitySource("Squad.AgentFramework.SquadAgent")` and a paired `Meter`, both flowing into the same OTLP pipeline that Aspire is already watching. The next full E2E run will show both sources side by side in the Traces tab — workflow orchestration spans from MAF and Squad agent spans (runs, session lifecycle, durations, success/error counts) in a single unified view.
+**Layer two** landed in [PR #7](https://github.com/tamirdresher/squad-agent-framework-demo/pull/7). The `SquadAgent` .NET wrapper now registers its own `ActivitySource("Squad.AgentFramework.SquadAgent")` and a paired `Meter`. Every call through the wrapper emits spans — `SquadAgent.CreateSession`, `SquadAgent.Run`, session serialize/deserialize across DTS checkpoints — and records metrics: `runs_started`, `runs_completed`, `run_duration_ms`, `sessions_created`. Before PR #7 the wrapper ran silently: you could see the workflow had a Squad step, but the interior was dark. PR #7 lit it up.
 
-One gap remains: token-usage counters. Copilot SDK 1.0.0-beta.2 doesn't yet expose a `Usage` property on responses, so the `SquadAgent` wrapper can track run counts and durations but not tokens consumed. I opened [bradygaster/squad#1144](https://github.com/bradygaster/squad/issues/1144) to start a conversation with the Squad team about a shared telemetry contract — a common span schema the Squad CLI, the C# wrapper, and any future language wrappers could all emit interchangeably. Right now it's DIY per wrapper; #1144 is the conversation about making that a real contract.
+![Aspire trace tree showing SquadAgent spans nested under the workflow](/assets/deterministic-meets-squads/aspire-trace-tree-with-squadagent.png)
 
-Squad itself also has a native Aspire integration. Run `squad aspire` from the CLI and it pulls the Aspire dashboard container and configures the OTLP endpoint automatically — agent spawns, token usage, session metrics, errors, all streamed in real time. Set `OTEL_EXPORTER_OTLP_ENDPOINT` to point the Squad CLI at the same Aspire instance already watching your workflow and everything — MAF workflow spans and Squad agent spans — shows up in the same dashboard under their respective service names. The dual-dashboard story (Aspire for .NET spans, DTS dashboard for task-hub orchestration view) becomes a tri-layer view when you add Squad CLI telemetry on top.
+![Aspire metrics panel — SquadAgent run counts, durations, and session metrics](/assets/deterministic-meets-squads/aspire-metrics-squadagent.png)
+
+**Layer three** is where it gets interesting — and honest. I had been assuming the GitHub Copilot SDK was a black box from an OTel perspective. No way to get spans out of what was happening inside the Copilot CLI sessions. Turns out I was wrong, and I have [Laurent Kempe](https://laurentkempe.com) to thank for setting me straight. He pointed me at the [Copilot SDK's own observability docs](https://github.com/github/copilot-sdk/blob/main/docs/observability/opentelemetry.md). The SDK has had built-in OTel support all along. We just had to wire it.
+
+The wiring goes in `EnsureInnerAsync`, right where the `CopilotClient` is constructed — [PR #8](https://github.com/tamirdresher/squad-agent-framework-demo/pull/8):
+
+```csharp
+// SquadAgent.cs — EnsureInnerAsync: wiring the Copilot SDK's native OTel (PR #8)
+copilotClient = new CopilotClient(new CopilotClientOptions
+{
+    Telemetry = new TelemetryConfig
+    {
+        OtlpEndpoint = otlpEndpoint  // injected from Aspire environment
+    }
+});
+```
+
+That's it. The Copilot CLI's own spans now export via OTLP and link to the .NET parent activity via W3C trace-context propagation. Open a trace in Aspire and you'll see `SquadAgent.Run` as the parent, with the Copilot CLI's internal spans as children underneath.
+
+![Aspire trace tree showing all three layers: workflow spans, SquadAgent spans, and Copilot SDK native spans](/assets/deterministic-meets-squads/aspire-trace-tree-copilot-sdk-telemetry.png)
+
+The story is: **the Copilot SDK had this all along — we just had to flip three switches.**
+
+**A wrinkle worth a paragraph.** Aspire's local dev environment uses a self-signed TLS certificate for its OTLP endpoint. The .NET OTLP exporter handles this gracefully. The Node.js OTLP exporter inside the GitHub Copilot CLI does not — it rejects the cert and spans stop flowing, silently. You stare at two layers instead of three and wonder what happened. The fix is a single line on the Aspire resource — [PR #9](https://github.com/tamirdresher/squad-agent-framework-demo/pull/9):
+
+```csharp
+// AppHost.cs — NODE_TLS_REJECT_UNAUTHORIZED for local Aspire dev only (PR #9)
+builder.AddProject<Projects.Squad_AgentFramework_Demo>("squad-agent-framework-demo")
+    .WithEnvironment("DTS_ENDPOINT", dts.GetEndpoint("scheduler"))
+    .WithEnvironment("NODE_TLS_REJECT_UNAUTHORIZED", "0")  // ⚠️ local Aspire dev only
+    .WaitFor(dts);
+```
+
+The comment is explicit: local Aspire development only. Do not copy this into production config. But you *will* hit this exact issue if you run the demo against a stock Aspire setup and wonder why the third layer of spans never arrives — this is why.
+
+After all four PRs, the Aspire Traces tab shows all three source names side by side: `Squad.AgentFramework.Demo` for the workflow layer, `Squad.AgentFramework.SquadAgent` for the .NET wrapper layer, and the Copilot CLI's own spans as children underneath — one unified trace from workflow orchestration down to the model call.
+
+<!-- TODO: replace with aspire-trace-tree-three-layer-telemetry.png once B'Elanna captures the full three-layer trace tree screenshot -->
+
+One gap that remains: token-usage counters. Copilot SDK 1.0.0-beta.2 doesn't yet expose a `Usage` property on responses, so the wrapper can track run counts and durations but not tokens consumed. I opened [bradygaster/squad#1144](https://github.com/bradygaster/squad/issues/1144) to start a conversation with the Squad team about a shared telemetry contract — a common span schema the Squad CLI, the C# wrapper, and any future wrappers could all emit interchangeably. Right now it's DIY per wrapper; #1144 is where that conversation lives.
+
+Squad also has a native Aspire integration: `squad aspire` from the CLI spins up the dashboard and wires the OTLP endpoint automatically. Set `OTEL_EXPORTER_OTLP_ENDPOINT` to point at the same Aspire instance already watching your workflow, and agent spawns, token usage, session metrics, and errors all show up in the same dashboard. The dual-dashboard story (Aspire for .NET spans, DTS dashboard for task-hub orchestration) becomes a four-layer view when you add Squad CLI telemetry on top.
 
 * * *
 
@@ -387,7 +427,7 @@ Make it so.
 
 ## Want to Dive Deeper?
 
-- **Demo repo:** [squad-agent-framework-demo](https://github.com/tamirdresher_microsoft/squad-agent-framework-demo) — clone it, run `dotnet run --project Squad.AgentFramework.Demo.AppHost`, watch the DTS dashboard at `http://localhost:8082`
+- **Demo repo:** [squad-agent-framework-demo](https://github.com/tamirdresher/squad-agent-framework-demo) — clone it, run `dotnet run --project Squad.AgentFramework.Demo.AppHost`, watch the DTS dashboard at `http://localhost:8082`
 - **Durable Task Scheduler:** [the DTS post](https://www.tamirdresher.com/blog/2026/04/07/durable-task-scheduler) — the production story and the war story that started this
 - **MAF Durable Workflows deep-dive:** [devblogs.microsoft.com](https://devblogs.microsoft.com/dotnet/durable-workflows-in-microsoft-agent-framework/) — executor model, workflow builder, replay semantics
 - **Bulletproof Agents:** [the official MAF + DTS announcement](https://techcommunity.microsoft.com/blog/appsonazureblog/bulletproof-agents-with-the-durable-task-extension-for-microsoft-agent-framework/4467122)
