@@ -353,7 +353,7 @@ That's `Squad.AgentFramework.Demo` — the workflow's own `ActivitySource`, emit
 
 ![Aspire metrics panel — SquadAgent run counts, durations, and session metrics](/assets/deterministic-meets-squads/aspire-metrics-squadagent.png)
 
-**Layer three** is where it gets interesting — and honest. I had been assuming the GitHub Copilot SDK was a black box from an OTel perspective. No way to get spans out of what was happening inside the Copilot CLI sessions. Turns out I was wrong, and I have [Laurent Kempe](https://laurentkempe.com) to thank for setting me straight. He pointed me at the [Copilot SDK's own observability docs](https://github.com/github/copilot-sdk/blob/main/docs/observability/opentelemetry.md). The SDK has had built-in OTel support all along. We just had to wire it.
+**Layer three** is where it gets interesting — and honest. I had been assuming the GitHub Copilot SDK was a black box from an OTel perspective. No way to get spans out of what was happening inside the Copilot CLI sessions. Turns out I was wrong, and I have [Laurent Kempé](https://laurentkempe.com) to thank for setting me straight. He pointed me at the [Copilot SDK's own observability docs](https://github.com/github/copilot-sdk/blob/main/docs/observability/opentelemetry.md). The SDK has had built-in OTel support all along. We just had to wire it.
 
 The wiring goes in `EnsureInnerAsync`, right where the `CopilotClient` is constructed:
 
