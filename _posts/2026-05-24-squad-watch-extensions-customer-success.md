@@ -600,6 +600,71 @@ That is what good automation feels like.
 
 ---
 
+## Ralph's Clone Army
+
+There is one more question that comes up the moment `squad watch --execute` becomes useful:
+
+> Can I run this on more than one machine without creating a tiny distributed-systems crime scene?
+
+Yes, but only if the workflow is honest about coordination.
+
+The basic pattern is:
+
+```text
+Machine A runs squad watch --execute
+Machine B runs squad watch --execute
+Machine C runs squad watch --execute
+All of them pull from the same repo.
+The repo becomes the shared coordination surface.
+```
+
+That sounds suspiciously simple because it is. But simple does not mean naive.
+
+For multiple machines, each watch loop should follow three rules:
+
+| Rule | Why it matters |
+|---|---|
+| Pull before acting | Every machine sees the newest decisions, markers, and state before choosing work. |
+| Write markers for one-time work | If Machine A already sent the renewal digest, Machine B should see that and skip. |
+| Target stateful work to one machine | Browser sessions, local files, and device-specific integrations should not randomly move around. |
+
+Squad already has a `self-pull` capability for the first part: start the round by fetching and fast-forwarding the repo. For team-specific extensions, I would use the same boring-but-solid pattern from the sample: write explicit state under `.squad/state` or another repo-owned marker file.
+
+For example:
+
+```text
+.squad/state/routed-customer-intake.json
+.squad/state/renewal-digest-2026-05-24.json
+.squad/cross-machine/tasks/crm-sync.yaml
+```
+
+Then the extension can make a sane decision:
+
+```text
+If the marker exists for today, skip.
+If this task is targeted to another machine, skip.
+If the state is missing, do the work and write the marker.
+```
+
+This is not Kubernetes.
+
+This is more like three people sharing a notebook and agreeing not to call the same customer twice. Which, frankly, is already better coordination than many enterprise systems I have met.
+
+The important part is that external capabilities should be written like good distributed chores:
+
+1. Make them idempotent when possible.
+2. Make one-time side effects leave a visible marker.
+3. Make machine-specific side effects explicit.
+4. Do not hide coordination in vibes.
+
+That makes multi-machine `watch --execute` boring in the best way. One laptop can sleep. Another machine can pick up the loop. A third can handle the tasks that only it is configured for.
+
+Ralph gets redundancy without becoming a cluster scheduler.
+
+And I get to say "multi-machine agent workflow" without immediately reaching for a YAML exorcist.
+
+---
+
 ## Where This Goes Next
 
 This low-level capability seam should stay low-level.
