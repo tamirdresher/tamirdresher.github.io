@@ -75,6 +75,25 @@ If every local step becomes a core Squad feature, Ralph becomes a junk drawer.
 
 And I say this as someone who has built many junk drawers. Some had Helm charts.
 
+To be clear, Squad already has real built-in capabilities. This is not the first time Ralph learned a trick.
+
+Today you can already opt into things like:
+
+| Built-in capability | What it does |
+|---|---|
+| `self-pull` | Pulls the repo before a watch round starts. |
+| `two-pass` | Hydrates promising work after the first triage pass. |
+| `execute` | Spawns agents for selected work. |
+| `board` | Updates project board state after execution. |
+| `wave-dispatch` / `fleet-dispatch` | Dispatches work in more advanced execution patterns. |
+| `monitor-teams` | Scans Teams for actionable items. |
+| `monitor-email` | Scans email for actionable items. |
+| `retro` / `decision-hygiene` / `cleanup` | Performs housekeeping after the main round. |
+
+Those are great when the capability is broadly useful across many Squads.
+
+But "check whether this customer is red before triage" should not become a Squad core feature. Neither should "write this exact CRM digest in our team's language." That belongs close to the team using it.
+
 The right design is not "merge every workflow idea into Squad." The right design is:
 
 > Keep the watch loop stable, and let repo owners attach small capabilities to stable phases.
@@ -117,6 +136,22 @@ The supported phases are intentionally few:
 | `post-triage` | Normalization or enrichment after candidate work is selected. |
 | `post-execute` | Follow-up artifacts after agents finish work. |
 | `housekeeping` | Cleanup, summaries, reminders, hygiene. |
+
+In one watch round, the order is:
+
+```text
+preflight once at startup
+  -> pre-scan capabilities
+  -> core scan + triage
+  -> post-triage capabilities
+  -> post-execute capabilities
+  -> housekeeping capabilities
+  -> wait for next poll
+```
+
+That means built-ins and repo-local extensions share the same phase model. `self-pull` is a `pre-scan` capability. `two-pass` is `post-triage`. `execute`, `board`, and dispatch capabilities live around `post-execute`. Teams/email monitoring and cleanup-style work happen in `housekeeping`.
+
+External capabilities do not replace that system. They join it.
 
 Config lives under `watch` in `.squad/config.json`.
 
@@ -362,6 +397,37 @@ await writeFile(
   'utf8',
 );
 ```
+
+That file is also how I would connect extension steps today.
+
+The capability result has a `summary` and optional structured `data`:
+
+```js
+return {
+  success: true,
+  summary: `Ticket intake routed ${selected.length} customer item(s)`,
+  data: { selected },
+};
+```
+
+The runner collects those results for the round, and core capabilities can use their own returned data. For example, the built-in `execute` capability returns data that the watch loop uses to update the round's executed count.
+
+But I would not design user extensions around invisible in-memory coupling. If one local step needs to affect a later local step, make the handoff explicit:
+
+```text
+.squad/state/routed-customer-intake.json
+output/customer-follow-up-drafts.md
+output/renewal-risk-digest.md
+```
+
+So the pattern becomes:
+
+1. `ticket-intake-router` writes `.squad/state/routed-customer-intake.json`.
+2. A later `post-execute` or `housekeeping` capability can read that file.
+3. A human can also inspect it.
+4. If the watch process restarts, the state is still understandable.
+
+That is less magical. Which, in automation, is usually a compliment.
 
 Nothing here requires Squad core to understand "strategic customer," "renewal risk," or "CRM hygiene." That language belongs to the repo.
 
