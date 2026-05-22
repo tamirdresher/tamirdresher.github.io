@@ -628,7 +628,9 @@ For multiple machines, each watch loop should follow three rules:
 | Write markers for one-time work | If Machine A already sent the renewal digest, Machine B should see that and skip. |
 | Target stateful work to one machine | Browser sessions, local files, and device-specific integrations should not randomly move around. |
 
-Squad already has a `self-pull` capability for the first part: start the round by fetching and fast-forwarding the repo. For team-specific extensions, I would use the same boring-but-solid pattern from the sample: write explicit state under `.squad/state` or another repo-owned marker file.
+Squad already has an opt-in `self-pull` capability for the first part: when enabled, it runs in the `pre-scan` phase and attempts to fetch and fast-forward the repo before triage. If the branch cannot fast-forward, or the checkout has no tracking branch, it skips rather than pretending to be a distributed lock.
+
+For team-specific extensions, I would use the same boring-but-solid pattern from the sample: write explicit state under a repo-owned marker path, such as `.squad/state/...` for extension-local state or `.squad/cross-machine/tasks/*.yaml` for cross-machine task markers.
 
 For example:
 
