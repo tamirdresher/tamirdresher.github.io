@@ -5,7 +5,7 @@ date: 2026-05-24
 tags: [ai-agents, squad, automation, extensibility, customer-success, workflows, github-copilot]
 series: "Scaling AI-Native Software Engineering"
 series_part: 18
-image: /assets/squad-watch-extensions-customer-success/hero-ralph-clone-army.png
+image: /assets/squad-watch-extensions-customer-success/hero-image.jpg
 ---
 
 > *"The most dangerous phrase in software is: while we are in here, let's just add one more step."*
