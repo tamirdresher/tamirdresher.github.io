@@ -155,7 +155,23 @@ builder.AddProject<Projects.SquadInABox>("maf-workflow")
     .WithHttpEndpoint(name: "http", env: "HTTP_PORTS");
 ```
 
-`maf-workflow` is a real ASP.NET Core API project, not a hidden terminal process. Aspire gives it an HTTP endpoint, so the dashboard shows a URL on the `maf-workflow` row. The API runs against the same `.squad` workspace represented by `maf-squad`, stays alive for dashboard inspection, and `POST /incidents/simulate` can trigger the workflow from the running resource instead of requiring a separate terminal.
+`maf-workflow` is a real ASP.NET Core API project, not a hidden terminal process. Aspire gives it an HTTP endpoint, so the dashboard shows a URL on the `maf-workflow` row. The API runs against the same `.squad` workspace represented by `maf-squad`, stays alive for dashboard inspection, and exposes a tiny workflow API you can actually poke:
+
+- `GET /` — current workflow snapshot
+- `GET /status` — same status snapshot, because dashboards and humans both like obvious URLs
+- `GET /health` — quick liveness check
+- `POST /incidents/simulate?severity=Sev2&title=Database%20latency` — queue the simulated incident and trigger the workflow
+
+From the Aspire dashboard, copy the URL from the `maf-workflow` row and paste it here:
+
+```powershell
+$baseUrl = "<maf-workflow URL from the Aspire dashboard>"
+Invoke-RestMethod "$baseUrl/health"
+Invoke-RestMethod -Method Post "$baseUrl/incidents/simulate?severity=Sev2&title=Database%20latency"
+Invoke-RestMethod "$baseUrl/status"
+```
+
+That is the missing little bridge: the dashboard does not just show that the workflow exists; it gives you the URL you need to trigger it without opening a separate terminal spelunking expedition.
 
 That gives the demo a complete observability loop in the dashboard: process/resource state, the incident trigger response, console output from the workflow, structured logs, traces, metrics, and the resource graph all come from the same running AppHost.
 
