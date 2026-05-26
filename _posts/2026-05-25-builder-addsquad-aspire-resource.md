@@ -151,10 +151,11 @@ So the demo AppHost also wires the `demos/squad-in-a-box` project into the resou
 ```csharp
 builder.AddProject<Projects.SquadInABox>("maf-workflow")
     .WithReference(mafSquad)
-    .WithArgs("--real-squad", "--team-root", sampleSquadRoot);
+    .WithArgs("--team-root", sampleSquadRoot)
+    .WithHttpEndpoint(name: "http", env: "HTTP_PORTS");
 ```
 
-`maf-workflow` hosts the real-Squad MAF adapter proof as a tiny web app against the same `.squad` workspace represented by `maf-squad`. It stays alive for dashboard inspection, and `POST /incidents/simulate` can trigger the workflow from the running resource instead of requiring a separate terminal.
+`maf-workflow` is a real ASP.NET Core API project, not a hidden terminal process. Aspire gives it an HTTP endpoint, so the dashboard shows a URL on the `maf-workflow` row. The API runs against the same `.squad` workspace represented by `maf-squad`, stays alive for dashboard inspection, and `POST /incidents/simulate` can trigger the workflow from the running resource instead of requiring a separate terminal.
 
 That gives the demo a complete observability loop in the dashboard: process/resource state, the incident trigger response, console output from the workflow, structured logs, traces, metrics, and the resource graph all come from the same running AppHost.
 
@@ -225,7 +226,7 @@ The current code and screenshots prove that:
 - `builder.AddSquad(...)` can add multiple named squad resources to an Aspire AppHost.
 - Each squad resource can point at a different local team root.
 - The Aspire dashboard can show one row per squad.
-- A MAF workflow project can appear in the same dashboard and reference a squad resource.
+- A real ASP.NET Core MAF workflow API can appear in the same dashboard, expose a URL, and reference a squad resource.
 - Agent rosters can be exposed as resource properties instead of top-level resource rows.
 - The resource can provide a custom `squad://resource/...` descriptor expression without implying a bound host or port.
 - Dashboard commands can be attached to the squad resource.
