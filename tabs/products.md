@@ -12,11 +12,11 @@ description: "Books, games, and digital products by Tamir Dresher — .NET, reac
   "@type": "CollectionPage",
   "name": "Products & Resources — Tamir Dresher",
   "description": "Books, games, and digital products by Tamir Dresher",
-  "url": "https://tamirdresher.github.io/tabs/products/",
+  "url": "{{ site.url }}/tabs/products/",
   "author": {
     "@type": "Person",
     "name": "Tamir Dresher",
-    "url": "https://tamirdresher.github.io"
+    "url": "{{ site.url }}"
   },
   "hasPart": [
     {
