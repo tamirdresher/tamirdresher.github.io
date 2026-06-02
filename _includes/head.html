@@ -20,9 +20,9 @@
     "@graph": [
       {
         "@type": "Person",
-        "@id": "https://tamirdresher.github.io/#author",
+        "@id": "{{ site.url }}{{ site.baseurl }}/#author",
         "name": "Tamir Dresher",
-        "url": "https://tamirdresher.github.io",
+        "url": "{{ site.url }}{{ site.baseurl }}/",
         "sameAs": [
           "https://twitter.com/tamir_dresher",
           "https://github.com/tamirdresher",
@@ -33,11 +33,11 @@
       },
       {
         "@type": "WebSite",
-        "@id": "https://tamirdresher.github.io/#website",
-        "url": "https://tamirdresher.github.io",
+        "@id": "{{ site.url }}{{ site.baseurl }}/#website",
+        "url": "{{ site.url }}{{ site.baseurl }}/",
         "name": "IBlogger — Tamir Dresher",
         "description": "Tamir Dresher's blog about .NET, reactive programming, distributed systems, AI, and software architecture.",
-        "author": { "@id": "https://tamirdresher.github.io/#author" }
+        "author": { "@id": "{{ site.url }}{{ site.baseurl }}/#author" }
       }
     ]
   }
