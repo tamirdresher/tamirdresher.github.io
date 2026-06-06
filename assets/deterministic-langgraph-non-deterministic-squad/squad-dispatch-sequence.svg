@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc" viewBox="0 0 1220 930">
+  <title id="title">Squad dispatch sequence</title>
+  <desc id="desc">A grounded sequence showing reviewerAgent running a standalone reviewer, applyApprovedStackFixes updating state in TypeScript, squadTechDesign calling the squad coordinator, and assembleDesign writing graph state.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8"/>
+    </marker>
+    <marker id="returnArrow" viewBox="0 0 10 10" refX="2" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 10 0 L 0 5 L 10 10 z" fill="#94a3b8"/>
+    </marker>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#020617" flood-opacity="0.35"/>
+    </filter>
+    <style>
+      .title { font: 800 26px "Segoe UI", Arial, sans-serif; fill: #f8fafc; }
+      .note { font: 500 15px "Segoe UI", Arial, sans-serif; fill: #cbd5e1; }
+      .head { fill: #1d4ed8; stroke: rgba(255,255,255,0.25); stroke-width: 1.3; filter: url(#shadow); }
+      .headText { font: 700 15px "Segoe UI", Arial, sans-serif; fill: #f8fafc; text-anchor: middle; }
+      .lane { stroke: #475569; stroke-width: 2; stroke-dasharray: 7 8; }
+      .call { stroke: #38bdf8; stroke-width: 3; marker-end: url(#arrow); }
+      .ret { stroke: #94a3b8; stroke-width: 2.5; stroke-dasharray: 7 6; marker-start: url(#returnArrow); }
+      .msg { font: 600 14px "Segoe UI", Arial, sans-serif; fill: #e2e8f0; }
+      .phase { fill: rgba(20,184,166,0.11); stroke: rgba(45,212,191,0.35); stroke-width: 1.2; }
+      .phaseText { font: 800 14px "Segoe UI", Arial, sans-serif; fill: #99f6e4; }
+    </style>
+  </defs>
+  <rect width="1220" height="930" rx="28" fill="url(#bg)"/>
+  <text x="48" y="54" class="title">Deterministic dispatch through a narrow Squad seam</text>
+  <text x="48" y="82" class="note">The graph decides the order; reviewer and Squad coordinator boundaries stay explicit and bounded.</text>
+
+  <g id="heads">
+    <g transform="translate(50 120)"><rect class="head" width="130" height="50" rx="14"/><text x="65" y="31" class="headText">LangGraph</text></g>
+    <g transform="translate(220 120)"><rect class="head" width="150" height="50" rx="14"/><text x="75" y="31" class="headText">reviewerAgent</text></g>
+    <g transform="translate(415 120)"><rect class="head" width="150" height="50" rx="14"/><text x="75" y="31" class="headText">runReviewerAgent</text></g>
+    <g transform="translate(610 120)"><rect class="head" width="145" height="50" rx="14"/><text x="72.5" y="31" class="headText">RequirementsReviewer</text></g>
+    <g transform="translate(785 120)"><rect class="head" width="140" height="50" rx="14"/><text x="70" y="31" class="headText">StackFixes</text></g>
+    <g transform="translate(970 120)"><rect class="head" width="100" height="50" rx="14"/><text x="50" y="31" class="headText">Graph State</text></g>
+  </g>
+
+  <line class="lane" x1="115" y1="180" x2="115" y2="895"/>
+  <line class="lane" x1="295" y1="180" x2="295" y2="895"/>
+  <line class="lane" x1="490" y1="180" x2="490" y2="895"/>
+  <line class="lane" x1="682" y1="180" x2="682" y2="505"/>
+  <line class="lane" x1="855" y1="180" x2="855" y2="505"/>
+  <line class="lane" x1="1020" y1="180" x2="1020" y2="895"/>
+
+  <rect class="phase" x="46" y="198" width="1030" height="310" rx="18"/>
+  <text x="64" y="224" class="phaseText">1. reviewerAgent runs the standalone reviewer</text>
+  <line class="call" x1="115" y1="250" x2="295" y2="250"/><text x="136" y="242" class="msg">run review node</text>
+  <line class="call" x1="295" y1="292" x2="490" y2="292"/><text x="316" y="284" class="msg">run standalone reviewer</text>
+  <line class="call" x1="490" y1="334" x2="682" y2="334"/><text x="512" y="326" class="msg">review intake</text>
+  <line class="ret" x1="682" y1="366" x2="490" y2="366"/><text x="535" y="358" class="msg">findings</text>
+  <line class="call" x1="295" y1="398" x2="490" y2="398"/><text x="316" y="390" class="msg">return review dispatch</text>
+  <line class="call" x1="490" y1="430" x2="855" y2="430"/><text x="545" y="422" class="msg">typed findings</text>
+  <line class="ret" x1="855" y1="462" x2="490" y2="462"/><text x="635" y="454" class="msg">findings</text>
+  <line class="ret" x1="295" y1="494" x2="115" y2="494"/><text x="152" y="486" class="msg">store review findings</text>
+
+  <rect class="phase" x="46" y="526" width="1030" height="62" rx="18"/>
+  <text x="64" y="552" class="phaseText">2. applyApprovedStackFixes runs before design</text>
+  <line class="call" x1="115" y1="572" x2="1020" y2="572"/><text x="405" y="564" class="msg">applyApprovedStackFixes applies safe corrections to graph state</text>
+
+  <rect class="phase" x="46" y="612" width="1030" height="310" rx="18"/>
+  <text x="64" y="638" class="phaseText">3. squadTechDesign runs squad coordinator, then assembleDesign writes state</text>
+  <g transform="translate(220 655)"><rect class="head" width="150" height="50" rx="14"/><text x="75" y="31" class="headText">squadTechDesign</text></g>
+  <g transform="translate(610 655)"><rect class="head" width="145" height="50" rx="14"/><text x="72.5" y="31" class="headText">squad</text></g>
+  <g transform="translate(785 655)"><rect class="head" width="140" height="50" rx="14"/><text x="70" y="31" class="headText">assembleDesign</text></g>
+  <line class="lane" x1="682" y1="705" x2="682" y2="895"/>
+  <line class="lane" x1="855" y1="705" x2="855" y2="895"/>
+
+  <line class="call" x1="115" y1="724" x2="295" y2="724"/><text x="142" y="716" class="msg">run tech design node</text>
+  <line class="call" x1="295" y1="756" x2="490" y2="756"/><text x="318" y="748" class="msg">run squad coordinator</text>
+  <line class="call" x1="490" y1="788" x2="682" y2="788"/><text x="527" y="780" class="msg">draft sections with tools</text>
+  <line class="ret" x1="682" y1="820" x2="490" y2="820"/><text x="525" y="812" class="msg">DispatchRecord sections</text>
+  <line class="ret" x1="490" y1="852" x2="295" y2="852"/><text x="323" y="844" class="msg">store design sections</text>
+  <line class="call" x1="115" y1="876" x2="855" y2="876"/><text x="390" y="868" class="msg">run assembleDesign node</text>
+  <line class="call" x1="855" y1="876" x2="1020" y2="876"/><text x="780" y="904" class="msg">assembleDesign writes final graph state</text>
+</svg>
