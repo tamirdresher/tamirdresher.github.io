@@ -6,6 +6,8 @@ tags: [ai-agents, github-copilot, squad, sandboxing, mxc, wsl, linux]
 image: /assets/mxc-copilot-squad-sandbox/hero.png
 ---
 
+![A Copilot agent reaching toward a host file from inside a glass MXC sandbox — the file stays politely out of reach](/assets/mxc-copilot-squad-sandbox/hero.png)
+
 I started with the most scientific test known to software engineering:
 
 ```bash
@@ -205,6 +207,27 @@ So the policy had to deny the Windows drive mount:
 That one line was the difference between "the sandbox can browse the Windows drive read-only" and "the Windows drive is hidden from the AI session."
 
 And for this experiment, hidden was the point.
+
+### Where the Restrictions Actually Live
+
+That JSON snippet does not float in the air. In the [sample repo](https://github.com/tamirdresher/squad-mxc-sandbox-sample) the moving parts sit in a handful of files, and it helps to know which one does what before you go looking:
+
+```text
+squad-mxc-sandbox-sample/
+├── scripts/
+│   └── run-squad-in-mxc.ps1        # Windows-side driver: launches the WSL+Bubblewrap session
+├── examples/
+│   ├── env/sandbox.env.example     # Env vars (paths, tunnel port, auth toggles)
+│   └── mcp/copilot-mxc-mcp.json    # MCP server wiring for Copilot CLI
+├── src/
+│   ├── squadSandbox.ts             # Builds the MXC config (deniedPaths, mounts, network)
+│   ├── mxcWslAdapter.ts            # Talks to the WSL/Bubblewrap backend via the SDK
+│   └── mcpServer.ts                # The MCP shell tool that runs inside MXC
+└── docs/
+    └── security-model.md           # What the sandbox does and does not promise
+```
+
+The `deniedPaths` block above is assembled inside `src/squadSandbox.ts` and handed to `@microsoft/mxc-sdk` through `src/mxcWslAdapter.ts`. The PowerShell driver in `scripts/` is just the entry point that wires the env file, the MCP config, and the SDK call together. If you want to tighten the policy, that is the file to edit — not the JSON in this blog post.
 
 ---
 
