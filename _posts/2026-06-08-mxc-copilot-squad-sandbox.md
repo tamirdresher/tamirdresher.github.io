@@ -68,8 +68,6 @@ The sample code for this experiment lives here:
 - [Source notes](https://github.com/tamirdresher/squad-mxc-sandbox-sample/blob/main/docs/source-notes.md)
 - [Interactive session guide](https://github.com/tamirdresher/squad-mxc-sandbox-sample/blob/main/docs/interactive-session-guide.md)
 
-The repo is public now, so the post points to the exact files instead of making you trust a hand-wavy architecture diagram and my charming personality.
-
 That is the part that made me curious. If agents are going to become more autonomous, the question is not just "which model?" or "which prompt?" It is also:
 
 **Where does the agent actually execute?**
