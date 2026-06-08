@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="860" viewBox="0 0 1400 860" role="img" aria-labelledby="title desc">
+  <title id="title">Live ACA Sandboxes workspace validation proof</title>
+  <desc id="desc">A sanitized proof card showing local tests, live sandbox commands, default-deny egress, snapshot, suspend, and cleanup validation.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="1" stop-color="#312e81"/>
+    </linearGradient>
+    <linearGradient id="line" x1="0" x2="1">
+      <stop offset="0" stop-color="#a78bfa"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 48px "Segoe UI", Arial, sans-serif; fill: #f8fafc; }
+      .subtitle { font: 400 22px "Segoe UI", Arial, sans-serif; fill: #cbd5e1; }
+      .card { fill: #0f172a; stroke: #334155; stroke-width: 1.4; }
+      .section { font: 700 28px "Segoe UI", Arial, sans-serif; fill: #f8fafc; }
+      .label { font: 600 17px "Segoe UI", Arial, sans-serif; fill: #93c5fd; letter-spacing: 0.08em; }
+      .value { font: 500 22px "Cascadia Code", Consolas, monospace; fill: #e5e7eb; }
+      .muted { font: 400 18px "Segoe UI", Arial, sans-serif; fill: #94a3b8; }
+      .ok { fill: #22c55e; }
+      .warn { fill: #f59e0b; }
+      .code { font: 500 20px "Cascadia Code", Consolas, monospace; fill: #d1fae5; }
+      .redacted { font: 700 18px "Segoe UI", Arial, sans-serif; fill: #fef3c7; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="860" fill="url(#bg)"/>
+  <circle cx="1230" cy="120" r="260" fill="#38bdf8" opacity="0.12"/>
+  <circle cx="145" cy="760" r="280" fill="#a78bfa" opacity="0.14"/>
+
+  <text x="85" y="95" class="title">ACA Sandboxes as a Squad workspace</text>
+  <text x="85" y="136" class="subtitle">Real sandbox run, sanitized output: no raw subscription IDs, resource paths, sandbox IDs, or snapshot IDs.</text>
+  <rect x="85" y="170" width="1230" height="4" fill="url(#line)"/>
+
+  <g transform="translate(85 215)">
+    <rect width="390" height="250" rx="24" class="card"/>
+    <circle cx="40" cy="44" r="10" class="ok"/>
+    <text x="65" y="52" class="section">Local gate</text>
+    <text x="32" y="105" class="label">Tests</text>
+    <text x="32" y="136" class="value">14 passed</text>
+    <text x="32" y="178" class="label">Compile</text>
+    <text x="32" y="209" class="value">compileall OK</text>
+    <text x="32" y="235" class="muted">Local demo produced approved artifact</text>
+  </g>
+
+  <g transform="translate(505 215)">
+    <rect width="390" height="250" rx="24" class="card"/>
+    <circle cx="40" cy="44" r="10" class="ok"/>
+    <text x="65" y="52" class="section">Live sandbox</text>
+    <text x="32" y="105" class="label">Commands</text>
+    <text x="32" y="136" class="value">prepare / analyze / read</text>
+    <text x="32" y="178" class="label">Exit codes</text>
+    <text x="32" y="209" class="value">0 / 0 / 0</text>
+    <text x="32" y="235" class="muted">Disposable sandbox, fictional data only</text>
+  </g>
+
+  <g transform="translate(925 215)">
+    <rect width="390" height="250" rx="24" class="card"/>
+    <circle cx="40" cy="44" r="10" class="ok"/>
+    <text x="65" y="52" class="section">Safety posture</text>
+    <text x="32" y="105" class="label">Egress</text>
+    <text x="32" y="136" class="value">Default Deny</text>
+    <text x="32" y="178" class="label">Shell</text>
+    <text x="32" y="209" class="value">fixed allowlist</text>
+    <text x="32" y="235" class="muted">No arbitrary model-chosen commands</text>
+  </g>
+
+  <g transform="translate(85 500)">
+    <rect width="600" height="240" rx="24" class="card"/>
+    <text x="32" y="52" class="section">Workspace artifact</text>
+    <text x="32" y="98" class="code"># Squad Sandbox Review Artifact</text>
+    <text x="32" y="132" class="code">Case: northwind-demo-042</text>
+    <text x="32" y="166" class="code">Deterministic risk score: 11</text>
+    <text x="32" y="200" class="muted">Review approved for demo; no customer data</text>
+  </g>
+
+  <g transform="translate(715 500)">
+    <rect width="600" height="240" rx="24" class="card"/>
+    <text x="32" y="52" class="section">Lifecycle proof</text>
+    <text x="32" y="98" class="value">snapshot: created + deleted</text>
+    <text x="32" y="136" class="value">suspend-at-end: enabled</text>
+    <text x="32" y="174" class="value">cleanup: 0 disposable sandboxes</text>
+    <text x="32" y="212" class="muted">Existing visible sandbox left for inspection</text>
+  </g>
+
+  <g transform="translate(85 775)">
+    <rect width="1230" height="52" rx="18" fill="#020617" stroke="#1e293b"/>
+    <text x="24" y="34" class="code">python -m squad_aca_sandboxes.demo</text>
+    <text x="460" y="34" class="code">mode=azure · identifiers=opaque</text>
+    <text x="1030" y="34" class="redacted">&lt;redacted&gt;</text>
+  </g>
+</svg>
