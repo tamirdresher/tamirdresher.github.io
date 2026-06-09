@@ -5,8 +5,10 @@ date: 2026-06-10
 tags: [ai-agents, squad, langgraph, nodejs, typescript, deterministic, copilot-sdk, orchestration, power-platform, azure]
 series: "Scaling AI-Native Software Engineering"
 series_part: 19
-image: /assets/deterministic-langgraph-non-deterministic-squad/squad-langgraph-factory-hero.svg
+image: /assets/deterministic-langgraph-non-deterministic-squad/hero.png
 ---
+
+![A deterministic LangGraph factory line on the left handing a glowing DispatchRecord packet across a clean policy seam to a green roundtable of holographic engineers — Squad doing the design judgment](/assets/deterministic-langgraph-non-deterministic-squad/hero.png)
 
 This week I had to help a Node.js team use Squad inside their app.
 
