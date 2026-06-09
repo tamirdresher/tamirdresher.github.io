@@ -5,8 +5,11 @@ date: 2026-06-07
 tags: [ai-agents, squad, azure-container-apps, dynamic-sessions, langgraph, sandbox, security, architecture]
 series: "Scaling AI-Native Software Engineering"
 series_part: 20
+image: /assets/aca-dynamic-sessions-squad/hero.png
 draft: true
 ---
+
+![A cyan command console with an operator at a LangGraph diagram on the left, an industrial blast-shield airlock in the center passing a RunTool packet through, and an ephemeral amber sandbox capsule on the right returning a glowing Artifact](/assets/aca-dynamic-sessions-squad/hero.png)
 
 In the last post, I put Squad behind a deterministic LangGraph node.
 
