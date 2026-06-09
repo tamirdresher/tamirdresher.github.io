@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Deterministic LangGraph, Non-Deterministic Squad"
-date: 2026-06-06
+date: 2026-06-10
 tags: [ai-agents, squad, langgraph, nodejs, typescript, deterministic, copilot-sdk, orchestration, power-platform, azure]
 series: "Scaling AI-Native Software Engineering"
 series_part: 19
@@ -16,7 +16,7 @@ But this is the real world. Teams already have stacks. They have TypeScript serv
 
 And if I am honest, that is exactly why this example matters.
 
-In the previous post, I talked about deterministic workflows with non-deterministic AI Squads: code owns the process, AI owns the judgment. This post continues that thread, but inside a Node.js application. The team wanted Squad in their app, and the answer could not be "please rewrite your product in C# first," even if a tiny part of me wanted to try.
+In the [previous post](/blog/2026/05/21/deterministic-meets-squads), I talked about deterministic workflows with non-deterministic AI Squads: code owns the process, AI owns the judgment. This post continues that thread, but inside a Node.js application. The team wanted Squad in their app, and the answer could not be "please rewrite your product in C# first," even if a tiny part of me wanted to try.
 
 The good news is that Node teams do not need to wait. LangGraph already gives them a deterministic graph. Standalone agents can handle specific judgment steps. Plain TypeScript can handle predictable-but-important mechanical steps. Squad can handle the deeper technical-design conversation behind one explicit boundary. The trick is to connect each thing at the right level instead of stuffing the whole architecture into one heroic prompt and making future-you reverse-engineer it later.
 
