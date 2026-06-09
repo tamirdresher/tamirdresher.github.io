@@ -6,10 +6,8 @@ tags: [ai-agents, squad, azure-container-apps, sandboxes, langgraph, sandbox, se
 series: "Scaling AI-Native Software Engineering"
 series_part: 21
 image: /assets/aca-sandboxes-squad-workspace/hero.png
-draft: true
 ---
 
-![A cyan operator console on the left looking through reinforced glass into an amber-lit ACA sandbox workshop on the right — persistent benches, glowing file trees, build-cache crates, artifact shelves, and a hologram banner that says PAUSED — awaiting human review](/assets/aca-sandboxes-squad-workspace/hero.png)
 
 In [Part 1], I put Squad inside a deterministic LangGraph workflow. In [Part 2], I moved risky tool execution into Azure Container Apps Dynamic Sessions.
 
