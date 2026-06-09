@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Part 3 — Giving the Agent a Workshop: Squad Workspaces in Azure Container Apps Sandboxes"
-date: 2026-06-07
+date: 2026-06-12
 tags: [ai-agents, squad, azure-container-apps, sandboxes, langgraph, sandbox, security, architecture]
 series: "Scaling AI-Native Software Engineering"
 series_part: 21
@@ -461,5 +461,5 @@ Agents do not just need brains. They need places to work. And if we give them a 
 - Companion sample workspace: <https://github.com/tamirdresher/squad-aca-sandboxes-workspace>, validated live for the bounded demo path, including local validation, live sandbox lifecycle, toolchain checks, and cleanup.
 - A sanitized proof artifact accompanies the post at `/assets/aca-sandboxes-squad-workspace/live-validation-evidence.md`.
 
-[Part 1]: /blog/2026/05/21/deterministic-meets-squads
-[Part 2]: /blog/2026/06/07/aca-dynamic-sessions-squad
+[Part 1]: /blog/2026/06/10/deterministic-langgraph-non-deterministic-squad
+[Part 2]: /blog/2026/06/12/aca-dynamic-sessions-squad
