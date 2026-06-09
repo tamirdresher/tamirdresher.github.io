@@ -477,6 +477,17 @@ Please use this power responsibly.
 
 ---
 
+## What's Next
+
+This is the first post in a three-part trilogy on putting the architecture into Azure.
+
+- **Part 2 — Sandboxing the Dangerous Part: Squad Tools in Azure Container Apps Dynamic Sessions** — where the risky tool execution actually goes.
+- **Part 3 — Giving the Agent a Workshop: Squad Workspaces in Azure Container Apps Sandboxes** — when the agent needs a persistent workspace, not just one command.
+
+Both ship a couple of days after this one. I will link them up here when they go live.
+
+---
+
 ## More in This Series
 
 - [Part 0 — Organized by AI: The Origin Story](/blog/2026/03/10/organized-by-ai)
