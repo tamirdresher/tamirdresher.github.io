@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Part 2 — Sandboxing the Dangerous Part: Squad Tools in Azure Container Apps Dynamic Sessions"
-date: 2026-06-07
+date: 2026-06-12
 tags: [ai-agents, squad, azure-container-apps, dynamic-sessions, langgraph, sandbox, security, architecture]
 series: "Scaling AI-Native Software Engineering"
 series_part: 20
@@ -11,7 +11,7 @@ draft: true
 
 ![A cyan command console with an operator at a LangGraph diagram on the left, an industrial blast-shield airlock in the center passing a RunTool packet through, and an ephemeral amber sandbox capsule on the right returning a glowing Artifact](/assets/aca-dynamic-sessions-squad/hero.png)
 
-In the last post, I put Squad behind a deterministic LangGraph node.
+In the [previous post](/blog/2026/06/10/deterministic-langgraph-non-deterministic-squad), I put Squad behind a deterministic LangGraph node.
 
 That solved one problem and immediately exposed the next one. Which is how architecture usually behaves when it is trying to be helpful.
 
@@ -553,7 +553,8 @@ Those hands should probably be wearing gloves.
 
 ## More in This Series
 
-- [Deterministic LangGraph, Non-Deterministic Squad](./squad-langgraph-nodejs-deterministic.md)
+- [Deterministic LangGraph, Non-Deterministic Squad](/blog/2026/06/10/deterministic-langgraph-non-deterministic-squad)
+- [Part 3 — Giving the Agent a Workshop: Squad Workspaces in Azure Container Apps Sandboxes](/blog/2026/06/12/aca-sandboxes-squad-workspace)
 - [Dynamic sessions in Azure Container Apps](https://learn.microsoft.com/azure/container-apps/sessions)
 - [Use session pools in Azure Container Apps](https://learn.microsoft.com/azure/container-apps/session-pool)
 - [Azure Container Apps sandboxes overview](https://learn.microsoft.com/en-us/azure/container-apps/sandboxes-overview)
