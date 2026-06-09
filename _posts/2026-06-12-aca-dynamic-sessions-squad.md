@@ -6,7 +6,6 @@ tags: [ai-agents, squad, azure-container-apps, dynamic-sessions, langgraph, sand
 series: "Scaling AI-Native Software Engineering"
 series_part: 20
 image: /assets/aca-dynamic-sessions-squad/hero.png
-draft: true
 ---
 
 In the [previous post](/blog/2026/06/10/deterministic-langgraph-non-deterministic-squad), I put Squad behind a deterministic LangGraph node.
