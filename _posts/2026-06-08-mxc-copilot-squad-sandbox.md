@@ -6,8 +6,6 @@ tags: [ai-agents, github-copilot, squad, sandboxing, mxc, wsl, linux]
 image: /assets/mxc-copilot-squad-sandbox/hero.png
 ---
 
-![A Copilot agent reaching toward a host file from inside a glass MXC sandbox — the file stays politely out of reach](/assets/mxc-copilot-squad-sandbox/hero.png)
-
 I started with the most scientific test known to software engineering:
 
 ```bash
