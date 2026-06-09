@@ -9,8 +9,6 @@ image: /assets/aca-dynamic-sessions-squad/hero.png
 draft: true
 ---
 
-![A cyan command console with an operator at a LangGraph diagram on the left, an industrial blast-shield airlock in the center passing a RunTool packet through, and an ephemeral amber sandbox capsule on the right returning a glowing Artifact](/assets/aca-dynamic-sessions-squad/hero.png)
-
 In the [previous post](/blog/2026/06/10/deterministic-langgraph-non-deterministic-squad), I put Squad behind a deterministic LangGraph node.
 
 That solved one problem and immediately exposed the next one. Which is how architecture usually behaves when it is trying to be helpful.
