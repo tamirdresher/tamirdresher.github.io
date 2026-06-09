@@ -8,8 +8,6 @@ series_part: 19
 image: /assets/deterministic-langgraph-non-deterministic-squad/hero.png
 ---
 
-![A deterministic LangGraph factory line on the left handing a glowing DispatchRecord packet across a clean policy seam to a green roundtable of holographic engineers — Squad doing the design judgment](/assets/deterministic-langgraph-non-deterministic-squad/hero.png)
-
 This week I had to help a Node.js team use Squad inside their app.
 
 They do not have the Microsoft Agent Framework, which is inconvenient for my C# heart but completely normal for the real world. The Node.js team was standing there with TypeScript, LangGraph, `package-lock.json`, and a very reasonable desire not to rewrite their product just because I like different tooling.
