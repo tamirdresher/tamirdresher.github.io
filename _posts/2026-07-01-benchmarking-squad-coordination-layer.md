@@ -7,9 +7,11 @@ series: "Scaling AI-Native Software Engineering"
 series_part: 22
 ---
 
-Hold a model constant, organize it into a coordinated team of agents, and it beats the same model running solo — more tasks completed, far less variance, and a clean run across every benchmark we put it through. That's the headline from a benchmark study of Squad I ran with Brady Gaster, and the numbers make the case.
+The most common question I get about Squad is some version of the same one: can you actually *show* me — with data — that coordinating a team of agents adds real value over just pointing one good model at the problem? It's a fair challenge, and it's the honest motivation for this whole study.
 
-With every agent pinned to **Claude Opus 4.6**, the full Squad stack completed **100%** of the MARBLE ablation tasks against **85%** for a single agent — a **+15-point** completion lift. Routing alone, with no shared memory, delivers **+7.5** of that. Variance across domains drops from 11.2% to essentially zero: the coordinated team isn't just more capable on average, it's dramatically more consistent. These are early numbers at n=10 per cell — but they're strikingly consistent across domains, and larger runs will confirm the scale.
+It's also a timely one. GitHub recently published [their own harness evaluation](https://github.blog/ai-and-ml/github-copilot/evaluating-performance-and-efficiency-of-the-github-copilot-agentic-harness-across-models-and-tasks/) of the Copilot agentic harness across models and tasks, and their central finding is that the orchestration layer — the harness that routes tools, manages context, and shapes the workflow — is a first-class performance variable in its own right, not a thin wrapper around the model. That's the idea I wanted to test one level up: if the harness matters that much, does the coordination layer sitting on top of it matter too? I ran the study with Brady Gaster to find out.
+
+Held to a single model, the answer is yes. With every agent pinned to **Claude Opus 4.6**, the full Squad stack completed **100%** of the MARBLE ablation tasks against **85%** for a single agent — a **+15-point** completion lift, with **+7.5** of that coming from routing alone, and variance across domains falling from 11.2% to essentially zero. The coordinated team isn't just more capable on average; it's dramatically more consistent. These are early numbers at n=10 per cell, but they're strikingly consistent across domains, and larger runs will confirm the scale.
 
 ---
 
