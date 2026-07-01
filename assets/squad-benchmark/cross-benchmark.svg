@@ -1,0 +1,71 @@
+<svg width="100%" height="440" viewBox="0 0 780 440" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="0" width="100%" height="100%" fill="#ffffff"/>
+    <!-- Y axis -->
+    <line x1="120" y1="30" x2="120" y2="290" stroke="#dedede" stroke-width="1"/>
+    <text x="115" y="35" text-anchor="end" font-size="10" fill="#5c5c5c">100%</text>
+    <text x="115" y="100" text-anchor="end" font-size="10" fill="#5c5c5c">75%</text>
+    <text x="115" y="165" text-anchor="end" font-size="10" fill="#5c5c5c">50%</text>
+    <text x="115" y="230" text-anchor="end" font-size="10" fill="#5c5c5c">25%</text>
+    <text x="115" y="293" text-anchor="end" font-size="10" fill="#5c5c5c">0%</text>
+    <!-- Grid -->
+    <line x1="120" y1="30" x2="750" y2="30" stroke="#dedede" stroke-width="0.5" stroke-dasharray="4,4"/>
+    <line x1="120" y1="95" x2="750" y2="95" stroke="#dedede" stroke-width="0.5" stroke-dasharray="4,4"/>
+    <line x1="120" y1="160" x2="750" y2="160" stroke="#dedede" stroke-width="0.5" stroke-dasharray="4,4"/>
+    <line x1="120" y1="225" x2="750" y2="225" stroke="#dedede" stroke-width="0.5" stroke-dasharray="4,4"/>
+    <line x1="120" y1="290" x2="750" y2="290" stroke="#dedede" stroke-width="1"/>
+
+    <!-- MARBLE (400 tasks) -->
+    <!-- Squad: 99.25% → height ~258 -->
+    <rect x="150" y="32" width="44" height="258" fill="#b11f4b" rx="3"/>
+    <text x="172" y="26" text-anchor="middle" font-size="9" font-weight="600" fill="#b11f4b">99.25%</text>
+    <!-- No-Squad same-model: 85% (completion avg, corrected) -->
+    <rect x="198" y="69" width="44" height="221" fill="#0078d4" rx="3"/>
+    <text x="220" y="63" text-anchor="middle" font-size="9" font-weight="600" fill="#0078d4">85%</text>
+    <!-- Paper baseline: 45% -->
+    <rect x="246" y="173" width="44" height="117" fill="#6f6f6f" rx="3" opacity="0.5"/>
+    <text x="268" y="167" text-anchor="middle" font-size="9" fill="#6f6f6f">~45%¹</text>
+    <text x="220" y="308" text-anchor="middle" font-size="10" fill="#5c5c5c">MARBLE (400)</text>
+
+    <!-- DevBench (1800 tasks) -->
+    <!-- Squad: 53.1% → 290-138=152 -->
+    <rect x="320" y="152" width="44" height="138" fill="#b11f4b" rx="3"/>
+    <text x="342" y="146" text-anchor="middle" font-size="9" font-weight="600" fill="#b11f4b">53.1%</text>
+    <!-- Best baseline: 43.5% → 290-113=177 -->
+    <rect x="368" y="177" width="44" height="113" fill="#6f6f6f" rx="3" opacity="0.5"/>
+    <text x="390" y="171" text-anchor="middle" font-size="9" fill="#6f6f6f">43.5%²</text>
+    <text x="365" y="308" text-anchor="middle" font-size="10" fill="#5c5c5c">DevBench (1,800)</text>
+
+    <!-- SWE-bench Lite (300 tasks) -->
+    <!-- Squad: 66% → 290-172=118 -->
+    <rect x="450" y="118" width="44" height="172" fill="#b11f4b" rx="3"/>
+    <text x="472" y="112" text-anchor="middle" font-size="9" font-weight="600" fill="#b11f4b">66%</text>
+    <!-- Estimated baseline: 48% → 290-125=165 -->
+    <rect x="498" y="165" width="44" height="125" fill="#6f6f6f" rx="3" opacity="0.5"/>
+    <text x="520" y="159" text-anchor="middle" font-size="9" fill="#6f6f6f">~48%³</text>
+    <text x="495" y="308" text-anchor="middle" font-size="10" fill="#5c5c5c">SWE-bench Lite (300)</text>
+
+    <!-- TerminalBench 2.0 (20 tasks) -->
+    <!-- Squad: 80% → 290-208=82 -->
+    <rect x="580" y="82" width="44" height="208" fill="#b11f4b" rx="3"/>
+    <text x="602" y="76" text-anchor="middle" font-size="9" font-weight="600" fill="#b11f4b">80%</text>
+    <!-- Baseline same-model: 75% → 290-195=95 -->
+    <rect x="628" y="95" width="44" height="195" fill="#0078d4" rx="3"/>
+    <text x="650" y="89" text-anchor="middle" font-size="9" font-weight="600" fill="#0078d4">75%</text>
+    <text x="625" y="308" text-anchor="middle" font-size="10" fill="#5c5c5c">TerminalBench (20)</text>
+
+    <!-- Legend -->
+    <rect x="150" y="330" width="14" height="14" fill="#b11f4b" rx="2"/>
+    <text x="168" y="342" font-size="10" fill="#5c5c5c">Copilot CLI + Squad</text>
+    <rect x="320" y="330" width="14" height="14" fill="#0078d4" rx="2"/>
+    <text x="338" y="342" font-size="10" fill="#5c5c5c">Copilot CLI alone (same model)</text>
+    <rect x="540" y="330" width="14" height="14" fill="#6f6f6f" rx="2" opacity="0.5"/>
+    <text x="558" y="342" font-size="10" fill="#5c5c5c">Best published baseline (see footnotes)</text>
+
+    <!-- Footnotes -->
+    <text x="120" y="365" font-size="8.5" fill="#6f6f6f">¹ MARBLE paper baseline uses gpt-4o-mini with milestone KPIs — different model and different metric. Not directly comparable.</text>
+    <text x="120" y="378" font-size="8.5" fill="#6f6f6f">² DevBench best baseline is GPT-5.5 (43.5% pass@1). Squad uses GPT-5.4. No same-model ablation available.</text>
+    <text x="120" y="391" font-size="8.5" fill="#6f6f6f">³ SWE-bench Lite: estimated Copilot agent baseline from public reports. No verified same-model-without-Squad run performed.</text>
+    <text x="120" y="404" font-size="8.5" fill="#6f6f6f">  TerminalBench 2.0: Same model (Claude Opus 4.6), different harness paths — directional only, n=20 (+1 task).</text>
+    <text x="120" y="417" font-size="8.5" fill="#6f6f6f">  MARBLE bars mix task sets: blue baseline = 85% from the 160-task controlled ablation; Squad red bar = 99.25% from the 400-task full run.</text>
+  </svg>
+
