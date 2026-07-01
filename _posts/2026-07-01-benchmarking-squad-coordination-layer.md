@@ -5,12 +5,9 @@ date: 2026-07-01
 tags: [ai-agents, squad, benchmarks, marble, swe-bench, terminalbench, evaluation, methodology, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
 series_part: 22
-image: /assets/squad-benchmark/hero.png
 ---
 
-<!-- TODO(assets): /assets/squad-benchmark/hero.png does not exist yet — needs to be created before publishing. The other SVGs referenced below (architecture, marble-ablation, cross-benchmark, completion-vs-cost, cost-per-task) are exported from the squad-marble-benchmark repo. -->
-
-Holding a model constant and organizing it into a coordinated team of agents produces a modest, repeatable improvement over running the same model as a single agent — and, on the hardest correctness metric we measured, no improvement at all. That is the short version of a benchmark study of Squad I ran with [Brady Gaster](https://bradygaster.com/), and the numbers come first.
+Holding a model constant and organizing it into a coordinated team of agents produces a modest, repeatable improvement over running the same model as a single agent — and, on the hardest correctness metric we measured, no improvement at all. That is the short version of a benchmark study of Squad I ran with Brady Gaster, and the numbers come first.
 
 With every agent pinned to **Claude Opus 4.6**, the full Squad stack completed **100%** of the MARBLE ablation tasks against **85%** for a single agent — a **+15-point** completion lift. Routing alone, with no shared memory, accounts for **+7.5** of that. Variance across domains collapses from 11.2% to essentially zero: the coordinated team isn't only a little better on average, it's far more consistent. One caveat stated up front, because it governs everything below: at n=10 per cell, that lift sits within statistical noise. It's directional, not significant. The rest of this post is the detail behind those sentences.
 
@@ -147,14 +144,13 @@ Given a fixed model, a well-organized team of agents is a little better and cons
 - MARBLE benchmark paper (ACL 2025) — [Zhu et al.][4]
 - GitHub's harness methodology, which this study mirrors — [Evaluating performance and efficiency of the GitHub Copilot agentic harness][5]
 - Framework version under test — Squad v0.9.6 (June 2026)
-- Co-author on this work — [Brady Gaster][6]
+- Co-author on this work — Brady Gaster
 
 [1]: https://github.com/tamirdresher/squad-marble-benchmark
 [2]: https://github.com/tamirdresher/squad-swe-bench
 [3]: https://github.com/tamirdresher/squad-marble-benchmark/pull/245
 [4]: https://arxiv.org/abs/2506.09468
 [5]: https://github.blog/ai-and-ml/github-copilot/evaluating-performance-and-efficiency-of-the-github-copilot-agentic-harness-across-models-and-tasks/
-[6]: https://bradygaster.com/
 
 ---
 
