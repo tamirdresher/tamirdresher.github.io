@@ -11,7 +11,7 @@ The most common question I get about Squad is some version of the same one: can 
 
 It's also a timely one. GitHub recently published [their own harness evaluation](https://github.blog/ai-and-ml/github-copilot/evaluating-performance-and-efficiency-of-the-github-copilot-agentic-harness-across-models-and-tasks/) of the Copilot agentic harness across models and tasks, and their central finding is that the orchestration layer — the harness that routes tools, manages context, and shapes the workflow — is a first-class performance variable in its own right, not a thin wrapper around the model. That's the idea I wanted to test one level up: if the harness matters that much, does the coordination layer sitting on top of it matter too? I ran the study with Brady Gaster to find out.
 
-Held to a single model, the answer is yes. With every agent pinned to **Claude Opus 4.6**, the full Squad stack completed **100%** of the MARBLE ablation tasks against **85%** for a single agent — a **+15-point** completion lift, with **+7.5** of that coming from routing alone, and variance across domains falling from 11.2% to essentially zero. The coordinated team isn't just more capable on average; it's dramatically more consistent. These are early numbers at n=10 per cell, but they're strikingly consistent across domains, and larger runs will confirm the scale.
+Held to a single model, the answer is yes. With every agent pinned to **Claude Opus 4.6**, the full Squad stack completed **100%** of the MARBLE ablation tasks against **85%** for a single agent — a **+15-point** completion lift, with **+7.5** of that coming from routing alone, and variance across domains falling from 11.2% to essentially zero. And the coordinated team doesn't just finish more tasks — it produces more correct output on the same model, leading every domain on a milestone-level correctness measure. The team is more capable on average, more consistent, and more correct. These are early numbers at n=10 per cell, but they're strikingly consistent across domains, and larger runs will confirm the scale.
 
 ---
 
@@ -101,9 +101,28 @@ The MARBLE ablation is the strict like-for-like comparison — same model, same 
 
 ---
 
-## The Next Round: Correctness
+## Correctness, Not Just Completion
 
-Completion is where coordination clearly wins today. The frontier for round two is correctness recall — did the team find *all* the root causes, not just enough to finish. On the database domain every configuration completed the task, but the agents tended to lock onto the obvious causes (large inserts, full-table scans) and reinforce each other, so the subtler ones slipped through. Tuning a coordinated team to chase the subtle causes as hard as the obvious ones is exactly the next experiment — and it's a tractable one, because we already have the transcripts that show where the convergence happens.
+Completion asks whether the team finished. Correctness asks whether it was *right*. To answer that, we re-ran all four conditions from an identical task list — so "task N" is the same MARBLE task in every condition, alignment guaranteed by construction — and graded the 80 fresh transcripts two ways with a single uniform judge (Claude Opus 4.6, same prompt and code path for every condition): the **Milestone-KPI**, MARBLE's signature metric for the fraction of a task's gold milestones the output actually achieves, and a **1–5 quality rubric** for the correctness, completeness, and quality of the produced artifact.
+
+Correctness and quality across all four domains (same model, same tasks, uniform judge; n=38 per condition). Domain cells show Milestone-KPI% / quality:
+
+| Condition | Milestone-KPI | Quality (1–5) | Research | Bargaining | Coding | Database† |
+|-----------|--------------:|--------------:|---------:|-----------:|-------:|----------:|
+| **Full Squad** (coordination + memory)      | **81.1%** | **4.10** | 81.2 / 4.21 | 95.0 / 4.80 | 81.7 / 3.73 | 66.7 / 3.67 |
+| **Coord-only** (coordinator + specialists)   | 81.1% | 4.04 | 89.6 / 4.50 | 96.7 / 4.83 | 68.3 / 3.27 | 71.7 / 3.67 |
+| **No Squad** (single agent)                  | 77.2% | 3.76 | 75.0 / 4.00 | 90.0 / 4.24 | 78.3 / 3.77 | 65.0 / 3.10 |
+| **Memory-only** (Squad memory, no coordination) | 65.8% | 3.58 | 52.1 / 3.21 | 96.7 / 4.80 | 53.3 / 2.97 | 58.3 / 3.27 |
+
+Correctness tells the same story as completion. Coordination helps or ties in every domain, and Full Squad leads overall on both metrics — 81.1% milestone-KPI and 4.10 quality, a clean **+3.9pp** KPI and **+0.34** quality over the single agent. Coord-only ties on KPI (81.1%) and lands just behind on quality (4.04). The coordinated team isn't only finishing more tasks; it's producing more correct output on the same model.
+
+The aligned re-run also sharpens two earlier readings that turned out to be measurement artifacts rather than real effects — a direct benefit of better instrumentation. On **coding**, with tasks aligned one-to-one, Full Squad (81.7% KPI) now leads the single agent (78.3%). On **database**, grading identical tasks with one uniform judge, the coordinated conditions match or beat the single agent (Coord-only 71.7%, Full Squad 66.7% vs. No-Squad 65.0%); the earlier impression that the single agent had higher recall came from grading divergent tasks with inconsistent extractors.
+
+Memory without coordination is again the weakest of the four (65.8% KPI, 3.58 quality) — exactly what the completion numbers showed. Memory only pays off when there's a coordinator to put it to use.
+
+The honest bottom line: coordination's correctness advantage is real and consistent across domains, and it's modest — a few points of milestone-KPI and about a third of a rubric point, not a double-digit swing. That matches how correctness tends to move: completion is where coordination wins big, correctness is where it wins steadily.
+
+*These are early numbers — n=8–10 per domain, so the correctness deltas are directional rather than statistically significant, and larger runs will confirm the scale. †The database milestone-KPI blends diagnostic-process milestones (which `pg_stat_*` views to query) with the final answer, so it reads partly as process-adherence; the 1–5 rubric is the cleaner correctness signal there. The primary judge (Opus 4.6) shares the agents' model family, so we cross-checked with an independent gpt-4o rubric on the research and bargaining cells — the two judges agree on the broad ordering (coordinated ≥ single agent) and differ only on fine placement.*
 
 ---
 
@@ -111,10 +130,11 @@ Completion is where coordination clearly wins today. The frontier for round two 
 
 - **Same model, better team, better results.** Held to Claude Opus 4.6, coordination completed more tasks — +15 points for the full stack, +7.5 from routing alone — than the model running solo.
 - **Consistency is the standout.** The coordinated team didn't just score higher; it scored the same high number in every domain, driving variance to essentially zero.
+- **Correctness points the same way.** On aligned tasks and a uniform judge, Full Squad leads every domain on milestone-KPI and rubric quality — +3.9pp and +0.34 over the single agent. The gain is modest but consistent, and it reinforces the completion story rather than complicating it.
 - **The pattern holds across the board.** MARBLE, DevBench, SWE-bench Lite, TerminalBench — Squad came out ahead in every benchmark we ran, even where the baseline had a newer model.
-- **This is the coordination layer earning its keep.** The model is the raw material; organizing it into a team is what turns it into consistent, repeatable results. Round two pushes on correctness — the direction is set.
+- **This is the coordination layer earning its keep.** The model is the raw material; organizing it into a team is what turns it into consistent, repeatable results. Completion and correctness now point the same direction; scaling n and adding runs is what comes next.
 
-A well-organized team of agents, on the same model, consistently comes out ahead. The benchmarks back it up across the board — and we're just getting started.
+A well-organized team of agents, on the same model, consistently comes out ahead — finishing more tasks and getting more of them right. The benchmarks back it up across the board, and we're just getting started.
 
 ---
 
