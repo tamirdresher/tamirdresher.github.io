@@ -1,0 +1,73 @@
+<svg width="100%" height="360" viewBox="0 0 780 360" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="0" width="100%" height="100%" fill="#ffffff"/>
+    <!-- Axes -->
+    <line x1="100" y1="20" x2="100" y2="280" stroke="#dedede" stroke-width="1"/>
+    <line x1="100" y1="280" x2="720" y2="280" stroke="#dedede" stroke-width="1"/>
+    <!-- Y axis label -->
+    <text x="25" y="150" text-anchor="middle" font-size="11" fill="#5c5c5c" transform="rotate(-90, 25, 150)">Milestone-KPI / Correctness (%)</text>
+    <!-- X axis label -->
+    <text x="410" y="318" text-anchor="middle" font-size="11" fill="#5c5c5c">Cost per Task ($)</text>
+    <!-- Y grid + labels: 50%, 60%, 70%, 80%, 90% -->
+    <text x="95" y="284" text-anchor="end" font-size="9" fill="#5c5c5c">50%</text>
+    <text x="95" y="219" text-anchor="end" font-size="9" fill="#5c5c5c">60%</text>
+    <line x1="100" y1="215" x2="720" y2="215" stroke="#dedede" stroke-width="0.5" stroke-dasharray="3,3"/>
+    <text x="95" y="154" text-anchor="end" font-size="9" fill="#5c5c5c">70%</text>
+    <line x1="100" y1="150" x2="720" y2="150" stroke="#dedede" stroke-width="0.5" stroke-dasharray="3,3"/>
+    <text x="95" y="89" text-anchor="end" font-size="9" fill="#5c5c5c">80%</text>
+    <line x1="100" y1="85" x2="720" y2="85" stroke="#dedede" stroke-width="0.5" stroke-dasharray="3,3"/>
+    <text x="95" y="24" text-anchor="end" font-size="9" fill="#5c5c5c">90%</text>
+    <line x1="100" y1="20" x2="720" y2="20" stroke="#dedede" stroke-width="0.5" stroke-dasharray="3,3"/>
+    <!-- X grid + labels: $0, $1, $2, $3, $4 -->
+    <text x="100" y="298" text-anchor="middle" font-size="9" fill="#5c5c5c">$0</text>
+    <text x="255" y="298" text-anchor="middle" font-size="9" fill="#5c5c5c">$1</text>
+    <line x1="255" y1="20" x2="255" y2="280" stroke="#dedede" stroke-width="0.5" stroke-dasharray="3,3"/>
+    <text x="410" y="298" text-anchor="middle" font-size="9" fill="#5c5c5c">$2</text>
+    <line x1="410" y1="20" x2="410" y2="280" stroke="#dedede" stroke-width="0.5" stroke-dasharray="3,3"/>
+    <text x="565" y="298" text-anchor="middle" font-size="9" fill="#5c5c5c">$3</text>
+    <line x1="565" y1="20" x2="565" y2="280" stroke="#dedede" stroke-width="0.5" stroke-dasharray="3,3"/>
+    <text x="720" y="298" text-anchor="middle" font-size="9" fill="#5c5c5c">$4</text>
+
+    <!-- "up and to the left = best value" annotation near Coord-only -->
+    <text x="120" y="52" text-anchor="start" font-size="8" font-style="italic" fill="#5c5c5c">&#8598; up and to the left = best value</text>
+
+    <!-- ================= DATA POINTS ================= -->
+
+    <!-- Memory-only: 65.8% KPI, ~$1.50/task, x=333 y=177 (worst: bottom-right) -->
+    <ellipse cx="333" cy="177" rx="22" ry="14" fill="#f59e0b" opacity="0.12"/>
+    <circle cx="333" cy="177" r="7" fill="#f59e0b"/>
+    <text x="345" y="180" text-anchor="start" font-size="9" font-weight="600" fill="#b45309">Memory-only</text>
+    <text x="345" y="191" text-anchor="start" font-size="8" fill="#b45309">65.8% &#183; ~$1.50</text>
+
+    <!-- No Squad: 77.2% KPI, $0.68/task, x=205 y=103 -->
+    <ellipse cx="205" cy="103" rx="18" ry="12" fill="#0078d4" opacity="0.12"/>
+    <circle cx="205" cy="103" r="7" fill="#0078d4"/>
+    <text x="217" y="100" text-anchor="start" font-size="9" font-weight="600" fill="#0078d4">No Squad</text>
+    <text x="217" y="111" text-anchor="start" font-size="8" fill="#0078d4">77.2% &#183; $0.68</text>
+
+    <!-- Full Squad: 81.1% KPI, $0.97/task, x=250 y=78 -->
+    <ellipse cx="250" cy="78" rx="18" ry="12" fill="#b11f4b" opacity="0.12"/>
+    <circle cx="250" cy="78" r="8" fill="#b11f4b"/>
+    <!-- label up-right of dot to avoid collision with Coord-only -->
+    <text x="262" y="66" text-anchor="start" font-size="9" font-weight="600" fill="#b11f4b">Full Squad</text>
+    <text x="262" y="77" text-anchor="start" font-size="8" fill="#b11f4b">81.1% &#183; $0.97</text>
+
+    <!-- Coord-only: 81.1% KPI, $0.41/task, x=164 y=78 (same y as Full Squad, best value) -->
+    <ellipse cx="164" cy="78" rx="18" ry="12" fill="#b11f4b" opacity="0.08"/>
+    <circle cx="164" cy="78" r="7" fill="#b11f4b" opacity="0.65"/>
+    <!-- label down-left of dot to avoid collision with Full Squad -->
+    <text x="152" y="93" text-anchor="end" font-size="9" font-weight="600" fill="#b11f4b">Coord-only</text>
+    <text x="152" y="104" text-anchor="end" font-size="8" fill="#b11f4b">81.1% &#183; $0.41</text>
+
+    <!-- ================= LEGEND ================= -->
+    <circle cx="105" cy="340" r="5" fill="#b11f4b"/>
+    <text x="114" y="343" text-anchor="start" font-size="9" fill="#5c5c5c">Full Squad</text>
+    <circle cx="185" cy="340" r="5" fill="#b11f4b" opacity="0.65"/>
+    <text x="194" y="343" text-anchor="start" font-size="9" fill="#5c5c5c">Coord-only</text>
+    <circle cx="268" cy="340" r="5" fill="#0078d4"/>
+    <text x="277" y="343" text-anchor="start" font-size="9" fill="#5c5c5c">No Squad</text>
+    <circle cx="345" cy="340" r="5" fill="#f59e0b"/>
+    <text x="354" y="343" text-anchor="start" font-size="9" fill="#5c5c5c">Memory-only</text>
+
+    <!-- ================= FOOTNOTE ================= -->
+    <text x="100" y="355" text-anchor="start" font-size="8" fill="#6f6f6f">Correctness = MARBLE Milestone-KPI (aligned 4-domain re-run, n=38/condition). Memory-only cost estimated; other costs from token billing.</text>
+</svg>
