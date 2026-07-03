@@ -46,7 +46,7 @@
     <circle cx="250" cy="20" r="8" fill="#b11f4b"/>
     <text x="270" y="15" font-size="9" font-weight="600" fill="#b11f4b">Full Squad</text>
     <text x="270" y="27" font-size="8" fill="#b11f4b">100% · $0.97</text>
-    <text x="270" y="37" font-size="7" fill="#6f6f6f">(400-run: 99.25%)</text>
+    <text x="270" y="37" font-size="7" fill="#6f6f6f">(400-run: 99.75%)</text>
 
     <!-- Memory-only: cost=~$1.50 (estimated), rate=42.5%, σ=26.8% → x=332, y=174 -->
     <ellipse cx="332" cy="174" rx="30" ry="70" fill="#f59e0b" opacity="0.1" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4,2"/>
