@@ -66,7 +66,7 @@
   <text x="338" y="352" font-size="10" fill="#5c5c5c">Copilot CLI standalone (same model)</text>
 
   <!-- Footnotes -->
-  <text x="90" y="375" font-size="8.5" fill="#6f6f6f">All bars are controlled Squad-on vs Squad-off pairs: same model, same task IDs, same metric.</text>
+  <text x="90" y="375" font-size="8.5" fill="#6f6f6f">Squad-on vs Squad-off pairs. Fully controlled arms: MARBLE and SWE-bench Verified; TerminalBench uses a different harness path (directional only).</text>
   <text x="90" y="388" font-size="8.5" fill="#6f6f6f">SWE-bench Verified: 50 instances, gpt-5.5, matched WSL/Docker harness, test-diffs stripped. 36 vs 36 is an honest tie (±1 at n=50); each arm uniquely resolves 3 non-overlapping instances.</text>
   <text x="90" y="401" font-size="8.5" fill="#6f6f6f">Quality bars scaled ×20 to share the axis; labels show the raw 1–5 rubric score. TerminalBench n=20, different harness paths — directional only.</text>
 
