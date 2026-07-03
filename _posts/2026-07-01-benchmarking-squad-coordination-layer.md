@@ -11,7 +11,7 @@ The most common question I get about Squad is some version of the same one: can 
 
 It's also a timely one. GitHub recently published [their own harness evaluation](https://github.blog/ai-and-ml/github-copilot/evaluating-performance-and-efficiency-of-the-github-copilot-agentic-harness-across-models-and-tasks/) of the Copilot agentic harness across models and tasks, and their central finding is that the orchestration layer — the harness that routes tools, manages context, and shapes the workflow — is a first-class performance variable in its own right, not a thin wrapper around the model. That's the idea I wanted to test one level up: if the harness matters that much, does the coordination layer sitting on top of it matter too? Brady Gaster and I designed and ran the study together.
 
-Held to a single model, the answer is yes. With every agent pinned to **Claude Opus 4.6**, a coordinated team produces more correct output than the model running solo — it leads every domain on a milestone-level correctness measure (detailed below) — and it does it more reliably, completing more tasks and finishing with near-zero variance across domains. The team is more correct on average, and more consistent about delivering. These are early numbers at n=10 per cell, but they're strikingly consistent across domains, and larger runs will confirm the scale.
+Held to a single model, the answer is yes where coordination matters. With every agent pinned to **Claude Opus 4.6**, a coordinated team produces more correct output than the model running solo on MARBLE — it leads every domain on a milestone-level correctness measure (detailed below) — and it does it more reliably, completing more tasks and finishing with near-zero variance across domains. The team is more correct on average, and more consistent about delivering. These are early numbers at n=10 per cell, but they're strikingly consistent across domains, and larger runs will confirm the scale.
 
 ---
 
@@ -115,26 +115,36 @@ Two live options come out of this: routing-only when you're optimizing for cost 
 
 ## What the Benchmarks Show
 
-One controlled ablation is persuasive. Five benchmarks pointing the same way is a pattern. Across everything we ran, Squad came out on top — held to the same model where we could, and ahead even when the baseline had a newer one.
+There are now two clean controlled arms in the study. On MARBLE, the multi-agent collaboration benchmark, Squad clearly wins. On SWE-bench Verified, an atomic single-issue bug-fixing benchmark, Squad honestly ties the standalone agent. The broader benchmarks are directional context and point the same way, including a #1 finish on the public SWE-bench Lite leaderboard at submission time (June 2026). The through-line is simple: Squad wins where coordination has something to coordinate.
+
+This is the only apples-to-apples figure in the post: every pair holds model, tasks, and metric constant. It combines the MARBLE ablation (Claude Opus 4.6), the TerminalBench sample, and the new 50-instance SWE-bench Verified arm (gpt-5.5).
+
+![Controlled comparison — Squad-on vs Squad-off, same model / same tasks / same metric](/assets/squad-benchmark/controlled-comparison.svg)
+
+The honest headline: on MARBLE, where the task is collaboration, Squad shows a clear lift — **+15pp** completion. On SWE-bench Verified, where the task is atomic solo bug-fixing, the arms tie at **36/50** each (**72%**). The subsets are not the same: Squad uniquely resolves astropy-13977, django-10097, and django-11265; standalone uniquely resolves astropy-13236, astropy-14365, and django-10973. Coordination reshuffles which problems get solved without moving the aggregate count. Squad's coordination pays off where there's collaboration to coordinate.
+
+Broader directional context, mixed metrics/models:
 
 | Benchmark          | Tasks     | Model           | Metric      | Squad                | Baseline                     | Comparison |
 |--------------------|-----------|-----------------|-------------|----------------------|------------------------------|------------|
 | MARBLE (ablation)  | 160       | Claude Opus 4.6 | Completion  | 100% completion      | 85% (same model)             | Controlled, **+15pp** ✅ |
 | MARBLE (full run)  | 400       | Claude Opus 4.6 | Completion  | 99.25% (397/400)     | ~45% gpt-4o-mini*            | different model/metric |
 | DevBench           | 1,800     | GPT-5.4         | Pass@1      | 53.1%                | 43.5% (GPT-5.5)              | cross-model, preliminary |
-| SWE-bench Lite     | 300       | GPT-4o          | Pass@1      | 66% (198/300 pass@1) | ~48% (est.)                 | **+18pp** vs *estimated* baseline (preliminary) |
+| SWE-bench Lite     | 300       | GPT-4o          | Pass@1      | 66% (198/300 pass@1) | ~48% (est.)                 | #1 on public Lite leaderboard (66% vs 62.7%); vs ~48% same-tool est. — directional |
+| SWE-bench Verified (controlled) | 50 | gpt-5.5 | Pass@1 | 72% (36/50) | 72% (36/50, same model) | **Tie** — controlled ✅ |
 | TerminalBench 2.0  | 20 of 89  | Claude Opus 4.6 | Resolution  | 80% (16/20)          | 75% (15/20)                 | **+5pp** same model, subset |
 
 ![Per-benchmark scores — Squad vs baselines (metrics differ)](/assets/squad-benchmark/cross-benchmark.svg)
 
-This table gathers each benchmark's headline score on its *own* native metric — the two MARBLE rows are completion, and DevBench, SWE-bench, and TerminalBench are correctness/pass — so it mixes axes on purpose. The MARBLE ablation remains the one clean same-model / same-metric comparison, a decisive +15 points; the rest add breadth and are directional. The MARBLE full run lands 99.25% (397/400). On DevBench, Squad running on GPT-5.4 scored higher than a single agent on the newer GPT-5.5 — a suggestive, contextual data point rather than an apples-to-apples result, since the models differ and it isn't a controlled comparison. SWE-bench Lite comes in at 66% pass@1 (198/300) — our real measured result — against a ~48% baseline *estimated* from public reports, with no same-model without-Squad run, so it's directional. TerminalBench lands at 80% on the same model.
+This table gathers each benchmark's headline score on its *own* native metric — the two MARBLE rows are completion, and DevBench, SWE-bench, and TerminalBench are correctness/pass — so it mixes axes on purpose. The clean controlled comparisons are MARBLE (win) and SWE-bench Verified (tie), both shown in the figure above. The MARBLE full run lands 99.25% (397/400). On DevBench, Squad running on GPT-5.4 scored higher than a single agent on the newer GPT-5.5 — a suggestive, contextual data point rather than an apples-to-apples result, since the models differ and it isn't a controlled comparison. SWE-bench Lite comes in at 66% pass@1 (198/300) on the full 300-task Lite run — our real measured result, and #1 on the public Lite leaderboard at submission time (June 2026), ahead of Claude Opus 4.6 at 62.7%. That is distinct from the controlled SWE-bench Verified-50 tie: different task set, different protocol, different model, and not contradictory. TerminalBench lands at 80% on the same model.
 
 *Reading the cross-benchmark table:*
 
 - *DevBench runs on a different model (Squad on GPT-5.4 vs. a GPT-5.5 baseline) and is preliminary/contextual, not a controlled comparison.*
-- *SWE-bench's ~48% baseline is estimated from public reports — there's no same-model without-Squad run — so only the 66% pass@1 is a measured result; the comparison is preliminary.*
+- *SWE-bench Lite is the directional full-run / leaderboard number: 66% pass@1 on the 300-task Lite set, #1 on the public Lite leaderboard at submission time (June 2026), distinct from the Verified-50 controlled arm.*
+- *SWE-bench Verified is the controlled solo-bug-fixing counterpart to the MARBLE collaboration ablation: gpt-5.5, matched WSL/Docker harness, gold test-diffs stripped, and a 36 vs. 36 tie (36/50 each), with non-overlapping solved subsets.*
 - *TerminalBench uses a 20-task subset through a different harness path.*
-- *The MARBLE ablation is the clean apples-to-apples measurement; the others are directional. Squad leads in every one.*
+- *There are two controlled arms: MARBLE, where Squad wins on collaboration, and SWE-bench Verified, where Squad ties on atomic solo bug-fixing. The edge concentrates where coordination matters; the rest is directional context.*
 
 ---
 
@@ -142,10 +152,10 @@ This table gathers each benchmark's headline score on its *own* native metric �
 
 - **Same model, more correct output.** Held to Claude Opus 4.6, the coordinated team produced more correct results than the model running solo — Full Squad leads every domain on milestone-KPI and rubric quality, +3.9pp and +0.34 over the single agent. The gain is modest but consistent.
 - **Reliability is the standout.** The coordinated team didn't just get more right; it finished more tasks — +15 points for the full stack, +7.5 from routing alone — and scored the same high completion number in every domain, driving variance to essentially zero. Correctness tells you it's right; reliability tells you it'll actually deliver, every time.
-- **The pattern holds across the board.** MARBLE, DevBench, SWE-bench Lite, TerminalBench — Squad came out ahead in every benchmark we ran, even where the baseline had a newer model.
-- **This is the coordination layer earning its keep.** The model is the raw material; organizing it into a team is what turns it into correct, repeatable results. Correctness and reliability now point the same direction; scaling n and adding runs is what comes next.
+- **The pattern is clearer now.** Squad wins where coordination matters — MARBLE collaboration — honestly ties on atomic solo bug-fixing in controlled SWE-bench Verified (36/50 vs. 36/50), and tops the public SWE-bench Lite leaderboard at submission time (66% vs. 62.7%). DevBench and TerminalBench add directional context.
+- **This is the coordination layer earning its keep.** The model is the raw material; organizing it into a team is what turns it into correct, repeatable results. Correctness and reliability now point the same direction where there is coordination work to do; scaling n and adding runs is what comes next.
 
-A well-organized team of agents, on the same model, consistently comes out ahead — getting more of the work right and delivering it more reliably. The benchmarks back it up across the board, and we're just getting started.
+A well-organized team of agents, on the same model, consistently comes out ahead when the work benefits from coordination — getting more of the collaborative work right and delivering it more reliably. The benchmarks back that up where coordination has something to coordinate; on atomic solo tasks, the controlled result is an honest tie, which is what a rigorous measurement should show. We're just getting started.
 
 ---
 
@@ -156,7 +166,7 @@ A well-organized team of agents, on the same model, consistently comes out ahead
 - MARBLE integration — [PR #245][3]
 - MARBLE benchmark paper (ACL 2025) — [Zhu et al.][4]
 - GitHub's harness methodology, which this study mirrors — [Evaluating performance and efficiency of the GitHub Copilot agentic harness][5]
-- Framework version under test — Squad v0.9.6 (June 2026)
+- Framework versions under test — Squad v0.9.6 (MARBLE ablation, SWE-bench Lite) and v0.11 (SWE-bench Verified arm).
 
 [1]: https://github.com/tamirdresher/squad-marble-benchmark
 [2]: https://github.com/tamirdresher/squad-swe-bench
