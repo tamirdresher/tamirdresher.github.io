@@ -5,6 +5,7 @@ date: 2026-07-01
 tags: [ai-agents, squad, benchmarks, marble, swe-bench, terminalbench, evaluation, methodology, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
 series_part: 22
+published: false
 ---
 
 The most common question I get about Squad is some version of the same one: can you actually *show* me — with data — that coordinating a team of agents adds real value over just pointing one good model at the problem? It's a fair challenge, and it's the honest motivation for this whole study.
@@ -128,7 +129,7 @@ Broader directional context, mixed metrics/models:
 | Benchmark          | Tasks     | Model           | Metric      | Squad                | Baseline                     | Comparison |
 |--------------------|-----------|-----------------|-------------|----------------------|------------------------------|------------|
 | MARBLE (ablation)  | 160       | Claude Opus 4.6 | Completion  | 100% completion      | 85% (same model)             | Controlled, **+15pp** ✅ |
-| MARBLE (full run)  | 400       | Claude Opus 4.6 | Completion  | 99.25% (397/400)     | ~45% gpt-4o-mini*            | different model/metric |
+| MARBLE (full run)  | 400       | Claude Opus 4.6 | Completion  | 99.75% (399/400)     | ~45% gpt-4o-mini*            | different model/metric |
 | DevBench           | 1,800     | GPT-5.4         | Pass@1      | 53.1%                | 43.5% (GPT-5.5)              | cross-model, preliminary |
 | SWE-bench Lite     | 300       | GPT-4o          | Pass@1      | 66% (198/300 pass@1) | ~48% (est.)                 | #1 on public Lite leaderboard (66% vs 62.7%); vs ~48% same-tool est. — directional |
 | SWE-bench Verified (controlled) | 50 | gpt-5.5 | Pass@1 | 72% (36/50) | 72% (36/50, same model) | **Tie** — controlled ✅ |
@@ -136,7 +137,7 @@ Broader directional context, mixed metrics/models:
 
 ![Per-benchmark scores — Squad vs baselines (metrics differ)](/assets/squad-benchmark/cross-benchmark.svg)
 
-This table gathers each benchmark's headline score on its *own* native metric — the two MARBLE rows are completion, and DevBench, SWE-bench, and TerminalBench are correctness/pass — so it mixes axes on purpose. The clean controlled comparisons are MARBLE (win) and SWE-bench Verified (tie), both shown in the figure above. The MARBLE full run lands 99.25% (397/400). On DevBench, Squad running on GPT-5.4 scored higher than a single agent on the newer GPT-5.5 — a suggestive, contextual data point rather than an apples-to-apples result, since the models differ and it isn't a controlled comparison. SWE-bench Lite comes in at 66% pass@1 (198/300) on the full 300-task Lite run — our real measured result, and #1 on the public Lite leaderboard at time of submission (June 2026) — a self-run evaluation with formal maintainer verification pending — ahead of Claude Opus 4.6 at 62.7%. That is distinct from the controlled SWE-bench Verified-50 tie: different task set, different protocol, different model, and not contradictory. TerminalBench lands at 80% on the same model.
+This table gathers each benchmark's headline score on its *own* native metric — the two MARBLE rows are completion, and DevBench, SWE-bench, and TerminalBench are correctness/pass — so it mixes axes on purpose. The clean controlled comparisons are MARBLE (win) and SWE-bench Verified (tie), both shown in the figure above. The MARBLE full run lands 99.75% (399/400). On DevBench, Squad running on GPT-5.4 scored higher than a single agent on the newer GPT-5.5 — a suggestive, contextual data point rather than an apples-to-apples result, since the models differ and it isn't a controlled comparison. SWE-bench Lite comes in at 66% pass@1 (198/300) on the full 300-task Lite run — our real measured result, and #1 on the public Lite leaderboard at time of submission (June 2026) — a self-run evaluation using the official Docker harness, with formal leaderboard submission pending maintainer verification — ahead of Claude Opus 4.6 at 62.7%. That is distinct from the controlled SWE-bench Verified-50 tie: different task set, different protocol, different model, and not contradictory. TerminalBench lands at 80% on the same model.
 
 *Reading the cross-benchmark table:*
 
@@ -170,7 +171,7 @@ A well-organized team of agents, on the same model, consistently comes out ahead
 
 [1]: https://github.com/tamirdresher/squad-marble-benchmark
 [2]: https://github.com/tamirdresher/squad-swe-bench
-[3]: https://github.com/tamirdresher/squad-marble-benchmark/pull/245
+[3]: https://github.com/ulab-uiuc/MARBLE/pull/245
 [4]: https://arxiv.org/abs/2506.09468
 [5]: https://github.blog/ai-and-ml/github-copilot/evaluating-performance-and-efficiency-of-the-github-copilot-agentic-harness-across-models-and-tasks/
 
