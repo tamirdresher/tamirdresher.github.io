@@ -31,7 +31,7 @@ model: Claude Opus 4.6   |   ablation metric: completion (output file within 600
 correctness measured separately: aligned 80-transcript re-run, n=38/condition
 ```
 
-The four conditions remove one capability at a time — **Full Squad** (coordination + memory), **Coord-only** (routing, no shared memory), **Memory-only** (shared memory, no coordinator), and **No Squad** (a single agent). Two terms I use precisely: **completion** means an output file appeared within the limit; **resolution / pass** means the output was verified *correct*. The 160-run ablation measured completion; correctness came from a separate, aligned 80-transcript re-run (n=38 per condition), so no single run is asked to stand in for both. Every cell in the tables below is backed by a validated run in the public dataset — no placeholders, and no estimates except where explicitly labeled.
+The four conditions remove one capability at a time — **Full Squad** (coordination + memory), **Coord-only** (routing, no shared memory), **Memory-only** (shared memory, no coordinator), and **No Squad** (a single agent). A note on that third condition: *memory-only* does not test generic persistent memory. It injects the same `decisions.md` that Squad's coordinator would produce — Squad-formatted memory — into an otherwise uncoordinated agent. The result is "coordinator output without the live coordinator," not arbitrary memory vs. none. Two terms I use precisely: **completion** means an output file appeared within the limit; **resolution / pass** means the output was verified *correct*. The 160-run ablation measured completion; correctness came from a separate, aligned 80-transcript re-run (n=38 per condition), so no single run is asked to stand in for both. Every cell in the tables below is backed by a validated run in the public dataset — no placeholders, and no estimates except where explicitly labeled.
 
 ---
 
@@ -136,7 +136,7 @@ Broader directional context, mixed metrics/models:
 
 ![Per-benchmark scores — Squad vs baselines (metrics differ)](/assets/squad-benchmark/cross-benchmark.svg)
 
-This table gathers each benchmark's headline score on its *own* native metric — the two MARBLE rows are completion, and DevBench, SWE-bench, and TerminalBench are correctness/pass — so it mixes axes on purpose. The clean controlled comparisons are MARBLE (win) and SWE-bench Verified (tie), both shown in the figure above. The MARBLE full run lands 99.25% (397/400). On DevBench, Squad running on GPT-5.4 scored higher than a single agent on the newer GPT-5.5 — a suggestive, contextual data point rather than an apples-to-apples result, since the models differ and it isn't a controlled comparison. SWE-bench Lite comes in at 66% pass@1 (198/300) on the full 300-task Lite run — our real measured result, and #1 on the public Lite leaderboard at submission time (June 2026), ahead of Claude Opus 4.6 at 62.7%. That is distinct from the controlled SWE-bench Verified-50 tie: different task set, different protocol, different model, and not contradictory. TerminalBench lands at 80% on the same model.
+This table gathers each benchmark's headline score on its *own* native metric — the two MARBLE rows are completion, and DevBench, SWE-bench, and TerminalBench are correctness/pass — so it mixes axes on purpose. The clean controlled comparisons are MARBLE (win) and SWE-bench Verified (tie), both shown in the figure above. The MARBLE full run lands 99.25% (397/400). On DevBench, Squad running on GPT-5.4 scored higher than a single agent on the newer GPT-5.5 — a suggestive, contextual data point rather than an apples-to-apples result, since the models differ and it isn't a controlled comparison. SWE-bench Lite comes in at 66% pass@1 (198/300) on the full 300-task Lite run — our real measured result, and #1 on the public Lite leaderboard at time of submission (June 2026) — a self-run evaluation with formal maintainer verification pending — ahead of Claude Opus 4.6 at 62.7%. That is distinct from the controlled SWE-bench Verified-50 tie: different task set, different protocol, different model, and not contradictory. TerminalBench lands at 80% on the same model.
 
 *Reading the cross-benchmark table:*
 
@@ -165,7 +165,7 @@ A well-organized team of agents, on the same model, consistently comes out ahead
 - SWE-bench data and reproduction harness, including `evaluate.py` for independent verification — [tamirdresher/squad-swe-bench][2] (1,500+ files)
 - MARBLE integration — [PR #245][3]
 - MARBLE benchmark paper (ACL 2025) — [Zhu et al.][4]
-- GitHub's harness methodology, which this study mirrors — [Evaluating performance and efficiency of the GitHub Copilot agentic harness][5]
+- GitHub's harness evaluation — the inspiration for testing the coordination layer one level up — [Evaluating performance and efficiency of the GitHub Copilot agentic harness][5]
 - Framework versions under test — Squad v0.9.6 (MARBLE ablation, SWE-bench Lite) and v0.11 (SWE-bench Verified arm).
 
 [1]: https://github.com/tamirdresher/squad-marble-benchmark
