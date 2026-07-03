@@ -4,7 +4,7 @@
     <rect x="160" y="15" width="243" height="28" fill="#b11f4b" rx="4"/>
     <text x="150" y="33" text-anchor="end" font-size="11" fill="#5c5c5c">Full Squad</text>
     <text x="410" y="33" font-size="11" font-weight="600" fill="#242424">$0.97/task</text>
-    <text x="500" y="33" font-size="10" fill="#16a34a">99.25% task completion</text>
+    <text x="500" y="33" font-size="10" fill="#16a34a">100% task completion</text>
 
     <!-- Coord-only -->
     <rect x="160" y="55" width="103" height="28" fill="#b11f4b" rx="4" opacity="0.65"/>
