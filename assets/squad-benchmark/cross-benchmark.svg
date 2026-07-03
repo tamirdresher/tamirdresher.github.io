@@ -15,9 +15,9 @@
     <line x1="120" y1="290" x2="750" y2="290" stroke="#dedede" stroke-width="1"/>
 
     <!-- MARBLE (400 tasks) -->
-    <!-- Squad: 99.25% → height ~258 -->
+    <!-- Squad: 99.75% → height ~258 -->
     <rect x="150" y="32" width="44" height="258" fill="#b11f4b" rx="3"/>
-    <text x="172" y="26" text-anchor="middle" font-size="9" font-weight="600" fill="#b11f4b">99.25%</text>
+    <text x="172" y="26" text-anchor="middle" font-size="9" font-weight="600" fill="#b11f4b">99.75%</text>
     <!-- No-Squad same-model: 85% (completion avg, corrected) -->
     <rect x="198" y="69" width="44" height="221" fill="#0078d4" rx="3"/>
     <text x="220" y="63" text-anchor="middle" font-size="9" font-weight="600" fill="#0078d4">85%</text>
@@ -66,6 +66,6 @@
     <text x="120" y="378" font-size="8.5" fill="#6f6f6f">² DevBench best baseline is GPT-5.5 (43.5% pass@1). Squad uses GPT-5.4. No same-model ablation available.</text>
     <text x="120" y="391" font-size="8.5" fill="#6f6f6f">³ SWE-bench Lite: estimated Copilot agent baseline from public reports. No verified same-model-without-Squad run performed.</text>
     <text x="120" y="404" font-size="8.5" fill="#6f6f6f">  TerminalBench 2.0: Same model (Claude Opus 4.6), different harness paths — directional only, n=20 (+1 task).</text>
-    <text x="120" y="417" font-size="8.5" fill="#6f6f6f">  MARBLE bars mix task sets: blue baseline = 85% from the 160-task controlled ablation; Squad red bar = 99.25% from the 400-task full run.</text>
+    <text x="120" y="417" font-size="8.5" fill="#6f6f6f">  MARBLE bars mix task sets: blue baseline = 85% from the 160-task controlled ablation; Squad red bar = 99.75% from the 400-task full run.</text>
   </svg>
 
