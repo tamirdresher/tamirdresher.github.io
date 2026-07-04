@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Same Model, Different Team — Benchmarking Squad's Coordination Layer"
-date: 2026-07-01
+date: 2026-07-04
 tags: [ai-agents, squad, benchmarks, marble, swe-bench, terminalbench, evaluation, methodology, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
 series_part: 22
