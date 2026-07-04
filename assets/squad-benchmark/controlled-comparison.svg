@@ -1,105 +1,75 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="100%" viewBox="0 0 1000 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
-  <title id="title">Controlled comparison — Squad vs Copilot CLI standalone (same model, same tasks, same metric)</title>
-  <desc id="desc">Grouped bar chart comparing Copilot CLI plus Squad against Copilot CLI standalone on controlled same-task, same-model metrics, including a SWE-bench Verified tie.</desc>
-  <rect x="0" y="0" width="1000" height="470" fill="#ffffff"/>
+<svg width="100%" height="470" viewBox="0 0 1000 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Controlled Squad-on versus Squad-off benchmark comparison</title>
+  <desc id="desc">Grouped bar chart comparing Copilot CLI plus Squad against Copilot CLI standalone on the same model, same task IDs, and same metric across MARBLE, TerminalBench, and SWE-bench Verified.</desc>
+  <rect x="0" y="0" width="100%" height="100%" fill="#ffffff"/>
 
-  <!-- Plot arithmetic: plotTop=100, plotBottom=300, plotHeight=200px. Bar height = percent/100*200; y = 300-height. Completion: 100%=200/y100, 85%=170/y130. KPI: 81.1%=162.2/y137.8, 77.2%=154.4/y145.6. Quality scaled: 82.0%=164/y136, 75.2%=150.4/y149.6. TB Resolution: 80%=160/y140, 75%=150/y150. SWE-bench: 72%=144/y156 (both arms). -->
+  <!-- Group headers -->
+  <text x="250" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="#5c5c5c">MARBLE (Claude Opus 4.6)</text>
+  <text x="550" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="#5c5c5c">TerminalBench (n=20, directional)</text>
+  <text x="780" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="#5c5c5c">SWE-bench Verified (n=50, gpt-5.5)</text>
 
-  <text x="500" y="26" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#242424">Controlled comparison — Squad vs Copilot CLI standalone (same model, same tasks, same metric)</text>
+  <!-- Y axis -->
+  <line x1="90" y1="60" x2="90" y2="300" stroke="#dedede" stroke-width="1"/>
+  <text x="85" y="65" text-anchor="end" font-size="10" fill="#5c5c5c">100%</text>
+  <text x="85" y="125" text-anchor="end" font-size="10" fill="#5c5c5c">75%</text>
+  <text x="85" y="185" text-anchor="end" font-size="10" fill="#5c5c5c">50%</text>
+  <text x="85" y="245" text-anchor="end" font-size="10" fill="#5c5c5c">25%</text>
+  <text x="85" y="303" text-anchor="end" font-size="10" fill="#5c5c5c">0%</text>
 
-  <g font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#5c5c5c">
-    <rect x="323" y="42" width="12" height="12" rx="2" fill="#b11f4b"/>
-    <text x="342" y="52">Copilot CLI + Squad</text>
-    <rect x="472" y="42" width="12" height="12" rx="2" fill="#0078d4"/>
-    <text x="491" y="52">Copilot CLI standalone (same model)</text>
-  </g>
+  <!-- Grid -->
+  <line x1="90" y1="60" x2="960" y2="60" stroke="#dedede" stroke-width="0.5" stroke-dasharray="4,4"/>
+  <line x1="90" y1="120" x2="960" y2="120" stroke="#dedede" stroke-width="0.5" stroke-dasharray="4,4"/>
+  <line x1="90" y1="180" x2="960" y2="180" stroke="#dedede" stroke-width="0.5" stroke-dasharray="4,4"/>
+  <line x1="90" y1="240" x2="960" y2="240" stroke="#dedede" stroke-width="0.5" stroke-dasharray="4,4"/>
+  <line x1="90" y1="300" x2="960" y2="300" stroke="#dedede" stroke-width="1"/>
 
-  <g font-family="Segoe UI, Arial, sans-serif">
-    <text x="302" y="76" text-anchor="middle" font-size="11" font-weight="600" fill="#5c5c5c">MARBLE (Claude Opus 4.6, controlled ablation)</text>
-    <text x="645" y="76" text-anchor="middle" font-size="11" font-weight="600" fill="#5c5c5c">TerminalBench (n=20, directional)</text>
-    <text x="835" y="76" text-anchor="middle" font-size="11" font-weight="600" fill="#5c5c5c">SWE-bench Verified (n=50, gpt-5.5)</text>
-    <line x1="535" y1="86" x2="535" y2="323" stroke="#dedede" stroke-width="1" stroke-dasharray="4,4"/>
-    <line x1="740" y1="86" x2="740" y2="323" stroke="#dedede" stroke-width="1" stroke-dasharray="4,4"/>
-  </g>
+  <!-- MARBLE: Completion -->
+  <rect x="130" y="60" width="28" height="240" fill="#b11f4b" rx="3"/>
+  <text x="144" y="54" text-anchor="middle" font-size="9" font-weight="600" fill="#b11f4b">100%</text>
+  <rect x="162" y="96" width="28" height="204" fill="#0078d4" rx="3"/>
+  <text x="176" y="90" text-anchor="middle" font-size="9" font-weight="600" fill="#0078d4">85%</text>
+  <text x="160" y="318" text-anchor="middle" font-size="10" fill="#5c5c5c">Completion</text>
 
-  <g stroke="#dedede" stroke-dasharray="4,4" stroke-width="0.7">
-    <line x1="70" y1="100" x2="940" y2="100"/>
-    <line x1="70" y1="150" x2="940" y2="150"/>
-    <line x1="70" y1="200" x2="940" y2="200"/>
-    <line x1="70" y1="250" x2="940" y2="250"/>
-  </g>
-  <line x1="70" y1="300" x2="940" y2="300" stroke="#dedede" stroke-width="1"/>
-  <line x1="70" y1="100" x2="70" y2="300" stroke="#dedede" stroke-width="1"/>
+  <!-- MARBLE: Milestone-KPI -->
+  <rect x="220" y="105.36" width="28" height="194.64" fill="#b11f4b" rx="3"/>
+  <text x="234" y="99" text-anchor="middle" font-size="9" font-weight="600" fill="#b11f4b">81.1%</text>
+  <rect x="252" y="114.72" width="28" height="185.28" fill="#0078d4" rx="3"/>
+  <text x="266" y="108" text-anchor="middle" font-size="9" font-weight="600" fill="#0078d4">77.2%</text>
+  <text x="250" y="318" text-anchor="middle" font-size="10" fill="#5c5c5c">Milestone-KPI</text>
 
-  <g font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#5c5c5c">
-    <text x="58" y="303" text-anchor="end">0%</text>
-    <text x="58" y="253" text-anchor="end">25%</text>
-    <text x="58" y="203" text-anchor="end">50%</text>
-    <text x="58" y="153" text-anchor="end">75%</text>
-    <text x="58" y="103" text-anchor="end">100%</text>
-  </g>
+  <!-- MARBLE: Quality scaled x20 -->
+  <rect x="310" y="103.2" width="28" height="196.8" fill="#b11f4b" rx="3"/>
+  <text x="324" y="97" text-anchor="middle" font-size="9" font-weight="600" fill="#b11f4b">4.10/5</text>
+  <rect x="342" y="119.52" width="28" height="180.48" fill="#0078d4" rx="3"/>
+  <text x="356" y="113" text-anchor="middle" font-size="9" font-weight="600" fill="#0078d4">3.76/5</text>
+  <text x="340" y="318" text-anchor="middle" font-size="10" fill="#5c5c5c">Quality ×20</text>
 
-  <g font-family="Segoe UI, Arial, sans-serif">
-    <!-- Completion -->
-    <rect x="123" y="100" width="28" height="200" rx="3" fill="#b11f4b"/>
-    <rect x="159" y="130" width="28" height="170" rx="3" fill="#0078d4"/>
-    <text x="137" y="94" text-anchor="middle" font-size="9" font-weight="600" fill="#b11f4b">100%</text>
-    <text x="173" y="124" text-anchor="middle" font-size="9" font-weight="600" fill="#0078d4">85%</text>
+  <!-- TerminalBench -->
+  <rect x="520" y="108" width="28" height="192" fill="#b11f4b" rx="3"/>
+  <text x="534" y="102" text-anchor="middle" font-size="9" font-weight="600" fill="#b11f4b">80%</text>
+  <rect x="552" y="120" width="28" height="180" fill="#0078d4" rx="3"/>
+  <text x="566" y="114" text-anchor="middle" font-size="9" font-weight="600" fill="#0078d4">75%</text>
+  <text x="550" y="318" text-anchor="middle" font-size="10" fill="#5c5c5c">Resolution</text>
 
-    <!-- Milestone-KPI -->
-    <rect x="268" y="137.8" width="28" height="162.2" rx="3" fill="#b11f4b"/>
-    <rect x="304" y="145.6" width="28" height="154.4" rx="3" fill="#0078d4"/>
-    <text x="282" y="131.8" text-anchor="middle" font-size="9" font-weight="600" fill="#b11f4b">81.1%</text>
-    <text x="318" y="139.6" text-anchor="middle" font-size="9" font-weight="600" fill="#0078d4">77.2%</text>
+  <!-- SWE-bench Verified -->
+  <rect x="750" y="127.2" width="28" height="172.8" fill="#b11f4b" rx="3"/>
+  <text x="764" y="121" text-anchor="middle" font-size="9" font-weight="600" fill="#b11f4b">72%</text>
+  <rect x="782" y="127.2" width="28" height="172.8" fill="#0078d4" rx="3"/>
+  <text x="796" y="121" text-anchor="middle" font-size="9" font-weight="600" fill="#0078d4">72%</text>
+  <text x="780" y="318" text-anchor="middle" font-size="10" fill="#5c5c5c">Resolution pass@1</text>
+  <text x="780" y="334" text-anchor="middle" font-size="9" font-weight="700" fill="#5c5c5c">TIE (36 vs 36)</text>
 
-    <!-- Quality rubric scaled x20 for axis -->
-    <rect x="413" y="136" width="28" height="164" rx="3" fill="#b11f4b"/>
-    <rect x="449" y="149.6" width="28" height="150.4" rx="3" fill="#0078d4"/>
-    <text x="427" y="130" text-anchor="middle" font-size="9" font-weight="600" fill="#b11f4b">4.10 / 5</text>
-    <text x="463" y="143.6" text-anchor="middle" font-size="9" font-weight="600" fill="#0078d4">3.76 / 5</text>
+  <!-- Legend -->
+  <rect x="130" y="340" width="14" height="14" fill="#b11f4b" rx="2"/>
+  <text x="148" y="352" font-size="10" fill="#5c5c5c">Copilot CLI + Squad</text>
+  <rect x="320" y="340" width="14" height="14" fill="#0078d4" rx="2"/>
+  <text x="338" y="352" font-size="10" fill="#5c5c5c">Copilot CLI standalone (same model)</text>
 
-    <!-- TerminalBench Resolution -->
-    <rect x="613" y="140" width="28" height="160" rx="3" fill="#b11f4b"/>
-    <rect x="649" y="150" width="28" height="150" rx="3" fill="#0078d4"/>
-    <text x="627" y="134" text-anchor="middle" font-size="9" font-weight="600" fill="#b11f4b">80%</text>
-    <text x="663" y="144" text-anchor="middle" font-size="9" font-weight="600" fill="#0078d4">75%</text>
+  <!-- Footnotes -->
+  <text x="90" y="375" font-size="8.5" fill="#6f6f6f">Squad-on vs Squad-off pairs. Fully controlled arms: MARBLE and SWE-bench Verified; TerminalBench uses a different harness path (directional only).</text>
+  <text x="90" y="388" font-size="8.5" fill="#6f6f6f">SWE-bench Verified: 50 instances, gpt-5.5, matched WSL/Docker harness, test-diffs stripped. 36 vs 36 is an honest tie (±1 at n=50); each arm uniquely resolves 3 non-overlapping instances.</text>
+  <text x="90" y="401" font-size="8.5" fill="#6f6f6f">Quality bars scaled ×20 to share the axis; labels show the raw 1–5 rubric score. TerminalBench n=20, different harness paths — directional only.</text>
 
-    <!-- SWE-bench Verified Resolution (pass@1) — honest tie 72% / 72% -->
-    <rect x="798" y="156" width="28" height="144" rx="3" fill="#b11f4b"/>
-    <rect x="834" y="156" width="28" height="144" rx="3" fill="#0078d4"/>
-    <text x="812" y="150" text-anchor="middle" font-size="9" font-weight="600" fill="#b11f4b">72%</text>
-    <text x="848" y="150" text-anchor="middle" font-size="9" font-weight="600" fill="#0078d4">72%</text>
-    <text x="830" y="316" text-anchor="middle" font-size="8.5" font-weight="700" fill="#6f6f6f">TIE (36 vs 36)</text>
-  </g>
-
-  <g font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#5c5c5c">
-    <text x="155" y="318" text-anchor="middle">Completion</text>
-    <text x="300" y="318" text-anchor="middle">Milestone-KPI</text>
-    <text x="445" y="318" text-anchor="middle">Quality (1–5)</text>
-    <text x="645" y="318" text-anchor="middle">Resolution</text>
-    <text x="830" y="330" text-anchor="middle">Resolution (pass@1)</text>
-  </g>
-
-  <g stroke="#5c5c5c" stroke-width="0.8" fill="none">
-    <path d="M105 342 H505"/>
-    <path d="M105 342 V338 M505 342 V338"/>
-    <path d="M595 342 H695"/>
-    <path d="M595 342 V338 M695 342 V338"/>
-    <path d="M785 342 H875"/>
-    <path d="M785 342 V338 M875 342 V338"/>
-  </g>
-  <g font-family="Segoe UI, Arial, sans-serif" font-size="9" font-weight="600" fill="#5c5c5c">
-    <text x="305" y="356" text-anchor="middle">Group A — MARBLE</text>
-    <text x="645" y="356" text-anchor="middle">Group B — TerminalBench</text>
-    <text x="830" y="356" text-anchor="middle">Group C — SWE-bench</text>
-  </g>
-
-  <g font-family="Segoe UI, Arial, sans-serif" font-size="8.5" fill="#6f6f6f">
-    <text x="48" y="384">• All bars are controlled Squad-on vs Squad-off pairs: identical task IDs, same model, same metric. MARBLE bars share the same harness (Claude Opus 4.6).</text>
-    <text x="48" y="400">• SWE-bench Verified: 50 instances, gpt-5.5, stripped test-diffs, WSL/Docker eval — same harness both arms. 36 vs 36 is an honest statistical tie (±1 at n=50);</text>
-    <text x="61" y="414">Squad and standalone each uniquely resolve 3 different (non-overlapping) instances — Squad reshuffles which problems get solved, not the aggregate count.</text>
-    <text x="48" y="430">• Quality bars scaled ×20 to share the 0–100% axis; labels show the raw 1–5 rubric score. TerminalBench n=20, different harness paths per arm — directional only.</text>
-    <text x="48" y="446">• MARBLE completion n=40; KPI/quality n=38 (task-aligned). DevBench and the MARBLE 400-task run are omitted (shown only in the broader directional chart).</text>
-  </g>
+  <!-- Caption -->
+  <text x="90" y="435" font-size="9" fill="#5c5c5c">The only apples-to-apples figure: model, tasks, and metric held constant. Squad's edge concentrates on multi-agent collaboration (MARBLE); on atomic solo bug-fixing (SWE-bench Verified) the arms tie.</text>
 </svg>
