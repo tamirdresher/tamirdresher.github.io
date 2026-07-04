@@ -5,7 +5,6 @@ date: 2026-07-04
 tags: [ai-agents, squad, benchmarks, marble, swe-bench, terminalbench, evaluation, methodology, scaling-ai-native-software-engineering]
 series: "Scaling AI-Native Software Engineering"
 series_part: 22
-published: false
 ---
 
 The most common question I get about Squad is some version of the same one: can you actually *show* me — with data — that coordinating a team of agents adds real value over just pointing one good model at the problem? It's a fair challenge, and it's the honest motivation for this whole study.
