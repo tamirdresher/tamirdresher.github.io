@@ -20,5 +20,8 @@ Disallow: /tags/
 # These are companion directories to legacy HTML pages and contain no indexable content
 Disallow: /assets/*_files/
 
+# Block legacy exported HTML files under assets while allowing images/CSS/JS
+Disallow: /assets/*.html
+
 # Sitemap
 Sitemap: {{ site.url | append: site.baseurl }}/sitemap.xml

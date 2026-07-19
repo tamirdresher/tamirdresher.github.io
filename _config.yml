@@ -179,6 +179,7 @@ exclude:
   - vendor        # Avoid Jekyll mistakenly read the vendor directory on Travis-CI's VM .
   - Gemfile.lock
   - Gemfile
+  - assets/**/*.html
   - tools
   - docs
   - README.md
@@ -195,7 +196,10 @@ sitemap_exclude:  # Sitemap will exclude the following items.
     - /tags/
     - /posts/
     - 404.html
+    - app.js
+    - blog/atom.xml
     - feed.xml
     - sitemap.xml
     - robots.txt
+    - sw.js
     - redirects.json
