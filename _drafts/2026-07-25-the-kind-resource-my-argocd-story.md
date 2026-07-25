@@ -52,23 +52,23 @@ Quick refresher, especially if you did not read Part 1: Aspire is a code-first, 
 
 For cloud-native inner loops, the missing piece is the cluster.
 
-That is where `CommunityToolkit.Aspire.Hosting.Kind` comes in. The Kind integration comes from `CommunityToolkit.Aspire.Hosting.Kind`, which I contribute to. It gives the AppHost a real local Kubernetes cluster as a first-class Aspire resource instead of a paragraph in a README that says, "Before you start, create a cluster and apply these things."
+That is where `CommunityToolkit.Aspire.Hosting.Kind` comes in. It gives the AppHost a real local Kubernetes cluster as a first-class Aspire resource instead of a paragraph in a README that says, "Before you start, create a cluster and apply these things."
 
 The API is intentionally boring, which is my favorite kind of API.
 
 ```csharp
 var stagingCluster = builder
     .AddKindCluster("staging-cluster")
-    .WithNodeCount(2)
+    .WithWorkerNodes(2)
     .WithKubernetesVersion("v1.31.0")
-    .WithPortMapping(hostPort: 80, containerPort: 80)
-    .WithPortMapping(hostPort: 443, containerPort: 443)
+    .WithClusterLifetime(ClusterLifetime.Persistent)
+    .WithPortMapping(hostPort: 80, containerPort: 80)   // ← from our small extensions project
+    .WithPortMapping(hostPort: 443, containerPort: 443) // ← same
     .WithHelmChart(
         releaseName: "ingress-nginx",
         chart: "ingress-nginx/ingress-nginx",
         @namespace: "ingress-nginx")
-    .WithManifest("k8s/namespace.yaml")
-    .WithWaitForReady(TimeSpan.FromMinutes(8));
+    .WithManifest("k8s/namespace.yaml");                // ← from our small extensions project
 ```
 
 That whole thing is just a fluent builder.
@@ -87,7 +87,11 @@ It worked.
 
 It was also a smell.
 
-`WithManifest` removes that entire custom bootstrap hook. When the cluster is ready, the integration kubectl-applies the manifest. Health reflects the result. Downstream resources that call `.WaitFor(cluster)` unblock only after the cluster is ready for them. No custom bootstrap code. No state singleton. No health-check ping-pong. No "remember to run this first" paragraph trying to cosplay as a dependency graph.
+`WithManifest` removes that entire custom bootstrap hook. When the cluster is ready, it kubectl-applies the manifest. Health reflects the result. Downstream resources that call `.WaitFor(cluster)` unblock only after the cluster is ready for them. No custom bootstrap code. No state singleton. No health-check ping-pong. No "remember to run this first" paragraph trying to cosplay as a dependency graph.
+
+Two of the methods in the money-shot above (`WithPortMapping` and `WithManifest`) are not shipped by the CommunityToolkit package itself. They live in a small companion project I wrote — `TamirDresher.Aspire.Hosting.Kind.Extensions` — that adds only the missing pieces on top of the upstream integration. The upstream `CommunityToolkit.Aspire.Hosting.Kind` source is used unmodified; the extensions project is two files that add these two methods and nothing else. When those APIs land upstream, the extensions project gets deleted. That is the healthy version of "fork and PR back": the sample uses the real integration and layers additions where they are genuinely missing, without inventing a parallel implementation.
+
+I contribute to `CommunityToolkit.Aspire.Hosting.Kind`, so upstreaming `WithManifest` and `WithPortMapping` is on my list.
 
 That one method matters because it represents the larger pattern: every "install → configure → verify" step in a platform README wants to become a fluent-builder call with a debugger.
 
@@ -100,7 +104,8 @@ The sample repo for this is `https://github.com/tamirdresher/aspire-argocd-dev-l
 The layout is deliberately plain:
 
 - `src/ArgoCd.Aspire.AppHost/` holds the AppHost.
-- `src/CommunityToolkit.Aspire.Hosting.Kind/` holds the vendored Kind integration source.
+- `src/CommunityToolkit.Aspire.Hosting.Kind/` holds the **upstream integration used unmodified** (vendored while I wait for it to publish to NuGet).
+- `src/TamirDresher.Aspire.Hosting.Kind.Extensions/` holds the two additions on top — `WithManifest` and `WithPortMapping`. Two files, roughly 200 lines of C#.
 - `docs/` explains the loop.
 - `scripts/clone-argocd.ps1` clones the Argo CD fork in the expected shape.
 - `tests/` validates the resource model and startup assumptions.
