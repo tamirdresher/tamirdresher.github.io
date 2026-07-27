@@ -12,15 +12,9 @@ There is a very specific reason I care about this post existing.
 
 Every time I have talked about Aspire in the last year, someone from the JavaScript, TypeScript, or Python side of the world has raised the same eyebrow. Sometimes politely. Sometimes not. The eyebrow means: *"This looks nice, but it is a .NET thing, right?"*
 
-And I get it.
+And I get it, because every Aspire example in the ecosystem, including the two posts I wrote earlier in this series, shows a C# AppHost. The API surface I have been quoting reads like a C# fluent builder. The tool that ships it is called `dotnet`. If your day job lives in `node_modules`, the polyglot pitch feels a little like the wine list at a steakhouse — thoughtfully worded but not really for you.
 
-Every Aspire example in the ecosystem, including the two posts I wrote earlier in this series, shows a C# AppHost. The API surface I have been quoting reads like a C# fluent builder. The tool that ships it is called `dotnet`. If your day job lives in `node_modules`, the polyglot pitch feels a little like the wine list at a steakhouse — thoughtfully worded but not really for you.
-
-So this post is the wine.
-
-We are going to take the exact operator from Part 1 — same Go code, same CRD, same Kind cluster — and swap the AppHost. From C# to TypeScript. Nothing else changes. If the pattern holds, the debugger still hits. The dashboard still shows the same graph. Every claim from Parts 1 and 2 survives the translation.
-
-That is the whole test.
+So this post is the wine: we are going to take the exact operator from Part 1 — same Go code, same CRD, same Kind cluster — and swap the AppHost. From C# to TypeScript. Nothing else changes. If the pattern holds, the debugger still hits, the dashboard still shows the same graph, and every claim from Parts 1 and 2 survives the translation. That is the whole test.
 
 ---
 
@@ -96,9 +90,7 @@ await builder
 await builder.build().run();
 ```
 
-Read it top to bottom.
-
-`createBuilder()` returns the AppHost builder. That is the exact same primitive the C# side calls `DistributedApplication.CreateBuilder(args)`. Same job, different casing.
+Read it top to bottom and `createBuilder()` returns the AppHost builder. That is the exact same primitive the C# side calls `DistributedApplication.CreateBuilder(args)`. Same job, different casing.
 
 Then the cluster: `builder.addExecutable('dev-cluster', process.execPath, appHostDir, [...])`. This is where the TypeScript story diverges from the C# story in one honest way. The C# side now has a published NuGet package, `CommunityToolkit.Aspire.Hosting.Kind` `13.4.1-beta.687`, with a first-class `AddKindCluster` resource, `WithWorkerNodes`, `WithKubernetesVersion`, `WithClusterLifetime`, Helm chart support, Kind config customization, and references. Manifest support is still pending upstream in [CommunityToolkit/Aspire#1481](https://github.com/CommunityToolkit/Aspire/pull/1481), where the C# API becomes `AddManifest` / `AddManifestFromContent`. That is great news for C# AppHosts. It does not automatically create a TypeScript SDK surface. As of this writing, there is no TypeScript counterpart.
 
@@ -171,15 +163,11 @@ Every claim I made in Parts 1 and 2 survives translation to TypeScript.
 - The Go operator still runs as a host process with a real debugger attached.
 - The typed dependency graph still replaces "run these things in this order or it breaks."
 
-The only thing that changed is the language you write the AppHost in.
-
-If you write Node.js services all day, you can now model a Kubernetes operator loop, a real Kind cluster, and any Aspire-shaped topology without leaving your ecosystem. You do not need to learn C#. You do not need to install the .NET SDK to author the AppHost itself. (You do still need it available for Aspire's runtime, but you are not writing `using` statements at 11pm.)
+The only thing that changed is the language you write the AppHost in, which means if you write Node.js services all day, you can now model a Kubernetes operator loop, a real Kind cluster, and any Aspire-shaped topology without leaving your ecosystem. You do not need to learn C#. You do not need to install the .NET SDK to author the AppHost itself. (You do still need it available for Aspire's runtime, but you are not writing `using` statements at 11pm.)
 
 For platform engineers on the JS/TS side of the world, that is not a small thing. That is the difference between "there is an interesting .NET tool for local topology as code" and "there is a tool for local topology as code, and it happens to have a .NET reference implementation."
 
-Aspire is the second thing. This post is the proof.
-
-The Greeter operator on my machine runs from a TypeScript AppHost. Same reconcile loop. Same debugger. Same Kind cluster. Same F5 story.
+Aspire is the second thing, and this post is the proof. The Greeter operator on my machine runs from a TypeScript AppHost, with the same reconcile loop, the same debugger, the same Kind cluster, and the same F5 story.
 
 The disruption I have been talking about is not about .NET. It is about **local topology as code**, in the language you already use.
 
@@ -199,7 +187,7 @@ Layout:
 - `config/greeter-crd.yaml` — the CRD
 - `examples/greeter-sample.yaml` — a sample Greeter to apply
 
-Read the root `README.md` for both quickstarts side by side. Pick your language.
+Read the root `README.md` for both quickstarts side by side, then pick your language.
 
 ## Further reading
 
