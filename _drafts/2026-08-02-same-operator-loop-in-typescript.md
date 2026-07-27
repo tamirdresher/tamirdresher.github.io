@@ -1,20 +1,20 @@
 ---
 layout: post
-title: "Part 3: The Same Operator Loop, in TypeScript — No .NET Required"
+title: "The Same Operator Loop, in TypeScript — No .NET Required"
 date: 2026-08-02T07:15:00+03:00
 tags: [dotnet-aspire, typescript, platform-engineering, kubernetes, operator, kind, polyglot, inner-loop]
-description: "Aspire's polyglot claim is real. The same Greeter operator from Part 1 runs under a TypeScript AppHost — no C#, no .NET SDK in the AppHost itself. Same Kind cluster, same F5 loop, different language."
+description: "Aspire's polyglot claim is real. The same Greeter operator from the C# AppHost post runs under a TypeScript AppHost — no C#, no .NET SDK in the AppHost itself. Same Kind cluster, same F5 loop, different language."
 ---
 
-> **Part 3 of 3.** [Part 1]({% post_url 2026-07-29-a-kubernetes-operator-with-a-debugger-not-a-deployment %}) built the Greeter operator with a C# AppHost. [Part 2]({% post_url 2026-07-31-the-kind-resource-my-argocd-story %}) applied the same pattern to argo-cd. This one is the proof: **you can write the AppHost in TypeScript instead of C#.**
+> This post stands on its own, but it is also connected to two earlier experiments: [When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering]({% post_url 2026-07-29-a-kubernetes-operator-with-a-debugger-not-a-deployment %}) built the Greeter operator with a C# AppHost, and [The Kind Resource: My argo-cd Story, and Why Aspire Is Quietly Disrupting DevOps]({% post_url 2026-07-31-the-kind-resource-my-argocd-story %}) took the same pattern into a real cloud-native project. Here I keep the operator and the cluster the same, then swap only the AppHost to TypeScript, because the interesting question is whether the loop survives outside .NET.
 
 There is a very specific reason I care about this post existing.
 
 Every time I have talked about Aspire in the last year, someone from the JavaScript, TypeScript, or Python side of the world has raised the same eyebrow. Sometimes politely. Sometimes not. The eyebrow means: *"This looks nice, but it is a .NET thing, right?"*
 
-And I get it, because every Aspire example in the ecosystem, including the two posts I wrote earlier in this series, shows a C# AppHost. The API surface I have been quoting reads like a C# fluent builder. The tool that ships it is called `dotnet`. If your day job lives in `node_modules`, the polyglot pitch feels a little like the wine list at a steakhouse — thoughtfully worded but not really for you.
+And I get it, because every Aspire example in the ecosystem, including the two related posts I wrote earlier, shows a C# AppHost. The API surface I have been quoting reads like a C# fluent builder. The tool that ships it is called `dotnet`. If your day job lives in `node_modules`, the polyglot pitch feels a little like the wine list at a steakhouse — thoughtfully worded but not really for you.
 
-So this post is the wine: we are going to take the exact operator from Part 1 — same Go code, same CRD, same Kind cluster — and swap the AppHost. From C# to TypeScript. Nothing else changes. If the pattern holds, the debugger still hits, the dashboard still shows the same graph, and every claim from Parts 1 and 2 survives the translation. That is the whole test.
+So this post is the wine: we are going to take the exact Greeter operator from the C# AppHost post — same Go code, same CRD, same Kind cluster — and swap the AppHost. From C# to TypeScript. Nothing else changes. If the pattern holds, the debugger still hits, the dashboard still shows the same graph, and every claim from the Greeter post and the argo-cd post survives the translation. That is the whole test.
 
 ---
 
@@ -46,7 +46,7 @@ The other important thing in that config file is this snippet:
 }
 ```
 
-That is not a typo. Aspire's Go hosting integration — the same integration Part 1's C# AppHost used to model the Greeter operator as a first-class `AddGoApp` resource — is available to the TypeScript AppHost through the same mechanism. Aspire's polyglot claim goes both ways: a TypeScript AppHost can consume a .NET-ecosystem hosting integration, because Aspire's runtime is what actually enforces the graph, not the language of the AppHost.
+That is not a typo. Aspire's Go hosting integration — the same integration the C# AppHost used to model the Greeter operator as a first-class `AddGoApp` resource — is available to the TypeScript AppHost through the same mechanism. Aspire's polyglot claim goes both ways: a TypeScript AppHost can consume a .NET-ecosystem hosting integration, because Aspire's runtime is what actually enforces the graph, not the language of the AppHost.
 
 That is the seam, and once you see it, the rest becomes ordinary plumbing you can reason about.
 
@@ -137,7 +137,7 @@ kubectl --context kind-dev-cluster get greeter tamir -o yaml
 
 `npm install` pulls a small number of dev dependencies (TypeScript, ESLint, `tsx`, `nodemon`) and one runtime dependency (`vscode-jsonrpc`, which the local Aspire SDK uses to talk to the runtime). `aspire run` is the same command shape as `aspire start` in the C# world — the TypeScript scaffold defines it as an npm script alias.
 
-The reconcile loop is identical to Part 1's: apply a Greeter, the operator's `Reconcile()` function creates a ConfigMap named `greeting-{name}`, the debugger attaches to the Go process, breakpoints hit. That last part is the whole reason to do any of this.
+The reconcile loop is the same one from the C# AppHost post: apply a Greeter, the operator's `Reconcile()` function creates a ConfigMap named `greeting-{name}`, the debugger attaches to the Go process, breakpoints hit. That last part is the whole reason to do any of this.
 
 The operator has not changed a single line. The Go code is the Go code. The debugger flow is the debugger flow. The Kind cluster is the same real Kubernetes state store. Only the AppHost is different.
 
@@ -155,7 +155,7 @@ The debugger side was where I expected trouble and found none. Setting a breakpo
 
 ## What this means
 
-Every claim I made in Parts 1 and 2 survives translation to TypeScript.
+Every claim I made in the Greeter post and the argo-cd post survives translation to TypeScript.
 
 - The setup doc is still the smell.
 - The AppHost is still the executable source of truth for local topology.
@@ -182,7 +182,7 @@ Sample repo: <https://github.com/tamirdresher/aspire-greeter-operator> (currentl
 Layout:
 
 - `operator/` — the Go operator (`controller-runtime`), unchanged across AppHosts
-- `apphost/` — the **C# AppHost** from Part 1
+- `apphost/` — the **C# AppHost** from the earlier Greeter post
 - `ts-apphost/` — the **TypeScript AppHost** from this post
 - `config/greeter-crd.yaml` — the CRD
 - `examples/greeter-sample.yaml` — a sample Greeter to apply
@@ -194,5 +194,5 @@ Read the root `README.md` for both quickstarts side by side, then pick your lang
 - Aspire's TypeScript AppHost docs: <https://aspire.dev>
 - CommunityToolkit.Aspire.Hosting.Kind on NuGet (C# only, for now): <https://www.nuget.org/packages/CommunityToolkit.Aspire.Hosting.Kind/13.4.1-beta.687>
 - Manifest support PR (`AddManifest` / `AddManifestFromContent`, 174 tests as of HEAD `5c80dc4b`): <https://github.com/CommunityToolkit/Aspire/pull/1481>
-- Part 1: A Kubernetes Operator with a Debugger, Not a Deployment
-- Part 2: The Kind Resource — My argo-cd Story, and Why Aspire Is Quietly Disrupting DevOps
+- [When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering]({% post_url 2026-07-29-a-kubernetes-operator-with-a-debugger-not-a-deployment %})
+- [The Kind Resource: My argo-cd Story, and Why Aspire Is Quietly Disrupting DevOps]({% post_url 2026-07-31-the-kind-resource-my-argocd-story %})

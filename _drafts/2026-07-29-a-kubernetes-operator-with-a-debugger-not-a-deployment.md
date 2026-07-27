@@ -1,12 +1,12 @@
 ---
 layout: post
-title: "Part 1: When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering"
+title: "When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering"
 date: 2026-07-29T07:15:00+03:00
 tags: [dotnet-aspire, platform-engineering, kubernetes, operator, controller-runtime, kind, inner-loop, tutorial]
 description: "A followable Aspire tutorial for running a real Kubernetes operator against a real Kind cluster, with the reconciler running as a debuggable host process instead of a deployed pod — and a clean path into the cloud-native inner loop."
 ---
 
-> **Part 1 of 3.** In Parts 2 and 3 I take this same pattern to a real cloud-native project (argo-cd) and then show the AppHost written in TypeScript instead of C#.
+> This post builds the smallest version of the loop that still shows the whole thing: a real Kind cluster, a real CRD, and a Go reconciler running where I can debug it. In follow-up posts I take the same pattern somewhere harder — a real cloud-native project with a genuine contributor-onboarding problem — and I also show the AppHost written in TypeScript for readers who do not live in .NET.
 
 There is a very specific smell in platform engineering: the setup guide that has become the system.
 
@@ -18,13 +18,19 @@ So in this post we are going to build a minimal Kubernetes operator from scratch
 
 Then we are going to run the operator as a host process under Aspire, press F5, set a breakpoint in `Reconcile()`, apply a custom resource, and step through the code, which is the whole trick.
 
+Here is the shape of the thing, because the split is the point:
+
+![Schematic of the setup: VS Code, the Aspire AppHost, and the Go operator all running as ordinary processes on the laptop, connected to a real Kind cluster in Docker that holds the API server, the Greeter CRD, and the cluster state. KUBECONFIG points from laptop to cluster, and a long-lived watch stream carries change events back.](/assets/kubernetes-operator-debugger/what-we-are-building.svg)
+
 ## Why I think this matters beyond one operator
+
+If you have not lived in Kubernetes operator land, the closest .NET analogy is an `IHostedService` that watches a queue or table full of desired state and keeps reality caught up. Kubernetes makes the API server that table; the rows are objects of a type you define, and the loop wakes up from a watch instead of a timer. In this post that object is a `Greeter` with a name, and the operator makes sure Kubernetes has a ConfigMap — basically a small config object — containing the greeting. Someone creates a Greeter, the operator notices, and the ConfigMap appears. That is why people write operators: they teach Kubernetes new nouns, like certificates or Argo CD Applications, and reconcile them into existence.
 
 The Greeter itself does almost nothing — it reads a name, writes a ConfigMap, and reports status — and that is the point, because the loop around it is where I think Aspire starts to disrupt platform engineering and DevOps.
 
-The dirty secret in platform engineering is that the inner loop for cloud-native work is still terrible. If you are building an operator, a controller, an admission webhook, or contributing to a CNCF project, the default loop is usually: build a container, push it somewhere or load it into Kind, apply a Deployment, wait for the pod, tail logs with `kubectl`, realize you typo'd the thing you were trying to inspect, and then do the whole little ceremony again. We got very good at automating that ceremony, but the iteration is still measured in minutes when the code change deserved seconds.
+The dirty secret in platform engineering is that the inner loop for cloud-native work is still terrible. If you are building an operator, a controller that runs this reconcile loop, an admission webhook, or contributing to a CNCF project, the default loop is usually: build a container, push it somewhere or load it into Kind, apply a Deployment, wait for the Pod (Kubernetes' unit of running containers), tail logs with `kubectl`, realize you typo'd the thing you were trying to inspect, and then do the whole little ceremony again. We got very good at automating that ceremony, but the iteration is still measured in minutes when the code change deserved seconds.
 
-Tools like [Tilt](https://tilt.dev/), [Skaffold](https://skaffold.dev/), [DevSpace](https://www.devspace.sh/), and [Garden](https://garden.io/) make that loop faster, and they matter, but my point is narrower: they usually improve the speed of a deploy-to-iterate loop while Aspire changes the shape of the loop. The cluster becomes a dependency your app talks to, not the place your editable code has to live during every edit. The controller can run as a native host process with a debugger attached, against a real Kubernetes API server, while the cluster still holds the CRDs, resources, and API semantics that make the test honest.
+Tools like [Tilt](https://tilt.dev/), [Skaffold](https://skaffold.dev/), [DevSpace](https://www.devspace.sh/), and [Garden](https://garden.io/) make that loop faster, and they matter, but my point is narrower: they usually improve the speed of a deploy-to-iterate loop while Aspire changes the shape of the loop. The cluster becomes a dependency your app talks to, not the place your editable code has to live during every edit. The controller can run as a native host process with a debugger attached, against a real Kubernetes API server, while the cluster still holds the CRDs, which are the custom Kubernetes types, along with the resources and API semantics that make the test honest.
 
 This is the part I think platform engineers and DevOps folks often do not ask for, because the tooling has trained us not to imagine it. Nobody asks for a debugger inside an operator when attaching one to a Pod feels like a production; you learn to live with print statements and logs. Nobody asks for a dashboard button that creates test resources, because retyping `kubectl apply` already feels like the price of admission until `WithApplyGreeterCommand()` turns it into a resource action. Nobody asks for the cluster to be a declared dependency of the app instead of ambient environment, because "make sure Kind is running first" has been normalized into every README we have ever written. And nobody asks to pause a C# AppHost and a Go reconciler together under one debugger, because the old loop made that sound like science fiction with a bad YAML appendix. That is the real argument for Aspire here. It does not just make a known painful step faster; it makes previously unreasonable workflows feel ordinary, and people do not miss capabilities they have never had. A bad inner loop does not merely waste time, but quietly deletes options from your mental model.
 
@@ -32,11 +38,11 @@ That change sounds small until you have onboarded someone to a serious cloud-nat
 
 The DevOps side is interesting for the same reason. The AppHost model that gives you the local graph is also the model Aspire uses at the other end: `aspire publish` can generate deployment artifacts such as Helm charts, and `aspire deploy` can take that model toward real clusters when you configure the environment. That does not mean this post is a production deployment story, and it does not mean Aspire replaces every Tilt or Skaffold workflow. I am talking about the inner loop, because that is where the pain actually lives and where small friction compounds into fewer contributors.
 
-The piece that made this practical for this series is [`CommunityToolkit.Aspire.Hosting.Kind`](https://www.nuget.org/packages/CommunityToolkit.Aspire.Hosting.Kind/13.4.1-beta.687). It is now published on NuGet as `13.4.1-beta.687`, and it gives Aspire a real Kind cluster as a first-class resource: it shows up in the dashboard, it creates and manages the cluster, it gives dependent apps a `KUBECONFIG`, and it cleans up according to the lifetime you choose. I also had the honor of becoming a small contributor to that integration, and I want to keep that precise.
+The piece that made this practical for this series is [`CommunityToolkit.Aspire.Hosting.Kind`](https://www.nuget.org/packages/CommunityToolkit.Aspire.Hosting.Kind/13.4.1-beta.687). It is now published on NuGet as `13.4.1-beta.687`, and it gives Aspire a real Kind cluster as a first-class resource: it shows up in the dashboard, it creates and manages the cluster, it gives dependent apps a `KUBECONFIG`, the cluster connection info Kubernetes clients read, and it cleans up according to the lifetime you choose. I also had the honor of becoming a small contributor to that integration, and I want to keep that precise.
 
-My merged contribution was [PR #1482](https://github.com/CommunityToolkit/Aspire/pull/1482), a dependency fix from `System.Security.Cryptography.Xml` 8.0.3 to 8.0.4 that cleared six high-severity CVE advisories and unblocked CI for every open PR in the CommunityToolkit/Aspire repo. The contribution that connects directly to this series is [PR #1481](https://github.com/CommunityToolkit/Aspire/pull/1481), which is still open as I write this. It adds `AddManifest` and `AddManifestFromContent` to the Kind integration so an AppHost can apply raw Kubernetes YAML from a file, directory, or kustomize overlay after the cluster is ready, with CRD-establishment waiting, server-side apply, configurable timeouts, and 174 tests. I hit that gap while writing these posts, built the small local version the samples needed, and sent the package-quality version upstream.
+My merged contribution was [PR #1482](https://github.com/CommunityToolkit/Aspire/pull/1482), a dependency fix from `System.Security.Cryptography.Xml` 8.0.3 to 8.0.4 that cleared six high-severity CVE advisories and unblocked CI for every open PR in the CommunityToolkit/Aspire repo. The contribution that connects directly to this series is [PR #1481](https://github.com/CommunityToolkit/Aspire/pull/1481), which is still open as I write this. It adds `AddManifest` and `AddManifestFromContent` to the Kind integration so an AppHost can apply raw Kubernetes YAML manifests from a file, directory, or kustomize overlay after the cluster is ready, with CRD-establishment waiting, server-side apply, configurable timeouts, and 174 tests. I hit that gap while writing these posts, built the small local version the samples needed, and sent the package-quality version upstream.
 
-That is why the samples carry a tiny extensions file with a "delete this once #1481 merges" comment. The rest of this post is the smallest honest example I could build: one CRD, one reconciler, one Kind cluster, and one debugger-first loop that shows the shape before you press F5.
+That is why the samples carry a tiny extensions file with a "delete this once #1481 merges" comment. The rest of this post is the smallest honest example I could build: one CRD, one reconciler (the code that does the matching), one Kind cluster, and one debugger-first loop that shows the shape before you press F5.
 
 ---
 
@@ -352,7 +358,7 @@ This is where Aspire enters, because the local environment becomes something the
 
 ### The AppHost money shot
 
-Here is the part I wanted after Part 1: Kind cluster, CRD bootstrap, Go operator, dependency ordering, and dashboard metadata in one file.
+Here is the AppHost shape I wanted all along: Kind cluster, CRD bootstrap, Go operator, dependency ordering, and dashboard metadata in one file.
 
 The important update since I first wrote this draft is that the Kind integration is no longer something you clone or vendor from source. It is a real NuGet package now:
 
@@ -514,7 +520,7 @@ You can also take an existing operator project and do the same thing over a week
 
 That is the platform-engineering disruption I actually care about: not a new abstraction for production, but a better inner loop for the people maintaining the abstractions everyone else depends on.
 
-The Greeter keeps the domain simple enough that the loop stays visible, and in Part 2 I take the same pattern to a real cloud-native project — Argo CD — and tell the story of why I ended up building this in the first place.
+The Greeter keeps the domain simple enough that the loop stays visible. In the argo-cd post, I take the same pattern to a real cloud-native project and tell the story of why I ended up building this in the first place.
 
 For now, I am happy with the tiny thing: a CRD, a reconciler, a Kind cluster, a debugger, and no image build in the loop. That is a very good start.
 

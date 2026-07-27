@@ -6,7 +6,7 @@ tags: [dotnet-aspire, platform-engineering, devops, argo-cd, kubernetes, kind, c
 description: "The story of how a real feature request in Argo CD (issue #18000) turned into days of local-dev pain — and how the Kind resource in .NET Aspire quietly disrupts the way cloud-native projects onboard contributors."
 ---
 
-> **Part 2 of 3.** In [Part 1]({% post_url 2026-07-29-a-kubernetes-operator-with-a-debugger-not-a-deployment %}), I built the tiny version: a Greeter operator, a Kind cluster, and a debugger-first Aspire loop. This is the real-world version. Same pattern. Bigger project. More archaeology. In [Part 3]({% post_url 2026-08-02-same-operator-loop-in-typescript %}) I do the same thing with a TypeScript AppHost, for readers who don't live in .NET.
+> This is the real-world version of the pattern I wrote about in [When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering]({% post_url 2026-07-29-a-kubernetes-operator-with-a-debugger-not-a-deployment %}): a Kind cluster as part of the local topology, not a prerequisite hiding in a README. You can start here without reading that post first; the short version is the same pattern, bigger project, more archaeology. If you want the polyglot angle afterward, I also show the same loop with a [TypeScript AppHost]({% post_url 2026-08-02-same-operator-loop-in-typescript %}) for readers who don't live in .NET.
 
 ## 1. The hook
 
@@ -34,7 +34,7 @@ For a lot of cloud-native projects, the answer is still longer than it should, a
 
 ## 2. The fix
 
-Quick refresher, especially if you did not read Part 1: Aspire is a code-first, polyglot orchestrator for distributed apps. The center is an AppHost — a small program, in C#, TypeScript, JavaScript, and other supported shapes — that describes your app as a resource graph. Containers, processes, cloud resources, dependencies, endpoints, health, and startup ordering live together. When you run it, Aspire starts the graph and gives you a dashboard with logs, state, health, traces, and resource actions. The shortest version lives at [aspire.dev](https://aspire.dev): compose, debug, and deploy distributed applications from code.
+Quick refresher, especially if this is where you are starting: Aspire is a code-first, polyglot orchestrator for distributed apps. The center is an AppHost — a small program, in C#, TypeScript, JavaScript, and other supported shapes — that describes your app as a resource graph. Containers, processes, cloud resources, dependencies, endpoints, health, and startup ordering live together. When you run it, Aspire starts the graph and gives you a dashboard with logs, state, health, traces, and resource actions. The shortest version lives at [aspire.dev](https://aspire.dev): compose, debug, and deploy distributed applications from code.
 
 For cloud-native inner loops, the missing piece is the cluster, and that is where `CommunityToolkit.Aspire.Hosting.Kind` comes in. It gives the AppHost a real local Kubernetes cluster as a first-class Aspire resource instead of a paragraph in a README that says, "Before you start, create a cluster and apply these things."
 
