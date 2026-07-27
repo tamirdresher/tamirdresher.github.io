@@ -68,7 +68,7 @@ I know. Suspiciously humane.
 
 ## Act 2 — Build
 
-Here is the complete mental model of the project: `apphost/AppHost.cs` is the Aspire resource graph, `config/greeter-crd.yaml` is the Kubernetes CRD, `examples/greeter-sample.yaml` is the sample custom resource, `operator/api/v1alpha1/greeter_types.go` defines the Go API types, `operator/controllers/greeter_controller.go` is the reconcile loop, `operator/main.go` starts the controller-runtime manager, and `kind-hosting/` holds the reusable Aspire Kind integration.
+Here is the complete mental model of the project: `apphost/AppHost.cs` is the Aspire resource graph, `config/greeter-crd.yaml` is the Kubernetes CRD, `examples/greeter-sample.yaml` is the sample custom resource, `operator/api/v1alpha1/greeter_types.go` defines the Go API types, `operator/controllers/greeter_controller.go` is the reconcile loop, `operator/main.go` starts the controller-runtime manager, and the AppHost references the published `CommunityToolkit.Aspire.Hosting.Kind` package plus one tiny local extensions file for the bits that have not landed upstream yet.
 
 The actual operator is tiny. The interesting part is not that it took a heroic amount of code. The interesting part is that it did not.
 
@@ -352,232 +352,53 @@ This is where Aspire enters.
 
 ### The AppHost money shot
 
-Here is the complete `apphost/AppHost.cs`. This is the part I wanted after Part 1: Kind cluster, CRD bootstrap, Go operator, dependency ordering, and dashboard metadata in one file.
+Here is the part I wanted after Part 1: Kind cluster, CRD bootstrap, Go operator, dependency ordering, and dashboard metadata in one file.
 
-From `apphost/AppHost.cs`:
+The important update since I first wrote this draft is that the Kind integration is no longer something you clone or vendor from source. It is a real NuGet package now:
+
+```xml
+<PackageReference Include="CommunityToolkit.Aspire.Hosting.Kind" Version="13.4.1-beta.687" />
+```
+
+That is the right starting point today. Install the package, then add a small local extensions file only for the gaps this sample still needs.
+
+From `apphost/AppHost.cs`, the shape becomes this:
 
 ```csharp
 using Aspire.Hosting;
-using Aspire.Hosting.ApplicationModel;
-using Aspire.Hosting.Eventing;
 using Aspire.Hosting.Go;
-using Aspire.Hosting.Lifecycle;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 
 GreeterPrerequisites.ValidateOrThrow();
 
 var builder = DistributedApplication.CreateBuilder(args);
 var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
 var operatorDir = Path.Combine(repoRoot, "operator");
-var kubeconfigDir = Path.Combine(repoRoot, ".kube");
-Directory.CreateDirectory(kubeconfigDir);
-var kubeconfigPath = Path.Combine(kubeconfigDir, "dev-cluster.yaml");
+var crdPath = Path.Combine(repoRoot, "config", "greeter-crd.yaml");
 
 var cluster = builder
-    .AddKindCluster("dev-cluster", clusterName: "dev-cluster", kubeconfigPath: kubeconfigPath)
-    .WithPersistentCluster()
-    .WithWaitForReady(TimeSpan.FromMinutes(5))
-    .WithHealthCheck(GreeterCrdBootstrapState.HealthCheckKey)
+    .AddKindCluster("dev-cluster")
+    .WithKubernetesVersion("v1.31.0")
+    .WithClusterLifetime(ClusterLifetime.Persistent)
+    .WithManifest(crdPath) // local extension for now; see note below
     .WithDashboardProperty("greeter.cluster", "dev-cluster")
-    .WithDashboardProperty("greeter.kubeconfig", kubeconfigPath)
     .WithDashboardProperty("greeter.crd", "greeters.hello.tamirdresher.dev");
-
-var bootstrapState = new GreeterCrdBootstrapState();
-builder.Services.AddSingleton(bootstrapState);
-builder.Services
-    .AddHealthChecks()
-    .AddCheck(GreeterCrdBootstrapState.HealthCheckKey, () => bootstrapState.Succeeded
-        ? HealthCheckResult.Healthy("Greeter CRD applied.")
-        : bootstrapState.Completed
-            ? HealthCheckResult.Unhealthy("Greeter CRD bootstrap failed.")
-            : HealthCheckResult.Unhealthy("Greeter CRD bootstrap has not completed yet."));
-
-builder.Services.AddSingleton<IDistributedApplicationEventingSubscriber>(sp =>
-    new GreeterCrdBootstrapHook(
-        sp.GetRequiredService<ILogger<GreeterCrdBootstrapHook>>(),
-        sp.GetRequiredService<ResourceNotificationService>(),
-        bootstrapState,
-        cluster.Resource,
-        Path.Combine(repoRoot, "config", "greeter-crd.yaml")));
 
 builder
     .AddGoApp("greeter-operator", operatorDir, "./main.go")
-    .WithEnvironment("KUBECONFIG", kubeconfigPath)
     .WithEnvironment("GOFLAGS", "-mod=mod")
+    .WithReference(cluster)
     .WaitFor(cluster);
 
 builder.Build().Run();
-
-internal static class GreeterPrerequisites
-{
-    public static void ValidateOrThrow()
-    {
-        var missing = new List<string>();
-                var checks = new (string Tool, string[] Arguments)[]
-        {
-            ("docker", ["--version"]),
-            ("kind", ["--version"]),
-            ("kubectl", ["version", "--client"]),
-            ("go", ["version"]),
-        };
-
-        foreach (var (tool, arguments) in checks)
-        {
-            if (!CanRun(tool, arguments))
-            {
-                missing.Add(tool);
-            }
-        }
-
-        if (missing.Count > 0)
-        {
-            throw new InvalidOperationException(
-                "Missing prerequisite(s): " + string.Join(", ", missing) +
-                ". Install Docker Desktop, kind, kubectl, and Go, then retry `aspire start`.");
-        }
-    }
-
-    private static bool CanRun(string fileName, IReadOnlyList<string> arguments)
-    {
-        try
-        {
-            using var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = fileName,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                },
-            };
-
-            foreach (var argument in arguments)
-            {
-                process.StartInfo.ArgumentList.Add(argument);
-            }
-
-            process.Start();
-            return process.WaitForExit(10_000) && process.ExitCode == 0;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-}
-
-internal sealed class GreeterCrdBootstrapState
-{
-    public const string HealthCheckKey = "greeter-crd-bootstrap";
-
-    public bool Completed { get; private set; }
-    public bool Succeeded { get; private set; }
-
-    public void MarkCompleted(bool succeeded)
-    {
-        Completed = true;
-        Succeeded = succeeded;
-    }
-}
-
-internal sealed class GreeterCrdBootstrapHook(
-    ILogger<GreeterCrdBootstrapHook> logger,
-    ResourceNotificationService notifications,
-    GreeterCrdBootstrapState state,
-    KindClusterResource cluster,
-    string crdPath) : IDistributedApplicationEventingSubscriber
-{
-    public Task SubscribeAsync(
-        IDistributedApplicationEventing eventing,
-        DistributedApplicationExecutionContext executionContext,
-        CancellationToken cancellationToken)
-    {
-        eventing.Subscribe<KindClusterReadyEvent>(cluster, OnKindClusterReadyAsync);
-        return Task.CompletedTask;
-    }
-
-    private async Task OnKindClusterReadyAsync(KindClusterReadyEvent applicationEvent, CancellationToken cancellationToken)
-    {
-        var succeeded = await ApplyCrdAsync(applicationEvent.Cluster, cancellationToken);
-        state.MarkCompleted(succeeded);
-    }
-
-    private async Task<bool> ApplyCrdAsync(KindClusterResource cluster, CancellationToken cancellationToken)
-    {
-        if (!File.Exists(crdPath))
-        {
-            logger.LogError("CRD manifest not found: {CrdPath}", crdPath);
-            return false;
-        }
-
-        logger.LogInformation("Applying Greeter CRD from {CrdPath}", crdPath);
-        var (exitCode, stdout, stderr) = await RunAsync(
-            "kubectl",
-            ["apply", "-f", crdPath, "--kubeconfig", cluster.KubeconfigPath],
-            cancellationToken);
-
-        var succeeded = exitCode == 0;
-        await notifications.PublishUpdateAsync(cluster, snapshot => snapshot with
-        {
-            Properties =
-            [
-                .. snapshot.Properties,
-                new ResourcePropertySnapshot("greeter.crd.status", succeeded ? "Applied" : $"FAILED: {stderr}"),
-            ],
-        });
-
-        if (succeeded)
-        {
-            logger.LogInformation("Greeter CRD applied: {Output}", stdout.Trim());
-            return true;
-        }
-
-        logger.LogError("kubectl apply failed with exit code {ExitCode}: {Error}", exitCode, stderr);
-        return false;
-    }
-
-    private static async Task<(int ExitCode, string Stdout, string Stderr)> RunAsync(
-        string fileName,
-        IReadOnlyList<string> arguments,
-        CancellationToken cancellationToken)
-    {
-        using var process = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = fileName,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            },
-        };
-
-        foreach (var argument in arguments)
-        {
-            process.StartInfo.ArgumentList.Add(argument);
-        }
-
-        process.Start();
-        var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
-        await process.WaitForExitAsync(cancellationToken);
-        return (process.ExitCode, await stdoutTask, await stderrTask);
-    }
-}
 ```
 
 This is the part that makes me grin.
 
-`builder.AddKindCluster("dev-cluster")` creates or reuses the local Kind cluster. The AppHost writes a kubeconfig to `.kube/dev-cluster.yaml`, then exposes that path as dashboard metadata so I do not have to go spelunking through folders.
+`builder.AddKindCluster("dev-cluster")` creates or reuses the local Kind cluster. The package owns the cluster lifecycle, Kubernetes version pinning, worker-node shape, persistent lifetime, Kind config, references to other Aspire resources, Helm charts, and the publish/deploy path through `builder.AddKubernetesEnvironment(name).WithKind()`.
 
-The CRD bootstrap is an Aspire lifecycle hook. Once the Kind resource emits `KindClusterReadyEvent`, the hook runs `kubectl apply -f config/greeter-crd.yaml --kubeconfig ...`. The CRD state becomes a health check, so the cluster resource is not just "running" in the vague sense. It is ready for this operator.
+The one method in that snippet that does **not** ship in `13.4.1-beta.687` is `WithManifest(path)`. In this sample it lives in a tiny local extension file. When the cluster is ready, it applies `config/greeter-crd.yaml`, and `.WaitFor(cluster)` keeps the operator from starting before the CRD exists.
+
+> **Package status, July 2026:** `WithManifest(path)` is the local gap. I upstreamed the richer version in [CommunityToolkit/Aspire#1481](https://github.com/CommunityToolkit/Aspire/pull/1481), where it appears as `cluster.AddManifest(name, path)` and `cluster.AddManifestFromContent(name, yaml)`, with `.WithNamespace(...)`, `.WithRecursive()`, `.WithServerSideApply(...)`, `.WithFieldManager(...)`, CRD wait timeout/behavior, apply timeout, kustomize auto-detection, and API-reachability probing. That PR is at 174 tests now, which is a nice reminder that the local version is just enough for the sample; the upstream version is the reviewed, package-quality API. Once it lands in a package, the local extensions file goes away and this sample becomes just the NuGet reference plus the AppHost.
 
 Then this line turns the Go controller into a first-class Aspire resource:
 
@@ -591,34 +412,15 @@ README paragraphs are fine. Dependency graphs are better at not forgetting.
 
 ### The Kind integration is reusable
 
-The `kind-hosting` project is the same generic shape that also powers the larger Argo CD experiment, dropped into this repo as a project reference. The AppHost consumes it through `Aspire.Hosting.Kind.csproj`:
+The demo is not "a one-off C# file that shells out to Kind." It uses the same `CommunityToolkit.Aspire.Hosting.Kind` package any AppHost can use today:
 
 ```xml
-<ProjectReference Include="..\kind-hosting\Aspire.Hosting.Kind.csproj" IsAspireProjectResource="false" />
+<PackageReference Include="CommunityToolkit.Aspire.Hosting.Kind" Version="13.4.1-beta.687" />
 ```
 
-The extension method is intentionally general. From `kind-hosting/KindClusterBuilderExtensions.cs`:
+The only local code left is the extension layer for `WithManifest(path)` and, in the larger Argo CD sample, a convenience `WithPortMapping(hostPort, containerPort)` wrapper over the package's `WithKindConfig`. That is the healthy shape: use the real package, patch the gap locally, upstream the useful part, delete the local copy later.
 
-```csharp
-public static IResourceBuilder<KindClusterResource> AddKindCluster(
-    this IDistributedApplicationBuilder builder,
-    [ResourceName] string name,
-    string? clusterName = null,
-    string? kubeconfigPath = null)
-{
-    ArgumentNullException.ThrowIfNull(builder);
-    ArgumentException.ThrowIfNullOrEmpty(name);
-
-    var resolvedClusterName = clusterName ?? name;
-    var resolvedKubeconfigPath = kubeconfigPath
-        ?? Path.Combine(Path.GetTempPath(), $"kind-{resolvedClusterName}-kubeconfig.yaml");
-
-    var resource = new KindClusterResource(name, resolvedClusterName, resolvedKubeconfigPath);
-```
-
-So the demo is not "a one-off C# file that shells out to Kind." It is an Aspire hosting integration you can reuse in any AppHost: create a cluster, write kubeconfig, expose commands, wait for readiness, and then let the rest of the graph depend on it.
-
-That is the pattern I care about.
+That contribution loop is part of the story. I hit the missing manifest API because the sample needed to apply a CRD after the cluster was ready. I built the smallest local version that made the loop work. Then I sent the more complete version upstream in [PR #1481](https://github.com/CommunityToolkit/Aspire/pull/1481). No parallel forever-fork. No "copy this source tree into your repo" ritual. Just the normal open-source loop, with a debugger attached.
 
 A Kubernetes operator project does not need to choose between fake local tests and full in-cluster deployment for every edit. The cluster can hold state. The host can run code. Aspire can own the topology.
 
@@ -637,7 +439,7 @@ kubectl --context kind-dev-cluster get greeter tamir -o yaml
 
 Or open `GreeterOperator.slnx` and press F5.
 
-Here is what happens in the version I tested: prerequisites are validated first, Kind starts or gets reused, the CRD is applied by the lifecycle hook, the Go operator starts as a host process, and the Aspire dashboard shows both the cluster and the operator.
+Here is what happens in the version I tested: prerequisites are validated first, Kind starts or gets reused, the CRD is applied by the small `WithManifest` extension, the Go operator starts as a host process, and the Aspire dashboard shows both the cluster and the operator.
 
 The slow part was not Go. The slow part was Kind doing real cluster work, which is exactly where I want the time to go. The complete validated end-to-end run was 87 seconds from `aspire start` to the first successful reconcile, with all reconciliation checks green.
 

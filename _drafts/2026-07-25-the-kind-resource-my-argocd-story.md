@@ -54,6 +54,41 @@ For cloud-native inner loops, the missing piece is the cluster.
 
 That is where `CommunityToolkit.Aspire.Hosting.Kind` comes in. It gives the AppHost a real local Kubernetes cluster as a first-class Aspire resource instead of a paragraph in a README that says, "Before you start, create a cluster and apply these things."
 
+The important update: this is published now. No vendored copy. No "clone the toolkit source and wire a project reference" ceremony. The AppHost starts with the package.
+
+The actual AppHost project file now looks like this:
+
+```xml
+<Project Sdk="Aspire.AppHost.Sdk/13.4.6">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>argocd-aspire-kind-dev</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TamirDresher.Aspire.Hosting.Kind.Extensions\TamirDresher.Aspire.Hosting.Kind.Extensions.csproj" IsAspireProjectResource="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="13.4.6" />
+    <PackageReference Include="Aspire.Hosting.Go" Version="13.4.6-preview.1.26319.6" />
+    <PackageReference Include="Aspire.Hosting.Redis" Version="13.4.6" />
+    <PackageReference Include="CommunityToolkit.Aspire.Hosting.Kind" Version="13.4.1-beta.687" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="..\..\tests\ArgoCd.Aspire.AppHost.Tests\**\*.cs" />
+  </ItemGroup>
+
+</Project>
+```
+
+That package already ships the boring-but-important parts I want from a Kind resource: cluster creation, Kubernetes version pinning, worker nodes, persistent cluster lifetime, raw Kind config customization, references to other Aspire resources, Kind networking for containers, Helm charts, and the `AddKubernetesEnvironment(name).WithKind()` path for publish/deploy scenarios.
+
 The API is intentionally boring, which is my favorite kind of API.
 
 ```csharp
@@ -62,13 +97,14 @@ var stagingCluster = builder
     .WithWorkerNodes(2)
     .WithKubernetesVersion("v1.31.0")
     .WithClusterLifetime(ClusterLifetime.Persistent)
-    .WithPortMapping(hostPort: 80, containerPort: 80)   // ← from our small extensions project
-    .WithPortMapping(hostPort: 443, containerPort: 443) // ← same
-    .WithHelmChart(
-        releaseName: "ingress-nginx",
-        chart: "ingress-nginx/ingress-nginx",
-        @namespace: "ingress-nginx")
-    .WithManifest("k8s/namespace.yaml");                // ← from our small extensions project
+    .WithPortMapping(hostPort: 80, containerPort: 80)   // local extension over WithKindConfig
+    .WithPortMapping(hostPort: 443, containerPort: 443) // same
+    .WithManifest("k8s/namespace.yaml");               // local extension for now
+
+stagingCluster
+    .AddHelmChart("ingress-nginx", "ingress-nginx/ingress-nginx")
+    .WithChartVersion("4.11.3")
+    .WithNamespace("ingress-nginx");
 ```
 
 That whole thing is just a fluent builder.
@@ -89,13 +125,13 @@ It was also a smell.
 
 `WithManifest` removes that entire custom bootstrap hook. When the cluster is ready, it kubectl-applies the manifest. Health reflects the result. Downstream resources that call `.WaitFor(cluster)` unblock only after the cluster is ready for them. No custom bootstrap code. No state singleton. No health-check ping-pong. No "remember to run this first" paragraph trying to cosplay as a dependency graph.
 
-Two of the methods in the money-shot above (`WithPortMapping` and `WithManifest`) are not shipped by the CommunityToolkit package itself. They live in a small companion project I wrote — `TamirDresher.Aspire.Hosting.Kind.Extensions` — that adds only the missing pieces on top of the upstream integration. The upstream `CommunityToolkit.Aspire.Hosting.Kind` source is used unmodified; the extensions project is two files that add these two methods and nothing else. When those APIs land upstream, the extensions project gets deleted. That is the healthy version of "fork and PR back": the sample uses the real integration and layers additions where they are genuinely missing, without inventing a parallel implementation.
-
-I contribute to `CommunityToolkit.Aspire.Hosting.Kind`, so upstreaming `WithManifest` and `WithPortMapping` is on my list.
+> **Package status, July 2026:** `WithManifest(path)` is not in `CommunityToolkit.Aspire.Hosting.Kind` `13.4.1-beta.687` yet. I carry it as a tiny local extension in the sample, and I upstreamed the real version in [CommunityToolkit/Aspire#1481](https://github.com/CommunityToolkit/Aspire/pull/1481). The upstream API is `cluster.AddManifest(name, path)` for files, directories, or kustomize, and `cluster.AddManifestFromContent(name, yaml)` for inline YAML through `kubectl` stdin. It also adds `.WithNamespace(...)`, `.WithRecursive()`, `.WithServerSideApply(forceConflicts: false)`, `.WithFieldManager(...)`, `.WithCrdWaitTimeout(...)`, `.WithCrdWaitBehavior(Fail | BestEffort)`, `.WithApplyTimeout(...)`, CRD-establishment waiting, API-reachability probing, and 174 tests. When it lands in a package, the local extension file gets deleted and the package version gets bumped. `WithPortMapping(hostPort, containerPort)` is still just a convenience wrapper over the package's `WithKindConfig`.
 
 That one method matters because it represents the larger pattern: every "install → configure → verify" step in a platform README wants to become a fluent-builder call with a debugger.
 
-`WithHelmChart` is the same pattern. So is `WithPortMapping`. So is `WithNodeCount`. So is `WithKubernetesVersion`. They are not glamorous. They are better than glamorous: they delete human ceremony.
+It also exposed a very normal open-source paper cut. The package XML docs list `IProcessRunner`, but from outside the package assembly it is not actually usable at compile time. So the sample's local `WithManifest` does the unglamorous thing and shells out with `System.Diagnostics.Process`. No reflection. No cleverness. Just enough `kubectl apply -f ... --kubeconfig ...` to make the loop work. Inside the upstream PR, `AddManifest` can use the real process abstraction with cancellation, logging, and `FakeProcessRunner` tests. That contrast is exactly why upstreaming matters.
+
+`AddHelmChart` is the same pattern. So is `WithPortMapping`. So is `WithWorkerNodes`. So is `WithKubernetesVersion`. They are not glamorous. They are better than glamorous: they delete human ceremony.
 
 In the Argo CD experiment, that deletion was very visible. The AppHost went from roughly 180 lines to roughly 100 lines once the Kind resource absorbed the bootstrap work. Less code is nice. Less special local-dev ritual is the real win.
 
@@ -103,12 +139,18 @@ The sample repo for this is `https://github.com/tamirdresher/aspire-argocd-dev-l
 
 The layout is deliberately plain:
 
-- `src/ArgoCd.Aspire.AppHost/` holds the AppHost.
-- `src/CommunityToolkit.Aspire.Hosting.Kind/` holds the **upstream integration used unmodified** (vendored while I wait for it to publish to NuGet).
-- `src/TamirDresher.Aspire.Hosting.Kind.Extensions/` holds the two additions on top — `WithManifest` and `WithPortMapping`. Two files, roughly 200 lines of C#.
-- `docs/` explains the loop.
-- `scripts/clone-argocd.ps1` clones the Argo CD fork in the expected shape.
-- `tests/` validates the resource model and startup assumptions.
+```text
+aspire-argocd-dev-loop/
+├── src/
+│   ├── ArgoCd.Aspire.AppHost/                        ← PackageReference to the NuGet
+│   └── TamirDresher.Aspire.Hosting.Kind.Extensions/  ← the two gap-fillers only
+│       ├── KindClusterManifestExtensions.cs
+│       └── KindClusterPortMappingExtensions.cs
+└── tests/
+    └── ArgoCd.Aspire.AppHost.Tests/                  ← 88 tests, all pass
+```
+
+The 29-file vendored `src/CommunityToolkit.Aspire.Hosting.Kind/` directory is gone. The only local extension code left is `KindClusterManifestExtensions.cs`, which applies a manifest with a small `System.Diagnostics.Process` helper, and `KindClusterPortMappingExtensions.cs`, which adds `WithPortMapping` by calling the package's `WithKindConfig(Action<KindConfigModel>)`.
 
 The topology is the important part.
 
@@ -149,9 +191,9 @@ Those are exactly the kinds of problems I want the local loop to catch. Not afte
 
 The other caveat is memory. Argo CD is not a tiny Go program. The full inner loop can compile seven Go binaries in parallel, and on this specific machine the host paging file is too small for that much `Process.Start` pressure. The code is correct; the machine is memory-constrained. That is why the quickstart sets `$env:GOMAXPROCS="2"`. It lowers the pressure enough for laptop-class development.
 
-The validation matched that story. `dotnet build` is clean: 0 warnings, 0 errors. The tests are 87 out of 88 passing. The one failing test fails only because the host paging file is too small for `Process.Start`, the same memory constraint that prevents the full seven-binary parallel compile on this machine.
+The validation matched that story. After the package refactor, `dotnet build` is clean: 0 warnings, 0 errors. The tests are 88 out of 88 passing. The old vendored integration directory is gone, and the sample is back to the shape I wanted: real package, tiny local gap-fillers, executable graph.
 
-That is an honest caveat, and it is also useful. If you are trying this on a memory-constrained laptop, set `GOMAXPROCS=2` before you blame yourself, the repo, Go, Kubernetes, Windows, or the moon.
+The memory caveat still matters for the full Argo CD inner loop, though. If you are trying this on a memory-constrained laptop, set `GOMAXPROCS=2` before you blame yourself, the repo, Go, Kubernetes, Windows, or the moon.
 
 I usually blame the moon third.
 
@@ -175,7 +217,7 @@ A good README is still important. I love a good README. But if the README is car
 
 An executable AppHost is better than a paragraph that says "first create a Kind cluster." A fluent builder call is better than a shell snippet that applies a manifest and hopes everyone remembers when it should happen. A `.WaitFor(cluster)` edge is better than "wait until the cluster is ready" as tribal instruction.
 
-That is why `WithManifest` is more than a convenience method. It is the archetype. It says the install-configure-verify sequence belongs in the resource model. `WithHelmChart` says the same thing. So does `WithPortMapping`. So does `WithNodeCount`. Each one moves a piece of local platform ceremony out of prose and into code.
+That is why `WithManifest` is more than a convenience method. It is the archetype. It says the install-configure-verify sequence belongs in the resource model. `AddHelmChart` says the same thing. So does `WithPortMapping`. So does `WithWorkerNodes`. Each one moves a piece of local platform ceremony out of prose and into code.
 
 And once it is code, it can be debugged. It can be reviewed. It can be tested. It can be reused.
 
@@ -200,6 +242,8 @@ It is not glamorous because the best platform work often is not glamorous. It is
 No keynote thunder. No "replace your platform" sticker. No pretending Kubernetes got simple because I wrote a fluent API around Kind. Just a quiet shift where a whole category of pain becomes optional.
 
 A while back I spent days getting Argo CD to run.
+
+This time the loop ended in a healthier place: I hit a gap, built the missing piece locally, discovered exactly where a local extension stops being pleasant (`IProcessRunner`, hello), upstreamed the part that belonged in the toolkit, and left myself a deletion path for the local extension file. That is my favorite kind of fork: the one with an expiration date.
 
 Next time:
 

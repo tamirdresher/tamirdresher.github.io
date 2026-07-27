@@ -100,11 +100,11 @@ Read it top to bottom.
 
 `createBuilder()` returns the AppHost builder. That is the exact same primitive the C# side calls `DistributedApplication.CreateBuilder(args)`. Same job, different casing.
 
-Then the cluster: `builder.addExecutable('dev-cluster', process.execPath, appHostDir, [...])`. This is where the TypeScript story diverges from the C# story in one honest way. The C# side had `CommunityToolkit.Aspire.Hosting.Kind`, which shipped a first-class `AddKindCluster` resource with `WithManifest`, `WithNodeCount`, `WithKubernetesVersion`, and friends. That C# integration is a proper Aspire resource type. As of this writing, there is no TypeScript counterpart.
+Then the cluster: `builder.addExecutable('dev-cluster', process.execPath, appHostDir, [...])`. This is where the TypeScript story diverges from the C# story in one honest way. The C# side now has a published NuGet package, `CommunityToolkit.Aspire.Hosting.Kind` `13.4.1-beta.687`, with a first-class `AddKindCluster` resource, `WithWorkerNodes`, `WithKubernetesVersion`, `WithClusterLifetime`, Helm chart support, Kind config customization, and references. Manifest support is still pending upstream in [CommunityToolkit/Aspire#1481](https://github.com/CommunityToolkit/Aspire/pull/1481), where the C# API becomes `AddManifest` / `AddManifestFromContent`. That is great news for C# AppHosts. It does not automatically create a TypeScript SDK surface. As of this writing, there is no TypeScript counterpart.
 
 So we drop one level down. Aspire's TypeScript SDK exposes `addExecutable`, which runs any process as an Aspire resource with logs, restart, and dashboard visibility. We hand it Node itself — `process.execPath` — and tell it to run our small helper script `scripts/kind-cluster.mjs`. That script is 185 lines of plain JavaScript that creates or reuses the cluster, applies the CRD, and blocks until the CRD is Established.
 
-That is not a workaround. That is the exact composition pattern Aspire is built around: a resource is a process, a container, or something the runtime knows how to lifecycle. When the ecosystem does not yet have a specialized resource type for your infrastructure, you compose it out of an executable. Later, when someone (probably me) ports the Kind integration to TypeScript, this block collapses to `builder.addKindCluster('dev-cluster').withManifest(crdPath)`. The rest of the file does not change.
+That is not a workaround. That is the exact composition pattern Aspire is built around: a resource is a process, a container, or something the runtime knows how to lifecycle. When the ecosystem does not yet have a specialized resource type for your infrastructure, you compose it out of an executable. Later, when the Kind integration has a TypeScript-facing shape — probably through the same `aspire add` / generated-SDK mechanism used by other integrations — this block can collapse to something like `builder.addKindCluster('dev-cluster').withManifest(crdPath)`. The rest of the file does not change.
 
 Then the operator, unchanged in shape:
 
@@ -155,7 +155,7 @@ A few honest notes, because posts that pretend the demo gods always smile are bo
 
 The `.aspire/modules/` generated-SDK model surprised me at first. My reflex was: "wait, where is my `npm install @microsoft/aspire-hosting`?" And the answer, for now, is: nowhere. The SDK ships with the CLI. Once the npm package is out, this whole shape will normalize. Until then, the AppHost is calling code that lives inside your own project, which is either terrifying or refreshing depending on your relationship with node_modules.
 
-The lack of a `CommunityToolkit.Aspire.Hosting.Kind` TypeScript port meant I had to drop from `AddKindCluster` down to `addExecutable`. That is fine, but it is also a real gap. The moment someone (I have ideas) ports that integration to TypeScript, this AppHost drops from ~60 lines to ~35, and the story tightens further.
+The lack of a `CommunityToolkit.Aspire.Hosting.Kind` TypeScript port meant I had to drop from `AddKindCluster` down to `addExecutable`. The NuGet package being published fixes the C# story, not this one. That is fine, but it is also a real gap. The moment someone (I have ideas) exposes a TypeScript-facing Kind integration, this AppHost drops from ~60 lines to ~35, and the story tightens further.
 
 The dashboard experience was identical. Logs, resource state, dependencies, restart controls — same UI, same feel. Aspire's runtime is genuinely language-agnostic. When you `aspire run` a TypeScript AppHost, you get the exact same operator dashboard experience as when you `aspire start` a C# one.
 
@@ -204,6 +204,7 @@ Read the root `README.md` for both quickstarts side by side. Pick your language.
 ## Further reading
 
 - Aspire's TypeScript AppHost docs: <https://aspire.dev>
-- CommunityToolkit.Aspire.Hosting.Kind (C# only, for now): <https://github.com/CommunityToolkit/Aspire/tree/main/src/CommunityToolkit.Aspire.Hosting.Kind>
+- CommunityToolkit.Aspire.Hosting.Kind on NuGet (C# only, for now): <https://www.nuget.org/packages/CommunityToolkit.Aspire.Hosting.Kind/13.4.1-beta.687>
+- Manifest support PR (`AddManifest` / `AddManifestFromContent`, 174 tests as of HEAD `5c80dc4b`): <https://github.com/CommunityToolkit/Aspire/pull/1481>
 - Part 1: A Kubernetes Operator with a Debugger, Not a Deployment
 - Part 2: The Kind Resource — My argo-cd Story, and Why Aspire Is Quietly Disrupting DevOps
