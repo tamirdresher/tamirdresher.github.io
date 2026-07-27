@@ -122,7 +122,7 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 }
 ```
 
-And here is the CRD Kubernetes sees. From `config/greeter-crd.yaml`:
+And here is the CRD Kubernetes sees. Trimmed to the shape that matters — the OpenAPI schema also declares `apiVersion`, `kind`, `metadata`, and a `status` subresource, which are the same in every CRD ever written ([full file in the repo](https://github.com/tamirdresher/aspire-kubernetes-operator-sample/blob/master/config/greeter-crd.yaml)):
 
 ```yaml
 apiVersion: apiextensions.k8s.io/v1
@@ -136,9 +136,7 @@ spec:
     plural: greeters
     singular: greeter
     kind: Greeter
-    listKind: GreeterList
-    shortNames:
-      - greet
+    shortNames: [greet]
   versions:
     - name: v1alpha1
       served: true
@@ -150,12 +148,6 @@ spec:
           type: object
           required: [spec]
           properties:
-            apiVersion:
-              type: string
-            kind:
-              type: string
-            metadata:
-              type: object
             spec:
               type: object
               required: [name]
@@ -165,16 +157,7 @@ spec:
                   minLength: 1
                   maxLength: 240
                   pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
-            status:
-              type: object
-              properties:
-                configMapName:
-                  type: string
-                message:
-                  type: string
-                lastReconciled:
-                  type: string
-                  format: date-time
+            # ... apiVersion, kind, metadata, status ...
 ```
 
 Nothing mystical yet. We told Kubernetes there is a new namespaced resource called `Greeter` under `hello.tamirdresher.dev/v1alpha1`, and its spec has one required string.
@@ -269,57 +252,18 @@ The hard part is usually not the code. The hard part is the local environment we
 
 ### The manager bootstrap
 
-The manager is the process that talks to Kubernetes, registers schemes, starts health checks, and runs the controller.
-
-From `operator/main.go`:
+The manager is the process that talks to Kubernetes, registers schemes, starts health checks, and runs the controller. Most of `operator/main.go` is the boilerplate every controller-runtime program has — flag parsing, scheme registration, health probes, and a lot of `if err != nil { os.Exit(1) }`. Here is the part that matters, with the ceremony elided ([full file in the repo](https://github.com/tamirdresher/aspire-kubernetes-operator-sample/blob/master/operator/main.go)):
 
 ```go
-package main
-
-import (
-	"context"
-	"flag"
-	"os"
-
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
-	hellov1alpha1 "github.com/tamirdresher/aspire-kubernetes-operator-sample/operator/api/v1alpha1"
-	"github.com/tamirdresher/aspire-kubernetes-operator-sample/operator/controllers"
-)
-
-var scheme = runtime.NewScheme()
-
-func init() {
-	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(hellov1alpha1.AddToScheme(scheme))
-	utilruntime.Must(corev1.AddToScheme(scheme))
-}
-
 func main() {
-	var metricsAddr string
-	var probeAddr string
-	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "metrics bind address; 0 disables metrics")
-	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "health probe bind address")
-	flag.Parse()
-
-	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
+	// ... flag parsing, logger setup ...
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		Metrics:                metricsserver.Options{BindAddress: metricsAddr},
 		HealthProbeBindAddress: probeAddr,
 	})
-	if err != nil {
-		ctrl.Log.Error(err, "unable to start manager")
-		os.Exit(1)
-	}
+	// ... error handling ...
 
 	if err := (&controllers.GreeterReconciler{
 		Client: mgr.GetClient(),
@@ -329,23 +273,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		ctrl.Log.Error(err, "unable to set up health check")
-		os.Exit(1)
-	}
-	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		ctrl.Log.Error(err, "unable to set up ready check")
-		os.Exit(1)
-	}
+	// ... healthz and readyz checks ...
 
-	ctx := ctrl.SetupSignalHandler()
-	if deadline, ok := ctx.Deadline(); ok {
-		ctrl.Log.Info("starting manager", "deadline", deadline)
-	} else {
-		ctrl.Log.Info("starting manager", "context", context.Background())
-	}
-
-	if err := mgr.Start(ctx); err != nil {
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		ctrl.Log.Error(err, "problem running manager")
 		os.Exit(1)
 	}
@@ -437,15 +367,12 @@ public static IResourceBuilder<KindClusterResource> WithApplyGreeterCommand(
             {
                 var failureText = string.IsNullOrWhiteSpace(stderr) ? stdout : stderr;
                 return CommandResults.Failure(
-                    $"kubectl apply failed for {crName}.",
-                    failureText,
-                    CommandResultFormat.Text);
+                    $"kubectl apply failed for {crName}.", failureText, CommandResultFormat.Text);
             }
 
-            var output = stdout.Trim();
             return CommandResults.Success(
                 $"Applied {crName} (spec.name={specName})",
-                output,
+                stdout.Trim(),
                 CommandResultFormat.Text,
                 true);
         },
