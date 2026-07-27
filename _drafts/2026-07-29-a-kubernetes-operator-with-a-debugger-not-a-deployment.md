@@ -377,15 +377,13 @@ GreeterPrerequisites.ValidateOrThrow();
 var builder = DistributedApplication.CreateBuilder(args);
 var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
 var operatorDir = Path.Combine(repoRoot, "operator");
-var crdPath = Path.Combine(repoRoot, "config", "greeter-crd.yaml");
 
 var cluster = builder
     .AddKindCluster("dev-cluster")
-    .WithKubernetesVersion("v1.31.0")
     .WithClusterLifetime(ClusterLifetime.Persistent)
-    .WithManifest(crdPath) // local extension for now; see note below
-    .WithDashboardProperty("greeter.cluster", "dev-cluster")
-    .WithDashboardProperty("greeter.crd", "greeters.hello.tamirdresher.dev");
+    .WithManifest(Path.Combine(repoRoot, "config", "greeter-crd.yaml")) // local extension for now; see note below
+    .WithApplyGreeterCommand()
+    .WithDeleteGreetersCommand();
 
 builder
     .AddGoApp("greeter-operator", operatorDir)
@@ -398,6 +396,60 @@ builder.Build().Run();
 
 This is the part that makes me grin: `builder.AddKindCluster("dev-cluster")` creates or reuses the local Kind cluster. The package owns the cluster lifecycle, Kubernetes version pinning, worker-node shape, persistent lifetime, Kind config, references to other Aspire resources, Helm charts, and the publish/deploy path through `builder.AddKubernetesEnvironment(name).WithKind()`.
 
+`WithApplyGreeterCommand()` and `WithDeleteGreetersCommand()` are mine, and they are the reason the dashboard has buttons on it.
+
+Aspire lets you attach commands to any resource with `WithCommand`, and they show up in the dashboard's context menu next to the built-in Start and Stop actions. That turns out to be one of the most useful and least advertised things in the whole model, because the dashboard stops being a read-only status page and becomes the place where you drive the loop. Here is the whole thing:
+
+```csharp
+public static IResourceBuilder<KindClusterResource> WithApplyGreeterCommand(
+    this IResourceBuilder<KindClusterResource> builder)
+{
+    builder.WithCommand(
+        name: "apply-greeter",
+        displayName: "Apply Greeter (timestamped)",
+        executeCommand: async _ =>
+        {
+            var stamp = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss");
+            var crName = $"greeter-{stamp}";
+            var specName = $"tamir-{stamp}";
+
+            var yaml = $"""
+                apiVersion: hello.tamirdresher.dev/v1alpha1
+                kind: Greeter
+                metadata:
+                  name: {crName}
+                  namespace: default
+                spec:
+                  name: {specName}
+                """;
+
+            var (exitCode, stdout, stderr) = await RunKubectlAsync(
+                ["--kubeconfig", builder.Resource.KubeconfigPath, "apply", "-f", "-"],
+                yaml);
+
+            return exitCode == 0
+                ? CommandResults.Success($"Applied {crName} (spec.name={specName})", stdout.Trim(), CommandResultFormat.Text, true)
+                : CommandResults.Failure($"kubectl apply failed for {crName}.", stderr, CommandResultFormat.Text);
+        },
+        new CommandOptions
+        {
+            Description = "Applies a timestamped Greeter custom resource to trigger the operator reconcile loop.",
+            IconName = "Add",
+            UpdateState = _ => ResourceCommandState.Enabled,
+        });
+
+    return builder;
+}
+```
+
+There are a few details worth pointing out. The command builds YAML in memory and pipes it to `kubectl apply -f -` over stdin, so there is no temp file to write or clean up. It reuses `builder.Resource.KubeconfigPath` from the Kind resource, which means it automatically talks to the right cluster without me hardcoding anything. It returns a `CommandResults.Success` or `Failure` that the dashboard renders, so a failed apply shows the actual `kubectl` error instead of failing silently. And `IconName` accepts any [Fluent UI icon name](https://react.fluentui.dev/?path=/docs/icons-catalog--docs), which is a small thing that makes the menu look like it belongs.
+
+The timestamp is the part that makes it genuinely useful rather than merely convenient. Every click produces a new `Greeter` with a new name, so every click is a fresh trip through `Reconcile()` with a value I can watch change in the debugger. Clicking twice and seeing `tamir-20260727-151653` then `tamir-20260727-151720` arrive at the breakpoint is a much better demonstration than reapplying the same static YAML and squinting at whether anything happened.
+
+I wrote the companion `WithDeleteGreetersCommand()` about thirty seconds later, for the obvious reason that clicking Apply eleven times leaves you with eleven Greeters.
+
+This is the kind of thing nobody asks for, because in the normal Kubernetes loop there is no surface to put a button on. Once there is one, every project grows a few: seed test data, rotate a secret, trigger a migration, force a resync. They are a few lines each and they live with the code rather than in someone's shell history.
+
 The one method in that snippet that does **not** ship in `13.4.1-beta.687` is `WithManifest(path)`. In this sample it lives in a tiny local extension file. When the cluster is ready, it applies `config/greeter-crd.yaml`, and `.WaitFor(cluster)` keeps the operator from starting before the CRD exists.
 
 > **Package status, July 2026:** `WithManifest(path)` is the local gap. I upstreamed the richer version in [CommunityToolkit/Aspire#1481](https://github.com/CommunityToolkit/Aspire/pull/1481), where it appears as `cluster.AddManifest(name, path)` and `cluster.AddManifestFromContent(name, yaml)`, with `.WithNamespace(...)`, `.WithRecursive()`, `.WithServerSideApply(...)`, `.WithFieldManager(...)`, CRD wait timeout/behavior, apply timeout, kustomize auto-detection, and API-reachability probing. That PR is at 174 tests now, which is a nice reminder that the local version is just enough for the sample; the upstream version is the reviewed, package-quality API. Once it lands in a package, the local extensions file goes away and this sample becomes just the NuGet reference plus the AppHost.
@@ -406,21 +458,6 @@ Then the Go integration turns the controller into a first-class Aspire resource.
 
 And then `.WaitFor(cluster)` is doing real work. The operator should not start before the cluster exists and the CRD bootstrap has completed. Instead of encoding that in a README paragraph called "Important: run this first," the dependency lives in the graph, and dependency graphs are better than README paragraphs at not forgetting.
 
-### The Kind integration is reusable
-
-The demo is not "a one-off C# file that shells out to Kind." It uses the same `CommunityToolkit.Aspire.Hosting.Kind` package any AppHost can use today:
-
-```xml
-<PackageReference Include="CommunityToolkit.Aspire.Hosting.Kind" Version="13.4.1-beta.687" />
-```
-
-The only local code left is the extension layer for `WithManifest(path)` and, in the larger Argo CD sample, a convenience `WithPortMapping(hostPort, containerPort)` wrapper over the package's `WithKindConfig`. That is the healthy shape: use the real package, patch the gap locally, upstream the useful part, delete the local copy later.
-
-That contribution loop is part of the story. I hit the missing manifest API because the sample needed to apply a CRD after the cluster was ready. I built the smallest local version that made the loop work. Then I sent the more complete version upstream in [PR #1481](https://github.com/CommunityToolkit/Aspire/pull/1481). No parallel forever-fork. No "copy this source tree into your repo" ritual. Just the normal open-source loop, with a debugger attached.
-
-A Kubernetes operator project does not need to choose between fake local tests and full in-cluster deployment for every edit. The cluster can hold state. The host can run code. Aspire can own the topology.
-
----
 
 ## Actually running it
 
@@ -432,9 +469,11 @@ You also need two VS Code extensions. The first is `golang.go`, and the second i
 code --install-extension microsoft-aspire.aspire-vscode
 ```
 
-Without the Aspire one, VS Code has no idea what an AppHost is. Every Aspire-in-VS-Code tutorial assumes you have it and almost none of them say so out loud, which is a small example of the same friction this post is complaining about.
+Without the Aspire one, VS Code has no idea what an AppHost is, and you end up hand-rolling a `coreclr` launch configuration that points at a built DLL. Every Aspire-in-VS-Code tutorial assumes you have it and almost none of them say so out loud, which is a small example of the same friction this post is complaining about.
 
-The launch configuration is a single entry:
+The nice part is that none of this has to live in a wiki page that nobody reads. A [`.vscode/extensions.json`](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_workspace-recommended-extensions) file makes VS Code prompt newcomers to install exactly these two the moment they open the folder, and this sample ships one. Take it further with a [dev container](https://containers.dev/) and the whole environment — the .NET SDK, Go, `kind`, `kubectl`, Delve, and the extensions — is described in [`devcontainer.json`](https://containers.dev/implementors/json_reference/) and built for the contributor automatically, whether they open it locally or in [GitHub Codespaces](https://docs.github.com/en/codespaces/overview). The setup guide stops being a document people follow and becomes a file the machine follows, which is the same shift this whole post is about, applied one level up.
+
+The launch configuration is a single entry, and you do not have to type it. Press **Ctrl+Shift+P**, run **Aspire: Configure launch.json**, and the extension writes it for you:
 
 ```jsonc
 {
@@ -476,11 +515,11 @@ var cluster = builder
 
 ![Aspire dashboard showing the greeter operator and Kind cluster running with the Apply Greeter timestamped command open](/assets/kubernetes-operator-debugger/aspire-dashboard-apply-greeter.png)
 
-**The afternoon I lost, so you don't have to.** My first version of the AppHost read `AddGoApp("greeter-operator", operatorDir, "./main.go")`, which looks entirely reasonable and runs perfectly. The operator started, reconciled, and did its job. The debugger never attached, and the resource died a few seconds after launch with exit code 2 and a Go usage banner in the logs.
+**One parameter worth getting right.** The third argument to `AddGoApp` is `packagePath`, and a Go package is a directory rather than a file, so `AddGoApp("greeter-operator", operatorDir)` is correct and `AddGoApp("greeter-operator", operatorDir, "./main.go")` is not — even though the second one runs.
 
-The third parameter of `AddGoApp` is `packagePath`, and a Go package is a directory rather than a file. `go run` happily accepts a filename, so nothing looked wrong at runtime, but that same value is passed through to `dlv debug`, where a filename produces a debug configuration VS Code rejects. What you see is an `Invalid debug adapter` error and a 500 from the extension's `run_session` endpoint, after which the orchestrator falls back to launching the process directly — with no arguments at all, which is why `go` printed its help text and exited.
+That distinction matters more than it looks, because the same value is passed to `go run`, `dlv debug`, and `go build` alike. `go run` accepts a filename quite happily, so the operator starts and reconciles and everything appears healthy, but `dlv debug` cannot use a filename, and the resulting debug configuration is rejected. The symptom is an `Invalid debug adapter` error, a 500 from the extension's `run_session` endpoint, and then the resource exiting with code 2 after printing Go's usage banner, because the orchestrator falls back to launching the process without arguments.
 
-Our `main.go` sits at the module root next to `go.mod`, so the correct call simply omits the third argument and lets it default to the module root. Three characters of difference, and an afternoon spent chasing timeouts, headless Delve servers, and debug adapters that were never the problem. If your Go resource runs but refuses to break, check that parameter first.
+Our `main.go` sits at the module root next to `go.mod`, so omitting the third argument and letting it default to the module root is what you want. If your Go resource runs fine but refuses to break at a breakpoint, that parameter is the first thing to check.
 
 ## Wait, how did that actually work?
 
