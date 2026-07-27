@@ -382,7 +382,7 @@ var cluster = builder
     .WithDashboardProperty("greeter.crd", "greeters.hello.tamirdresher.dev");
 
 builder
-    .AddGoApp("greeter-operator", operatorDir, "./main.go")
+    .AddGoApp("greeter-operator", operatorDir)
     .WithEnvironment("KUBECONFIG", cluster.Resource.KubeconfigPath)
     .WithEnvironment("GOFLAGS", "-mod=mod")
     .WaitFor(cluster);
@@ -420,43 +420,45 @@ A Kubernetes operator project does not need to choose between fake local tests a
 
 Everything below assumes Docker Desktop is running, because Kind is Kubernetes-in-Docker and nothing works without it. Beyond that you need the .NET 10 SDK, Go 1.26 or newer, `kind` and `kubectl` on your PATH, and Delve installed with `go install github.com/go-delve/delve/cmd/dlv@latest` — one gotcha there is that it lands in `$(go env GOPATH)\bin`, which on a default Windows setup is `C:\Users\<you>\go\bin` and is frequently not on PATH.
 
-For the editor you need two VS Code extensions, and the second one is the one I wasted an hour not having. The first is `golang.go`. The second is Microsoft's official Aspire extension:
+You also need two VS Code extensions. The first is `golang.go`, and the second is Microsoft's official Aspire extension:
 
 ```
 code --install-extension microsoft-aspire.aspire-vscode
 ```
 
-Without it, VS Code has no idea what an AppHost is, and you end up hand-rolling a `coreclr` launch configuration pointing at a built DLL. I did exactly that, got it working, and only then discovered the extension contributes a purpose-built `aspire` debug type that does the whole thing properly. Every Aspire-in-VS-Code tutorial assumes you have it and almost none of them say so out loud, which is a small example of the same friction this post is complaining about.
+Without the Aspire one, VS Code has no idea what an AppHost is. Every Aspire-in-VS-Code tutorial assumes you have it and almost none of them say so out loud, which is a small example of the same friction this post is complaining about.
 
-With the extension installed you don't write `launch.json` by hand. Press **Ctrl+Shift+P**, run **Aspire: Configure launch.json**, and you get this:
+The launch configuration is a single entry:
 
 ```jsonc
 {
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Debug Aspire AppHost",
       "type": "aspire",
       "request": "launch",
-      "name": "Debug Aspire AppHost",
-      "program": "${workspaceFolder}"
+      "program": "${workspaceFolder}/apphost/GreeterOperator.AppHost.csproj"
     }
   ]
 }
 ```
 
-That is the entire file. One configuration, no compound, no build task, no Go attach entry. F5 on it and the extension builds the AppHost, starts the Kind cluster, applies the CRD, launches the operator, opens the dashboard, and attaches debuggers to every resource that supports it — including the Go one.
+Note that `program` points at the AppHost csproj rather than the workspace folder. The extension's generated snippet uses `${workspaceFolder}`, but the Go debugging playground in the Aspire repo points at the project file, and that is the shape that works reliably.
 
-The mechanism is worth knowing because it explains why there is nothing to configure. The extension starts Aspire with `--start-debug-session`, and DCP's `/run_session` endpoint spawns a child debug session per resource. For a Go app it builds a `dlv-dap` configuration on your behalf, which is why Delve has to be on your PATH even though nothing in your project mentions it.
-
-Put your breakpoint on line 36 of `operator/controllers/greeter_controller.go`:
+Set a breakpoint on line 36 of `operator/controllers/greeter_controller.go`:
 
 ```go
 configMapName := fmt.Sprintf("greeting-%s", greeter.Spec.Name)
 ```
 
-Line 36 rather than the top of `Reconcile()` because `r.Get()` has already populated `greeter` by then, so the Variables panel shows real CR fields instead of a zero value.
+Line 36 rather than the top of `Reconcile()` because `r.Get()` has already populated `greeter` by then, so the Variables panel shows real fields instead of a zero value.
 
-Then click **Apply Greeter (timestamped)** on the cluster resource in the dashboard and watch it stop. The command applies a Greeter whose name carries the current timestamp, so each click sends a new value through `Reconcile()` and you can watch `greeter.Spec.Name` change without touching a terminal. That button is itself just an extension method calling `WithCommand`:
+Then press F5, wait for the dashboard, and click **Apply Greeter (timestamped)** on the cluster resource. The breakpoint hits, and the Call Stack shows two debug sessions side by side: the C# AppHost running, and the Go operator paused. One keypress, two languages, one cluster.
+
+![VS Code paused in the Go reconciler with the Aspire AppHost still running and the Go operator paused on a breakpoint](/assets/kubernetes-operator-debugger/vscode-breakpoint-call-stack.png)
+
+The command applies a Greeter whose name carries the current timestamp, so each click sends a new value through `Reconcile()` and you can watch `greeter.Spec.Name` change without touching a terminal. That button is itself just an extension method calling `WithCommand`:
 
 ```csharp
 var cluster = builder
@@ -466,24 +468,52 @@ var cluster = builder
     .WithApplyGreeterCommand();
 ```
 
-**A mistake worth stealing from me.** `Aspire.Hosting.Go` has a `WithDelveServer()` method, and when I found it I assumed it was the thing that made Go debugging work, so I added it. My operator then started correctly, ran for forty-four seconds, and exited with status `Finished` and exit code zero. Nothing had crashed, and there was nothing in the logs beyond `Starting workers`.
+![Aspire dashboard showing the greeter operator and Kind cluster running with the Apply Greeter timestamped command open](/assets/kubernetes-operator-debugger/aspire-dashboard-apply-greeter.png)
 
-`WithDelveServer` is for GoLand and other external DAP clients. It replaces the normal `go run` launch with a headless Delve server, and headless Delve without `--accept-multiclient` terminates the program the moment its one client disconnects. So every time VS Code detached, my operator died. The method had also displaced the automatic debugging the extension was already providing, which is why I never noticed I didn't need it. If you are debugging from VS Code, don't call it — the docs say as much, in a remark I read only after losing an afternoon.
+**The afternoon I lost, so you don't have to.** My first version of the AppHost read `AddGoApp("greeter-operator", operatorDir, "./main.go")`, which looks entirely reasonable and runs perfectly. The operator started, reconciled, and did its job. The debugger never attached, and the resource died a few seconds after launch with exit code 2 and a Go usage banner in the logs.
 
-**When it doesn't work.** If F5 gives you *"Couldn't find a debug adapter descriptor for debug type 'dotnet'"*, you are on a launch configuration written before the Aspire extension was installed, so regenerate it with **Aspire: Configure launch.json**. If your breakpoint renders as a hollow circle rather than solid red, the Go extension usually hasn't finished loading its tools, so check the Go status in the bottom bar and confirm `dlv` is on your PATH.
+The third parameter of `AddGoApp` is `packagePath`, and a Go package is a directory rather than a file. `go run` happily accepts a filename, so nothing looked wrong at runtime, but that same value is passed through to `dlv debug`, where a filename produces a debug configuration VS Code rejects. What you see is an `Invalid debug adapter` error and a 500 from the extension's `run_session` endpoint, after which the orchestrator falls back to launching the process directly — with no arguments at all, which is why `go` printed its help text and exited.
 
+Our `main.go` sits at the module root next to `go.mod`, so the correct call simply omits the third argument and lets it default to the module root. Three characters of difference, and an afternoon spent chasing timeouts, headless Delve servers, and debug adapters that were never the problem. If your Go resource runs but refuses to break, check that parameter first.
 
-The ritual collapsed into a solution file, and that matters more than this toy Greeter. The Greeter is deliberately boring. The workflow is not.
+## Wait, how did that actually work?
+
+The part that feels slightly illegal is that the operator is not in the cluster. It is an ordinary process running on my laptop, and it holds an open HTTP connection to the Kubernetes API server. Kubernetes is perfectly fine with that, because a controller is not special because of where it runs. It is special because it can authenticate, read the state it cares about, and write the changes it is responsible for. Production controllers usually run as Pods because that is the operationally sensible place for them, but the API server does not require that arrangement during development.
+
+The entire bridge is one environment variable: `.WithEnvironment("KUBECONFIG", cluster.Resource.KubeconfigPath)`. The Kind integration creates or reuses the cluster, writes a kubeconfig to a temporary location, and hands that path to the Go process. Inside that file is the API server address, which looks like `https://127.0.0.1:<random-port>` because Kind publishes the control-plane container's Kubernetes port back to the host. The file also contains the client certificate material the process needs to authenticate, so from the operator's point of view this is just a normal Kubernetes client talking to a normal Kubernetes API server.
+
+That is why the Go code does not contain an Aspire-specific secret handshake. `ctrl.GetConfigOrDie()` follows the same convention every controller-runtime program follows: it checks for an explicit flag, then `KUBECONFIG`, then `~/.kube/config`, and then the in-cluster service-account tokens mounted into a Pod. In this loop it succeeds at step two and never reaches the in-cluster path. That is the useful trick hiding in plain sight, because the same binary can run unchanged as a Pod later or as a laptop process now.
+
+Before any of that matters, Kubernetes has to know what a `Greeter` is. A CRD is the document that teaches the API server a new noun, and before `WithManifest` applies `greeter-crd.yaml`, asking for a Greeter returns a 404 because the API server has never heard of that type. After the manifest lands, the API server stores Greeters, validates them against the schema, serves them through the usual REST API, and treats them enough like built-in resources that controller-runtime can watch them without caring that they were invented five minutes ago.
+
+This is also why `.WaitFor(cluster)` is not decorative. If the operator starts too early, it tries to watch a type the API server has not been taught yet, and then the inner loop fails in the least romantic way possible: the code is fine, the cluster is fine, and the ordering is wrong. By putting `.WaitFor(cluster)` on the Go resource, the AppHost says, in executable form, "do not start the controller until the cluster and its bootstrap manifests are ready." That sentence belongs in code rather than in a README warning with three exclamation marks.
+
+Once the manager starts, `ctrl.NewControllerManagedBy(mgr).For(&Greeter{})` opens the important connection. Under the covers, controller-runtime issues a long-lived watch request to the API server and leaves it open. That is the `Starting EventSource` line in the logs. From then on, Kubernetes streams create, update, and delete events for Greeters down that connection, the same way it would stream them to a controller running inside the cluster.
+
+Now the dashboard button has something to disturb. The command runs `kubectl apply` with the same kubeconfig, sends a timestamped Greeter to the API server, and the API server validates it against the CRD schema before persisting it. The watch sees the new object and sends an event to controller-runtime, controller-runtime puts the object's namespace and name on a work queue, and a worker calls `Reconcile()`. Notice that the request passed to `Reconcile()` is not the full object; it is only a namespace and name, which is why line 29 fetches the Greeter and line 36 is the good breakpoint. By the time execution reaches that line, the object has been read back from the API server and the Variables panel finally has something interesting to show.
+
+```text
+Dashboard button
+  └─ kubectl apply -f -            (uses KUBECONFIG)
+      └─ API server (in Kind container): validate against CRD, persist
+          └─ watch event streamed over the open connection
+              └─ controller-runtime work queue
+                  └─ Reconcile() — running on your laptop
+                      └─ your breakpoint
+```
+
+Normally that last step happens inside a Pod inside a node container, so changing one line means rebuilding an image, loading it into Kind, restarting the Deployment, and tailing logs while telling yourself this is fine. It is fine, in the way airport security is fine. Here the state lives in the cluster where it must, and the code runs on the laptop where I can stop it, inspect locals, and try again without pretending a container image is the only honest way to execute Go. Kubernetes never notices the difference, because from its point of view a controller is just an authenticated HTTP client with a long-lived watch.
+
+The ritual collapsed into a solution file, and that matters more than this toy Greeter, because the Greeter is deliberately boring while the workflow is not.
 
 Once this loop exists, you can add the parts real operators need: finalizers, status conditions, multiple CRDs, watches over owned resources, webhooks, metrics, leader election, or integration tests that bring the whole topology up and prove reconciliation end to end.
 
 You can also take an existing operator project and do the same thing over a weekend: keep the CRDs and Kubernetes state in Kind, run the controller as a host process, wire it through Aspire, and make the dashboard the place where contributors see what is happening.
 
-That is the platform-engineering disruption I actually care about. Not a new abstraction for production. A better inner loop for the people maintaining the abstractions everyone else depends on.
+That is the platform-engineering disruption I actually care about: not a new abstraction for production, but a better inner loop for the people maintaining the abstractions everyone else depends on.
 
 The Greeter is deliberately small because small examples make the loop visible, and in Part 2 I take the same pattern to a real cloud-native project — Argo CD — and tell the story of why I ended up building this in the first place.
 
 For now, I am happy with the tiny thing: a CRD, a reconciler, a Kind cluster, a debugger, and no image build in the loop. That is a very good start.
-
 
 
