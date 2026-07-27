@@ -1,12 +1,12 @@
 ---
 layout: post
 title: "Part 3: The Same Operator Loop, in TypeScript — No .NET Required"
-date: 2026-07-25T17:30:00+03:00
+date: 2026-08-02T07:15:00+03:00
 tags: [dotnet-aspire, typescript, platform-engineering, kubernetes, operator, kind, polyglot, inner-loop]
 description: "Aspire's polyglot claim is real. The same Greeter operator from Part 1 runs under a TypeScript AppHost — no C#, no .NET SDK in the AppHost itself. Same Kind cluster, same F5 loop, different language."
 ---
 
-> **Part 3 of 3.** [Part 1]({% post_url 2026-07-25-a-kubernetes-operator-with-a-debugger-not-a-deployment %}) built the Greeter operator with a C# AppHost. [Part 2]({% post_url 2026-07-25-the-kind-resource-my-argocd-story %}) applied the same pattern to argo-cd. This one is the proof: **you can write the AppHost in TypeScript instead of C#.**
+> **Part 3 of 3.** [Part 1]({% post_url 2026-07-29-a-kubernetes-operator-with-a-debugger-not-a-deployment %}) built the Greeter operator with a C# AppHost. [Part 2]({% post_url 2026-07-31-the-kind-resource-my-argocd-story %}) applied the same pattern to argo-cd. This one is the proof: **you can write the AppHost in TypeScript instead of C#.**
 
 There is a very specific reason I care about this post existing.
 

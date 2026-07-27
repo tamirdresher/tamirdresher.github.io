@@ -1,12 +1,12 @@
 ---
 layout: post
 title: "The Kind Resource: My argo-cd Story, and Why Aspire Is Quietly Disrupting DevOps"
-date: 2026-07-25T07:15:00+03:00
+date: 2026-07-31T07:15:00+03:00
 tags: [dotnet-aspire, platform-engineering, devops, argo-cd, kubernetes, kind, cncf, inner-loop]
 description: "The story of how a real feature request in Argo CD (issue #18000) turned into days of local-dev pain — and how the Kind resource in .NET Aspire quietly disrupts the way cloud-native projects onboard contributors."
 ---
 
-> **Part 2 of 3.** In [Part 1]({% post_url 2026-07-25-a-kubernetes-operator-with-a-debugger-not-a-deployment %}), I built the tiny version: a Greeter operator, a Kind cluster, and a debugger-first Aspire loop. This is the real-world version. Same pattern. Bigger project. More archaeology. In [Part 3]({% post_url 2026-07-25-same-operator-loop-in-typescript %}) I do the same thing with a TypeScript AppHost, for readers who don't live in .NET.
+> **Part 2 of 3.** In [Part 1]({% post_url 2026-07-29-a-kubernetes-operator-with-a-debugger-not-a-deployment %}), I built the tiny version: a Greeter operator, a Kind cluster, and a debugger-first Aspire loop. This is the real-world version. Same pattern. Bigger project. More archaeology. In [Part 3]({% post_url 2026-08-02-same-operator-loop-in-typescript %}) I do the same thing with a TypeScript AppHost, for readers who don't live in .NET.
 
 ## 1. The hook
 
