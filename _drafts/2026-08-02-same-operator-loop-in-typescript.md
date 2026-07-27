@@ -48,7 +48,7 @@ The other important thing in that config file is this snippet:
 
 That is not a typo. Aspire's Go hosting integration — the same integration Part 1's C# AppHost used to model the Greeter operator as a first-class `AddGoApp` resource — is available to the TypeScript AppHost through the same mechanism. Aspire's polyglot claim goes both ways: a TypeScript AppHost can consume a .NET-ecosystem hosting integration, because Aspire's runtime is what actually enforces the graph, not the language of the AppHost.
 
-That is the seam. Once you see it, the rest is boring in the good way.
+That is the seam, and once you see it, the rest becomes ordinary plumbing you can reason about.
 
 ## Act 2 — The AppHost, in full
 
@@ -143,7 +143,7 @@ The operator has not changed a single line. The Go code is the Go code. The debu
 
 ## What surprised me about the TypeScript side
 
-A few honest notes, because posts that pretend the demo gods always smile are boring.
+A few honest notes, because posts that pretend the demo gods always smile make me suspicious.
 
 The `.aspire/modules/` generated-SDK model surprised me at first. My reflex was: "wait, where is my `npm install @microsoft/aspire-hosting`?" And the answer, for now, is: nowhere. The SDK ships with the CLI. Once the npm package is out, this whole shape will normalize. Until then, the AppHost is calling code that lives inside your own project, which is either terrifying or refreshing depending on your relationship with node_modules.
 

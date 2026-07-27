@@ -71,9 +71,9 @@ The actual AppHost project file now looks like this:
 </Project>
 ```
 
-That package already ships the boring-but-important parts I want from a Kind resource: cluster creation, Kubernetes version pinning, worker nodes, persistent cluster lifetime, raw Kind config customization, references to other Aspire resources, Kind networking for containers, Helm charts, and the `AddKubernetesEnvironment(name).WithKind()` path for publish/deploy scenarios.
+That package already ships the mundane but important parts I want from a Kind resource: cluster creation, Kubernetes version pinning, worker nodes, persistent cluster lifetime, raw Kind config customization, references to other Aspire resources, Kind networking for containers, Helm charts, and the `AddKubernetesEnvironment(name).WithKind()` path for publish/deploy scenarios.
 
-The API is intentionally boring, which is my favorite kind of API:
+The API is exactly the kind of API I want here: readable, chainable, and obvious from left to right:
 
 ```csharp
 var stagingCluster = builder
@@ -113,7 +113,7 @@ The sample started life as a standalone companion repo, and that first shape was
 
 The better version now lives inside my Argo CD fork itself: `https://github.com/tamirdresher/argo-cd`, on the `aspire-dev-loop` branch, under `contrib/aspire-dev/`. That matters because Argo CD already has a `contrib/` convention, so this is no longer just a side experiment that has to live forever next to the real project. It can be proposed upstream as an actual contribution candidate, and that lands the thesis much harder: the fix to the onboarding problem can live in the project that has the onboarding problem.
 
-The layout is deliberately plain:
+The layout is plain on purpose, because the point is to see the contribution path instead of admire the scaffolding:
 
 ```text
 contrib/aspire-dev/
@@ -135,7 +135,7 @@ That last sentence is the whole trick: a C# AppHost can orchestrate a Go cloud-n
 
 So instead of treating Argo CD's local process model as sacred knowledge hidden in a Procfile, the AppHost turns it into typed extension methods: repo server, API server, application controller, application set controller, notifications controller, commit server, UI. Each wrapper captures the flags and environment that component needs. The graph captures who waits for whom.
 
-That is not magic; it is better than magic because it is boring code you can read. The polyglot moment still makes me happy. The AppHost is C#, the services are Go, the UI is JavaScript/TypeScript, Redis is a container, Kubernetes is Kind, and the whole thing still shows up as one application. Not one language. Not one framework. One topology. That is the mental model I want contributors to have on day one.
+That is not magic; it is better than magic because it is ordinary code you can read. The polyglot moment still makes me happy: the AppHost is C#, the services are Go, the UI is JavaScript/TypeScript, Redis is a container, Kubernetes is Kind, and the whole thing still shows up as one application rather than one language, one framework, or five unrelated terminals. One topology is the mental model I want contributors to have on day one.
 
 The happy path is now the thing I wanted when I first cloned Argo CD:
 
@@ -192,7 +192,7 @@ The deeper point is onboarding, because every minute a contributor spends fighti
 
 A debugger-first AppHost is not just nicer; it is a maintenance strategy. It makes the local topology visible. It makes assumptions executable. It makes prerequisites fail fast. It makes "what is running?" answerable from a dashboard instead of five terminals. It turns "follow the guide carefully" into "run the graph and let the graph tell you what is missing."
 
-That is the disruption I mean, and it is not glamorous because the best platform work often is not glamorous. It is the work that removes one more implicit step, one more Slack thread, one more "oh, you also need to run this" from the path between intent and understanding. The win is not that the demo looks impressive. The win is that the contributor gets to the boring part faster — and the boring part is where real engineering starts.
+That is the disruption I mean, and it is not glamorous because the best platform work often is not glamorous. It is the work that removes one more implicit step, one more Slack thread, one more "oh, you also need to run this" from the path between intent and understanding. The win is not that the demo looks impressive; the win is that the contributor reaches the real engineering sooner, with the code getting their full attention instead of the setup ritual.
 
 No keynote thunder. No "replace your platform" sticker. No pretending Kubernetes got simple because I wrote a fluent API around Kind. Just a quiet shift where a whole category of pain becomes optional.
 
