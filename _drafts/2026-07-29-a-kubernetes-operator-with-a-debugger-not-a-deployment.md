@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Part 1: A Kubernetes Operator with a Debugger, Not a Deployment"
+title: "Part 1: When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering"
 date: 2026-07-29T07:15:00+03:00
 tags: [dotnet-aspire, platform-engineering, kubernetes, operator, controller-runtime, kind, inner-loop, tutorial]
 description: "A followable Aspire tutorial for running a real Kubernetes operator against a real Kind cluster, with the reconciler running as a debuggable host process instead of a deployed pod — and a clean path into the cloud-native inner loop."
