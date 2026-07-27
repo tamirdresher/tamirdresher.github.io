@@ -50,6 +50,8 @@ A Kubernetes operator is just a controller with opinions, which is the least sca
 
 In production, that pattern is incredibly powerful. In local development, it can become a small ritual.
 
+Everything in this post lives in [`tamirdresher/aspire-kubernetes-operator-sample`](https://github.com/tamirdresher/aspire-kubernetes-operator-sample) if you would rather read code than prose, or clone it and press F5 while you read. It contains the Go operator, the C# AppHost, and the TypeScript one, and nothing else.
+
 The traditional path looks familiar if you have spent time in this space: run `kubebuilder init`, generate the API types, generate CRDs, write the reconciler, build an image, create a Kind cluster, load the image into Kind, patch a Deployment, apply RBAC, apply the CRD, tail pod logs, and then attempt to attach a debugger through enough indirection that you begin to envy people who debug CSS.
 
 Kubebuilder is still the standard entry point I would recommend. It gives you the project shape, the markers, the generated files, the manager bootstrap, and all the things that keep you from forgetting one mundane-but-important piece.
@@ -60,17 +62,19 @@ The example keeps the contract down to one field: a `Greeter` custom resource ha
 
 Tiny operators are useful because they do not distract us. If this one is easy to run, observe, and debug, then the same loop applies when the reconciler creates Deployments, Services, certificates, cloud resources, finalizers, webhooks, or whatever else your platform team has lovingly turned into Tuesday.
 
-The important thing is the shape:
+The important thing is the shape. There is no build step to describe, which is rather the point:
 
 ```powershell
-dotnet restore .\GreeterOperator.slnx
-dotnet build .\GreeterOperator.slnx
-Set-Location .\operator; go build .\...
+git clone https://github.com/tamirdresher/aspire-kubernetes-operator-sample.git
+cd aspire-kubernetes-operator-sample
+code .
 ```
 
-That is from the repo README: build the AppHost, build the Go operator, and then start Aspire while the cluster stays real. Kubernetes stores the CRD and the custom resources. The operator code does not run inside the cluster during the inner loop. It runs on my machine as an Aspire resource, with `KUBECONFIG` pointed at Kind.
+Then set a breakpoint in the reconciler and press F5. Aspire restores, builds, and starts everything — the Kind cluster, the CRD, and the Go operator under a debugger — as one operation. If you would rather stay in a terminal, `aspire run` does the same thing without the debugger attached.
 
-So instead of "change code, build image, load image, redeploy pod, tail logs," the loop becomes: open the solution, press F5, apply the resource, and watch the breakpoint hit. I know, suspiciously humane.
+Kubernetes stores the CRD and the custom resources. The operator code does not run inside the cluster during the inner loop. It runs on my machine as an Aspire resource, with `KUBECONFIG` pointed at Kind.
+
+So instead of "change code, build image, load image, redeploy pod, tail logs," the loop becomes: open the folder, press F5, apply the resource, and watch the breakpoint hit. I know, suspiciously humane.
 
 ---
 
@@ -286,8 +290,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	hellov1alpha1 "github.com/tamirdresher/part2-greeter-operator/operator/api/v1alpha1"
-	"github.com/tamirdresher/part2-greeter-operator/operator/controllers"
+	hellov1alpha1 "github.com/tamirdresher/aspire-kubernetes-operator-sample/operator/api/v1alpha1"
+	"github.com/tamirdresher/aspire-kubernetes-operator-sample/operator/controllers"
 )
 
 var scheme = runtime.NewScheme()
@@ -404,6 +408,8 @@ Aspire lets you attach commands to any resource with `WithCommand`, and they sho
 public static IResourceBuilder<KindClusterResource> WithApplyGreeterCommand(
     this IResourceBuilder<KindClusterResource> builder)
 {
+    ArgumentNullException.ThrowIfNull(builder);
+
     builder.WithCommand(
         name: "apply-greeter",
         displayName: "Apply Greeter (timestamped)",
@@ -427,9 +433,21 @@ public static IResourceBuilder<KindClusterResource> WithApplyGreeterCommand(
                 ["--kubeconfig", builder.Resource.KubeconfigPath, "apply", "-f", "-"],
                 yaml);
 
-            return exitCode == 0
-                ? CommandResults.Success($"Applied {crName} (spec.name={specName})", stdout.Trim(), CommandResultFormat.Text, true)
-                : CommandResults.Failure($"kubectl apply failed for {crName}.", stderr, CommandResultFormat.Text);
+            if (exitCode != 0)
+            {
+                var failureText = string.IsNullOrWhiteSpace(stderr) ? stdout : stderr;
+                return CommandResults.Failure(
+                    $"kubectl apply failed for {crName}.",
+                    failureText,
+                    CommandResultFormat.Text);
+            }
+
+            var output = stdout.Trim();
+            return CommandResults.Success(
+                $"Applied {crName} (spec.name={specName})",
+                output,
+                CommandResultFormat.Text,
+                true);
         },
         new CommandOptions
         {
@@ -461,7 +479,7 @@ And then `.WaitFor(cluster)` is doing real work. The operator should not start b
 
 ## Actually running it
 
-Everything below assumes Docker Desktop is running, because Kind is Kubernetes-in-Docker and nothing works without it. Beyond that you need the .NET 10 SDK, Go 1.26 or newer, `kind` and `kubectl` on your PATH, and Delve installed with `go install github.com/go-delve/delve/cmd/dlv@latest` — one gotcha there is that it lands in `$(go env GOPATH)\bin`, which on a default Windows setup is `C:\Users\<you>\go\bin` and is frequently not on PATH.
+Everything below assumes Docker Desktop is running, because Kind is Kubernetes-in-Docker and nothing works without it. Beyond that you need the .NET 10 SDK, Go 1.23 or newer, `kind` and `kubectl` on your PATH, and Delve installed with `go install github.com/go-delve/delve/cmd/dlv@latest` — one gotcha there is that it lands in `$(go env GOPATH)\bin`, which on a default Windows setup is `C:\Users\<you>\go\bin` and is frequently not on PATH.
 
 You also need two VS Code extensions. The first is `golang.go`, and the second is Microsoft's official Aspire extension:
 
@@ -510,7 +528,8 @@ var cluster = builder
     .AddKindCluster("dev-cluster")
     .WithClusterLifetime(ClusterLifetime.Persistent)
     .WithManifest(Path.Combine(repoRoot, "config", "greeter-crd.yaml"))
-    .WithApplyGreeterCommand();
+    .WithApplyGreeterCommand()
+    .WithDeleteGreetersCommand();
 ```
 
 ![Aspire dashboard showing the greeter operator and Kind cluster running with the Apply Greeter timestamped command open](/assets/kubernetes-operator-debugger/aspire-dashboard-apply-greeter.png)

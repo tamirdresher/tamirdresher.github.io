@@ -3,10 +3,10 @@ layout: post
 title: "The Kind Resource: My argo-cd Story, and Why Aspire Is Quietly Disrupting DevOps"
 date: 2026-07-31T07:15:00+03:00
 tags: [dotnet-aspire, platform-engineering, devops, argo-cd, kubernetes, kind, cncf, inner-loop]
-description: "The story of how a real feature request in Argo CD (issue #18000) turned into days of local-dev pain — and how the Kind resource in .NET Aspire quietly disrupts the way cloud-native projects onboard contributors."
+description: "How a real feature request in Argo CD (issue #18000) exposes local-dev friction — and how the Kind resource in .NET Aspire quietly disrupts the way cloud-native projects onboard contributors."
 ---
 
-> This is the real-world version of the pattern I wrote about in [When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering]({% post_url 2026-07-29-a-kubernetes-operator-with-a-debugger-not-a-deployment %}): a Kind cluster as part of the local topology, not a prerequisite hiding in a README. You can start here without reading that post first; the short version is the same pattern, bigger project, more archaeology. If you want the polyglot angle afterward, I also show the same loop with a [TypeScript AppHost]({% post_url 2026-08-02-same-operator-loop-in-typescript %}) for readers who don't live in .NET.
+> This is the real-world version of the pattern I wrote about in [When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering]({% post_url 2026-07-29-a-kubernetes-operator-with-a-debugger-not-a-deployment %}): a Kind cluster as part of the local topology, not a prerequisite hiding in a README. You can start here without reading that post first; the short version is the same pattern, bigger project, more archaeology. If you want the polyglot angle afterward, I also show the same loop with a [TypeScript AppHost]({% post_url 2026-08-02-same-operator-loop-in-typescript %}) for readers who don't live in .NET; that Greeter sample lives at <https://github.com/tamirdresher/aspire-kubernetes-operator-sample>, while the Argo CD work below lives in the `aspire-dev-loop` branch of <https://github.com/tamirdresher/argo-cd>.
 
 ## 1. The hook
 
@@ -16,19 +16,11 @@ Specifically, [issue #18000 — `syncPolicy.DisableHelmChartCache=true`](https:/
 
 The request was practical: let a Helm-source Application say, "do not cache the chart." That matters in dev loops. It also matters with OCI Helm registries where charts can be updated in-place without a version bump. If the chart content changes but the version string does not, the cache becomes the enemy. And like most good feature requests, it was small enough to sound easy before I actually touched the code.
 
-So I did what every OSS contributor does: I cloned the repo, and then I spent days getting it to run.
+The standard OSS move is simple enough: clone the repo, follow the contributor guide, and get to the code path behind the feature request. The hard part is that mature cloud-native projects accumulate local-dev sediment: a Makefile layer here, a `hack` script there, a Procfile, a Kind cluster, Tilt, Kubernetes patches, UI dependencies, Corepack shims, generated assets, and one guide linking to another guide linking to a note that assumes you already ran the thing from the previous guide. None of those pieces is irrational. Each one exists because someone solved a real problem at a real moment.
 
-Not because Argo CD is badly maintained. Quite the opposite. Argo CD is a mature CNCF project with serious maintainers, real documentation, real developer workflows, and a codebase that has earned every bit of its operational complexity. This is not a dunk on Argo CD. I like Argo CD. That is why I wanted to contribute.
+The problem is what happens after five years of real moments: you do not get a clean contributor loop, you get a pilgrimage. Argo CD is a mature CNCF project with serious maintainers, real documentation, real developer workflows, and a codebase that has earned every bit of its operational complexity. This is not a dunk on Argo CD. I like Argo CD. That is why the local loop matters: the sooner a contributor gets from "I cloned the repo" to "I am stepping through the code path I care about," the sooner the project benefits from their attention.
 
-But mature cloud-native projects accumulate local-dev sediment: a Makefile layer here. A `hack` script there. A Procfile. A Kind cluster. Tilt. Kubernetes patches. UI dependencies. Corepack shims. Generated assets. One guide linking to another guide linking to a note that assumes you already ran the thing from the previous guide. None of those pieces is irrational. Each one exists because someone solved a real problem at a real moment.
-
-The problem is what happens after five years of real moments: you do not get a clean contributor loop, you get a pilgrimage.
-
-I worked through the READMEs, the developer guides, the shell scripts, the Makefile targets, the Tilt setup, the Kubernetes patching, and the little platform-specific edges that always appear right when you think you are done. Eventually I had the system running. But by that point, I had spent more energy proving that my laptop was acceptable to the project than understanding the feature I wanted to build.
-
-At some point I was not debugging Argo CD anymore; I was debugging my ability to become acceptable to Argo CD, which sounds funny because it is true in the way platform engineers recognize immediately and then stare out a window for a second.
-
-This is the part of open source we under-talk about. We measure time-to-first-issue, time-to-merge, review latency, CI health, and test coverage. Those are all useful. But there is another metric hiding underneath them: how long does it take a motivated contributor to get from "I cloned the repo" to "I am stepping through the code path I care about"?
+This is the part of open source we under-talk about. We measure time-to-first-issue, time-to-merge, review latency, CI health, and test coverage. Those are all useful. But there is another metric hiding underneath them: how long does it take a motivated contributor to reach the first useful breakpoint?
 
 For a lot of cloud-native projects, the answer is still longer than it should, and that contributor experience is the problem this post is about.
 
@@ -51,7 +43,15 @@ The actual AppHost project file now looks like this:
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UserSecretsId>argocd-aspire-kind-dev</UserSecretsId>
+    <ArgoCdRepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../../..'))</ArgoCdRepoRoot>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>ArgoCdRepoRoot</_Parameter1>
+      <_Parameter2>$(ArgoCdRepoRoot)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ArgoCd.Aspire.Hosting.Kind.Extensions\ArgoCd.Aspire.Hosting.Kind.Extensions.csproj" IsAspireProjectResource="false" />
@@ -73,41 +73,42 @@ The actual AppHost project file now looks like this:
 
 That package already ships the mundane but important parts I want from a Kind resource: cluster creation, Kubernetes version pinning, worker nodes, persistent cluster lifetime, raw Kind config customization, references to other Aspire resources, Kind networking for containers, Helm charts, and the `AddKubernetesEnvironment(name).WithKind()` path for publish/deploy scenarios.
 
-The API is exactly the kind of API I want here: readable, chainable, and obvious from left to right:
+The actual cluster wiring in this branch is intentionally smaller than the package surface area. The AppHost derives a per-checkout cluster name, renders the Argo CD state manifest, then creates a persistent Kind cluster and applies that generated manifest:
 
 ```csharp
-var stagingCluster = builder
-    .AddKindCluster("staging-cluster")
-    .WithWorkerNodes(2)
-    .WithKubernetesVersion("v1.31.0")
-    .WithClusterLifetime(ClusterLifetime.Persistent)
-    .WithPortMapping(hostPort: 80, containerPort: 80)   // local extension over WithKindConfig
-    .WithPortMapping(hostPort: 443, containerPort: 443) // same
-    .WithManifest("k8s/namespace.yaml");               // local extension for now
+var kindClusterName = ArgoCdClusterName.Resolve(repoRoot);
+var stateManifestPath = ArgoCdManifestSet.RenderStateOnlyManifest(
+    Path.Combine(AppContext.BaseDirectory, "generated", "argocd-state.yaml"),
+    enableDex);
 
-stagingCluster
-    .AddHelmChart("ingress-nginx", "ingress-nginx/ingress-nginx")
-    .WithChartVersion("4.11.3")
-    .WithNamespace("ingress-nginx");
+var cluster = builder
+    .AddKindCluster(kindClusterName)
+    .WithClusterLifetime(ClusterLifetime.Persistent)
+    .WithManifest(stateManifestPath);
+
+cluster
+    .WithRepoServerOverrideCommand()
+    .WithDeleteClusterCommand()
+    .WithAdminCredentialCommand();
 ```
 
-That whole thing is just a fluent builder: cluster creation, node topology, Kubernetes version pinning, port mapping, Helm chart installation, manifest apply, and readiness wait, all in typed C# under a debugger and in the same program that describes the rest of the local system. Not bash. Not Terraform. Not a README ritual with three "important" notes that only become important after you miss one.
+That whole thing is still just a fluent builder: choose the cluster identity, generate the Kubernetes state that Argo CD needs, create the cluster, apply the manifest, and attach the contributor commands, all in typed C# under a debugger and in the same program that describes the rest of the local system. Not bash. Not Terraform. Not a README ritual with three "important" notes that only become important after you miss one.
 
-The killer method in that snippet is `WithManifest(path)`.
+The killer method in that snippet is `WithManifest(stateManifestPath)`.
 
 In the earlier version of this experiment, applying Kubernetes state after cluster creation required a bespoke Aspire lifecycle hook. The hook listened for the Kind cluster to become ready, ran `kubectl apply`, updated resource properties, toggled health state, and carried enough ceremony that I had a little state singleton sitting in the middle of the AppHost like a tiny bureaucrat with a clipboard.
 
 It worked, but it was also a smell, and `WithManifest` removes that entire custom bootstrap hook. When the cluster is ready, it kubectl-applies the manifest. Health reflects the result. Downstream resources that call `.WaitFor(cluster)` unblock only after the cluster is ready for them. No custom bootstrap code. No state singleton. No health-check ping-pong. No "remember to run this first" paragraph trying to cosplay as a dependency graph.
 
-> **Package status, July 2026:** `WithManifest(path)` is not in `CommunityToolkit.Aspire.Hosting.Kind` `13.4.1-beta.687` yet. I carry it as a tiny local extension in the sample, and I upstreamed the real version in [CommunityToolkit/Aspire#1481](https://github.com/CommunityToolkit/Aspire/pull/1481). The upstream API is `cluster.AddManifest(name, path)` for files, directories, or kustomize, and `cluster.AddManifestFromContent(name, yaml)` for inline YAML through `kubectl` stdin. It also adds `.WithNamespace(...)`, `.WithRecursive()`, `.WithServerSideApply(forceConflicts: false)`, `.WithFieldManager(...)`, `.WithCrdWaitTimeout(...)`, `.WithCrdWaitBehavior(Fail | BestEffort)`, `.WithApplyTimeout(...)`, CRD-establishment waiting, API-reachability probing, and 174 tests. When it lands in a package, the local extension file gets deleted and the package version gets bumped. `WithPortMapping(hostPort, containerPort)` is still just a convenience wrapper over the package's `WithKindConfig`.
+> **Package status, July 2026:** `WithManifest(path)` is not in `CommunityToolkit.Aspire.Hosting.Kind` `13.4.1-beta.687` yet. I carry it as a tiny local extension in this branch, and I upstreamed the real version in [CommunityToolkit/Aspire#1481](https://github.com/CommunityToolkit/Aspire/pull/1481). The upstream API is `cluster.AddManifest(name, path)` for files, directories, or kustomize, and `cluster.AddManifestFromContent(name, yaml)` for inline YAML through `kubectl` stdin. It also adds `.WithNamespace(...)`, `.WithRecursive()`, `.WithServerSideApply(forceConflicts: false)`, `.WithFieldManager(...)`, `.WithCrdWaitTimeout(...)`, `.WithCrdWaitBehavior(Fail | BestEffort)`, `.WithApplyTimeout(...)`, CRD-establishment waiting, API-reachability probing, and 174 tests. When it lands in a package, the local extension file gets deleted and the package version gets bumped. `WithPortMapping(hostPort, containerPort)` is still just a convenience wrapper over the package's `WithKindConfig`.
 
 That one method matters because it represents the larger pattern: every "install → configure → verify" step in a platform README wants to become a fluent-builder call with a debugger.
 
 It also exposed a very normal open-source paper cut. The package XML docs list `IProcessRunner`, but from outside the package assembly it is not actually usable at compile time. So the sample's local `WithManifest` does the unglamorous thing and shells out with `System.Diagnostics.Process`. No reflection. No cleverness. Just enough `kubectl apply -f ... --kubeconfig ...` to make the loop work. Inside the upstream PR, `AddManifest` can use the real process abstraction with cancellation, logging, and `FakeProcessRunner` tests. That contrast is exactly why upstreaming matters.
 
-`AddHelmChart` is the same pattern. So is `WithPortMapping`. So is `WithWorkerNodes`. So is `WithKubernetesVersion`. They are not glamorous. They are better than glamorous: they delete human ceremony.
+`AddHelmChart`, `WithPortMapping`, `WithWorkerNodes`, and `WithKubernetesVersion` are the same kind of API when a project needs them. This branch does not use all of them yet, and that is fine; the point is that local platform ceremony can move into the resource model one piece at a time.
 
-In the Argo CD experiment, that deletion was very visible. The AppHost went from roughly 180 lines to roughly 100 lines once the Kind resource absorbed the bootstrap work. Less code is nice. Less special local-dev ritual is the real win.
+In the Argo CD experiment, that deletion was very visible. The bespoke cluster-bootstrap code disappeared once the Kind resource absorbed the lifecycle work. Less special local-dev ritual is the real win.
 
 The sample started life as a standalone companion repo, and that first shape was useful because it let me move fast without pretending I understood the upstream contribution path yet. But it also recreated the exact onboarding smell this post is about: one repo had the AppHost, another repo had Argo CD, and then a little helper called `ArgoCdRepoRoot.cs` had to wander around the filesystem trying to find the checkout it was supposed to orchestrate. That worked, but it was a polite way of saying "please solve path discovery before you can solve the real problem."
 
@@ -137,18 +138,22 @@ So instead of treating Argo CD's local process model as sacred knowledge hidden 
 
 That is not magic; it is better than magic because it is ordinary code you can read. The polyglot moment still makes me happy: the AppHost is C#, the services are Go, the UI is JavaScript/TypeScript, Redis is a container, Kubernetes is Kind, and the whole thing still shows up as one application rather than one language, one framework, or five unrelated terminals. One topology is the mental model I want contributors to have on day one.
 
-The happy path is now the thing I wanted when I first cloned Argo CD:
+The dashboard commands are where this stops being a pretty graph and starts feeling like contributor tooling. The Kind cluster resource wires three commands directly in `AppHost.cs`: **Show admin credentials**, **Delete Kind cluster (clean shutdown)**, and **Rebuild repo-server (source override)**. The admin command replaces the incantation everyone half-remembers — `kubectl get secret ... | base64 -d`, with bonus cross-shell quoting pain — with a button that reads `argocd-initial-admin-secret`, decodes the password in C#, and also explains when no password is required because the dev loop is running `--disable-auth=true`.
+
+The delete command exists for a very practical reason: `aspire stop` can hard-kill the AppHost before the async `kind delete cluster` cleanup has enough time to finish. A dashboard command is awaited, so clean teardown becomes a reliable action instead of a race against process shutdown. The repo-server override is the heavier one: it builds `argocd-repo-server` from the current working tree, tags it with commit, dirty state, and timestamp, loads it into the Kind cluster, patches the Deployment, waits for rollout, and checks the logs for the new commit. That is exactly the kind of button every serious project eventually grows: seed data, rotate a secret, force a resync, rebuild the one component you are actually editing.
+
+The happy path is now the thing a contributor should see first:
 
 ```powershell
 git clone https://github.com/tamirdresher/argo-cd
 cd argo-cd
 git switch aspire-dev-loop
-cd contrib\aspire-dev
-$env:GOMAXPROCS="2"
-aspire start
+code .
 ```
 
-That is one clone, not two. No path wiring. No script whose main job is to go fetch the real project from somewhere else. Just switch to the branch, move into `contrib/aspire-dev`, and run the graph.
+VS Code prompts for the recommended extensions because the repo includes `.vscode/extensions.json`, and the important one for this loop is `microsoft-aspire.aspire-vscode`; `golang.go` is the other half, because the resources being debugged are Go processes. If the launch entry ever disappears, you do not have to hand-type `launch.json`: press **Ctrl+Shift+P**, run **Aspire: Configure launch.json**, and let the extension write the AppHost entry. In the current checkout, `.vscode/launch.json` already points at `contrib/aspire-dev/ArgoCd.Aspire.AppHost/ArgoCd.Aspire.AppHost.csproj`, so the contributor path is install the recommendations, press **F5**, choose **Debug Aspire AppHost**, and open the dashboard.
+
+That is one clone, not two. No path wiring. No script whose main job is to go fetch the real project from somewhere else. The command-line path still exists for automation and constrained machines, but it is no longer the ceremony at the front door.
 
 To be honest, there were still sharp edges, because reality remains undefeated and occasionally enjoys slapstick.
 
@@ -160,13 +165,11 @@ The second was a UI dependency refresh: the UI needed `@codecov/webpack-plugin`.
 
 Those are exactly the kinds of problems I want the local loop to catch. Not after a contributor has spent two days assembling the environment. Immediately. In the graph. With logs in one place.
 
-The other caveat is memory. Argo CD is not a tiny Go program. The full inner loop can compile seven Go binaries in parallel, and on this specific machine the host paging file is too small for that much `Process.Start` pressure. The code is correct; the machine is memory-constrained. That is why the quickstart sets `$env:GOMAXPROCS="2"`. It lowers the pressure enough for laptop-class development.
+The other caveat is memory. Argo CD is not a tiny Go program. The full inner loop can compile seven Go binaries in parallel, and on this specific machine the host paging file is too small for that much `Process.Start` pressure. The code is correct; the machine is memory-constrained. On constrained laptops, the terminal fallback can set `GOMAXPROCS=2` before launching the graph to lower the pressure enough for development.
 
 The validation matched that story. In the relocated layout, 84 tests pass. The old vendored integration directory is still gone, the old path-hunting helper is deleted, and the sample is back to the shape I wanted: real package, tiny local gap-fillers, executable graph, and a plausible path upstream because it lives where contributors already are.
 
-The memory caveat still matters for the full Argo CD inner loop, though. If you are trying this on a memory-constrained laptop, set `GOMAXPROCS=2` before you blame yourself, the repo, Go, Kubernetes, Windows, or the moon.
-
-I usually blame the moon third.
+The memory caveat still matters for the full Argo CD inner loop, though. If you are trying this on a memory-constrained laptop, set `GOMAXPROCS=2` before you blame yourself, the repo, Go, Kubernetes, Windows, or the moon, which remains a suspicious but unproven actor.
 
 ## 3. The thesis
 
@@ -175,6 +178,8 @@ Here is the careful version of the disruption claim: Aspire does not replace Kub
 The interesting sentence is this: Aspire makes Kubernetes' outside modellable in code. By "outside" I mean all the things around the cluster that every serious cloud-native project needs before a contributor can do useful work: the local cluster, the manifests, the sidecars, the supporting containers, the host processes, the UI, the dependency ordering, the ports, the health checks, the generated state, the commands, the little readiness rituals, and the "please run this before that" knowledge that slowly migrates into documentation because documentation is where pain goes when we have not modeled it yet.
 
 The setup doc is the smell, even though a good README is still important. I love a good README. But if the README is carrying topology, lifecycle, dependency ordering, health verification, and environment-specific caveats, then the README is doing work that belongs in a program.
+
+The same rule applies one layer below the AppHost. VS Code's [workspace recommended extensions](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_workspace-recommended-extensions) move "install the Aspire and Go extensions" out of prose and into `.vscode/extensions.json`, so newcomers get prompted by the editor instead of punished by a missed paragraph. A [dev container](https://containers.dev/) takes that further: the SDK, Go toolchain, kind, kubectl, Delve, Node, pnpm, and extensions can all be described in [`devcontainer.json`](https://containers.dev/implementors/json_reference/) and built for the contributor, locally or in [Codespaces](https://docs.github.com/en/codespaces/overview). The setup guide stops being a document people follow and becomes a file the machine follows.
 
 An executable AppHost is better than a paragraph that says "first create a Kind cluster." A fluent builder call is better than a shell snippet that applies a manifest and hopes everyone remembers when it should happen. A `.WaitFor(cluster)` edge is better than "wait until the cluster is ready" as tribal instruction.
 
@@ -196,7 +201,7 @@ That is the disruption I mean, and it is not glamorous because the best platform
 
 No keynote thunder. No "replace your platform" sticker. No pretending Kubernetes got simple because I wrote a fluent API around Kind. Just a quiet shift where a whole category of pain becomes optional.
 
-A while back I spent days getting Argo CD to run, and this time the loop ended in a healthier place: I hit a gap, built the missing piece locally, discovered exactly where a local extension stops being pleasant (`IProcessRunner`, hello), upstreamed the part that belonged in the toolkit, and left myself a deletion path for the local extension file. That is my favorite kind of fork: the one with an expiration date.
+The healthier loop is the one where a contributor hits a gap, builds the missing piece locally, discovers exactly where a local extension stops being pleasant (`IProcessRunner`, hello), upstreams the part that belongs in the toolkit, and leaves a deletion path for the local extension file. That is my favorite kind of fork: the one with an expiration date.
 
 Next time, I want the loop to look like this:
 
@@ -204,10 +209,10 @@ Next time, I want the loop to look like this:
 git clone https://github.com/tamirdresher/argo-cd
 cd argo-cd
 git switch aspire-dev-loop
-cd contrib\aspire-dev
-$env:GOMAXPROCS="2"
-aspire start
+code .
 ```
+
+Then VS Code recommends the extensions, **F5** starts the AppHost, and the dashboard gives the contributor the graph, logs, and project-specific commands.
 
 That is days into minutes, but more importantly it is the onboarding fix living inside the project that needs it, which is the disruption I have been waiting for.
 
