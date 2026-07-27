@@ -383,8 +383,8 @@ var cluster = builder
 
 builder
     .AddGoApp("greeter-operator", operatorDir, "./main.go")
+    .WithEnvironment("KUBECONFIG", cluster.Resource.KubeconfigPath)
     .WithEnvironment("GOFLAGS", "-mod=mod")
-    .WithReference(cluster)
     .WaitFor(cluster);
 
 builder.Build().Run();
@@ -396,7 +396,7 @@ The one method in that snippet that does **not** ship in `13.4.1-beta.687` is `W
 
 > **Package status, July 2026:** `WithManifest(path)` is the local gap. I upstreamed the richer version in [CommunityToolkit/Aspire#1481](https://github.com/CommunityToolkit/Aspire/pull/1481), where it appears as `cluster.AddManifest(name, path)` and `cluster.AddManifestFromContent(name, yaml)`, with `.WithNamespace(...)`, `.WithRecursive()`, `.WithServerSideApply(...)`, `.WithFieldManager(...)`, CRD wait timeout/behavior, apply timeout, kustomize auto-detection, and API-reachability probing. That PR is at 174 tests now, which is a nice reminder that the local version is just enough for the sample; the upstream version is the reviewed, package-quality API. Once it lands in a package, the local extensions file goes away and this sample becomes just the NuGet reference plus the AppHost.
 
-Then this line turns the Go controller into a first-class Aspire resource: `builder.AddGoApp("greeter-operator", operatorDir, "./main.go")`. That comes from `Aspire.Hosting.Go`. Aspire runs the operator from source, wires environment variables, captures logs, and makes it visible in the dashboard like any other resource.
+Then the Go integration turns the controller into a first-class Aspire resource. `AddGoApp` comes from `Aspire.Hosting.Go`, so Aspire runs the operator from source, wires environment variables, captures logs, exposes it in the dashboard, and gives the VS Code Aspire extension enough resource metadata to attach the right debugger automatically.
 
 And then `.WaitFor(cluster)` is doing real work. The operator should not start before the cluster exists and the CRD bootstrap has completed. Instead of encoding that in a README paragraph called "Important: run this first," the dependency lives in the graph, and dependency graphs are better than README paragraphs at not forgetting.
 
@@ -416,52 +416,62 @@ A Kubernetes operator project does not need to choose between fake local tests a
 
 ---
 
-## Act 3 — Run it
+## Actually running it
 
-Start the AppHost from the repo root:
+Everything below assumes Docker Desktop is running, because Kind is Kubernetes-in-Docker and nothing works without it. Beyond that you need the .NET 10 SDK, Go 1.26 or newer, `kind` and `kubectl` on your PATH, and Delve installed with `go install github.com/go-delve/delve/cmd/dlv@latest` — one gotcha there is that it lands in `$(go env GOPATH)\bin`, which on a default Windows setup is `C:\Users\<you>\go\bin` and is frequently not on PATH.
 
-```powershell
-aspire start .\apphost\GreeterOperator.AppHost.csproj
-kubectl --context kind-dev-cluster apply -f .\examples\greeter-sample.yaml
-kubectl --context kind-dev-cluster get configmap greeting-tamir -o yaml
-kubectl --context kind-dev-cluster get greeter tamir -o yaml
+For the editor you need two VS Code extensions, and the second one is the one I wasted an hour not having. The first is `golang.go`. The second is Microsoft's official Aspire extension:
+
+```
+code --install-extension microsoft-aspire.aspire-vscode
 ```
 
-Or open `GreeterOperator.slnx` and press F5.
+Without it, VS Code has no idea what an AppHost is, and you end up hand-rolling a `coreclr` launch configuration pointing at a built DLL. I did exactly that, got it working, and only then discovered the extension contributes a purpose-built `aspire` debug type that does the whole thing properly. Every Aspire-in-VS-Code tutorial assumes you have it and almost none of them say so out loud, which is a small example of the same friction this post is complaining about.
 
-Here is what happens in the version I tested: prerequisites are validated first, Kind starts or gets reused, the CRD is applied by the small `WithManifest` extension, the Go operator starts as a host process, and the Aspire dashboard shows both the cluster and the operator.
+With the extension installed you don't write `launch.json` by hand. Press **Ctrl+Shift+P**, run **Aspire: Configure launch.json**, and you get this:
 
-The slow part was not Go. The slow part was Kind doing real cluster work, which is exactly where I want the time to go. The complete validated end-to-end run was 87 seconds from `aspire start` to the first successful reconcile, with all reconciliation checks green.
-
-The sample resource is real Kubernetes YAML. From `examples/greeter-sample.yaml`:
-
-```yaml
-apiVersion: hello.tamirdresher.dev/v1alpha1
-kind: Greeter
-metadata:
-  name: tamir
-  namespace: default
-spec:
-  name: tamir
----
-apiVersion: hello.tamirdresher.dev/v1alpha1
-kind: Greeter
-metadata:
-  name: torres
-  namespace: default
-spec:
-  name: torres
+```jsonc
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "aspire",
+      "request": "launch",
+      "name": "Debug Aspire AppHost",
+      "program": "${workspaceFolder}"
+    }
+  ]
+}
 ```
 
-Apply it, and the operator log stream in the Aspire dashboard shows the controller running and updating Greeter status. Then Kubernetes has the ConfigMap:
+That is the entire file. One configuration, no compound, no build task, no Go attach entry. F5 on it and the extension builds the AppHost, starts the Kind cluster, applies the CRD, launches the operator, opens the dashboard, and attaches debuggers to every resource that supports it — including the Go one.
 
-`kubectl --context kind-dev-cluster get configmap greeting-tamir -o yaml`
+The mechanism is worth knowing because it explains why there is nothing to configure. The extension starts Aspire with `--start-debug-session`, and DCP's `/run_session` endpoint spawns a child debug session per resource. For a Go app it builds a `dlv-dap` configuration on your behalf, which is why Delve has to be on your PATH even though nothing in your project mentions it.
 
-That ConfigMap exists in Kind. Not in memory. Not in a mock client. In Kubernetes.
+Put your breakpoint on line 36 of `operator/controllers/greeter_controller.go`:
 
-Delete the Greeter, and the ConfigMap disappears because the reconciler set the controller owner reference. That is Kubernetes garbage collection doing the thing Kubernetes is supposed to do.
+```go
+configMapName := fmt.Sprintf("greeting-%s", greeter.Spec.Name)
+```
 
-Now set a breakpoint on `Reconcile()`, apply the sample again, and the debugger hits. This is the moment I wanted. Not "you could theoretically debug this if you had the right launch profile and a sympathetic moon." You are stepping through Go code while it reconciles against a real API server.
+Line 36 rather than the top of `Reconcile()` because `r.Get()` has already populated `greeter` by then, so the Variables panel shows real CR fields instead of a zero value.
+
+Then click **Apply Greeter (timestamped)** on the cluster resource in the dashboard and watch it stop. The command applies a Greeter whose name carries the current timestamp, so each click sends a new value through `Reconcile()` and you can watch `greeter.Spec.Name` change without touching a terminal. That button is itself just an extension method calling `WithCommand`:
+
+```csharp
+var cluster = builder
+    .AddKindCluster("dev-cluster")
+    .WithClusterLifetime(ClusterLifetime.Persistent)
+    .WithManifest(Path.Combine(repoRoot, "config", "greeter-crd.yaml"))
+    .WithApplyGreeterCommand();
+```
+
+**A mistake worth stealing from me.** `Aspire.Hosting.Go` has a `WithDelveServer()` method, and when I found it I assumed it was the thing that made Go debugging work, so I added it. My operator then started correctly, ran for forty-four seconds, and exited with status `Finished` and exit code zero. Nothing had crashed, and there was nothing in the logs beyond `Starting workers`.
+
+`WithDelveServer` is for GoLand and other external DAP clients. It replaces the normal `go run` launch with a headless Delve server, and headless Delve without `--accept-multiclient` terminates the program the moment its one client disconnects. So every time VS Code detached, my operator died. The method had also displaced the automatic debugging the extension was already providing, which is why I never noticed I didn't need it. If you are debugging from VS Code, don't call it — the docs say as much, in a remark I read only after losing an afternoon.
+
+**When it doesn't work.** If F5 gives you *"Couldn't find a debug adapter descriptor for debug type 'dotnet'"*, you are on a launch configuration written before the Aspire extension was installed, so regenerate it with **Aspire: Configure launch.json**. If your breakpoint renders as a hollow circle rather than solid red, the Go extension usually hasn't finished loading its tools, so check the Go status in the bottom bar and confirm `dlv` is on your PATH.
+
 
 The ritual collapsed into a solution file, and that matters more than this toy Greeter. The Greeter is deliberately boring. The workflow is not.
 

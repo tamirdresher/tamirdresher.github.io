@@ -54,7 +54,7 @@ The actual AppHost project file now looks like this:
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TamirDresher.Aspire.Hosting.Kind.Extensions\TamirDresher.Aspire.Hosting.Kind.Extensions.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\ArgoCd.Aspire.Hosting.Kind.Extensions\ArgoCd.Aspire.Hosting.Kind.Extensions.csproj" IsAspireProjectResource="false" />
   </ItemGroup>
 
   <ItemGroup>
@@ -65,7 +65,7 @@ The actual AppHost project file now looks like this:
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="..\..\tests\ArgoCd.Aspire.AppHost.Tests\**\*.cs" />
+    <Compile Remove="..\ArgoCd.Aspire.AppHost.Tests\**\*.cs" />
   </ItemGroup>
 
 </Project>
@@ -109,24 +109,25 @@ It also exposed a very normal open-source paper cut. The package XML docs list `
 
 In the Argo CD experiment, that deletion was very visible. The AppHost went from roughly 180 lines to roughly 100 lines once the Kind resource absorbed the bootstrap work. Less code is nice. Less special local-dev ritual is the real win.
 
-The sample repo for this is `https://github.com/tamirdresher/aspire-argocd-dev-loop`. It is private while I am finishing this post and will be made public when the post drops.
+The sample started life as a standalone companion repo, and that first shape was useful because it let me move fast without pretending I understood the upstream contribution path yet. But it also recreated the exact onboarding smell this post is about: one repo had the AppHost, another repo had Argo CD, and then a little helper called `ArgoCdRepoRoot.cs` had to wander around the filesystem trying to find the checkout it was supposed to orchestrate. That worked, but it was a polite way of saying "please solve path discovery before you can solve the real problem."
+
+The better version now lives inside my Argo CD fork itself: `https://github.com/tamirdresher/argo-cd`, on the `aspire-dev-loop` branch, under `contrib/aspire-dev/`. That matters because Argo CD already has a `contrib/` convention, so this is no longer just a side experiment that has to live forever next to the real project. It can be proposed upstream as an actual contribution candidate, and that lands the thesis much harder: the fix to the onboarding problem can live in the project that has the onboarding problem.
 
 The layout is deliberately plain:
 
 ```text
-aspire-argocd-dev-loop/
-├── src/
-│   ├── ArgoCd.Aspire.AppHost/                        ← PackageReference to the NuGet
-│   └── TamirDresher.Aspire.Hosting.Kind.Extensions/  ← the two gap-fillers only
-│       ├── KindClusterManifestExtensions.cs
-│       └── KindClusterPortMappingExtensions.cs
-└── tests/
-    └── ArgoCd.Aspire.AppHost.Tests/                  ← 88 tests, all pass
+contrib/aspire-dev/
+├── ArgoCd.Aspire.slnx
+├── global.json
+├── README.md
+├── ArgoCd.Aspire.AppHost/
+├── ArgoCd.Aspire.Hosting.Kind.Extensions/
+└── ArgoCd.Aspire.AppHost.Tests/
 ```
 
-The 29-file vendored `src/CommunityToolkit.Aspire.Hosting.Kind/` directory is gone. The only local extension code left is `KindClusterManifestExtensions.cs`, which applies a manifest with a small `System.Diagnostics.Process` helper, and `KindClusterPortMappingExtensions.cs`, which adds `WithPortMapping` by calling the package's `WithKindConfig(Action<KindConfigModel>)`.
+Moving the AppHost in-tree deleted an entire class of "find the other repo" problems. `ArgoCdRepoRoot.cs` is gone. The repo root is structurally known as `../../..` from the AppHost project, resolved at build time through MSBuild metadata instead of discovered at runtime by filesystem archaeology. That is the same lesson as the AppHost itself: if a path, dependency, startup order, or prerequisite is part of the system, model it where the system can see it instead of asking the reader to remember it.
 
-The topology is the important part: the Kind cluster is state-only. It holds the Argo CD namespace, CRDs, RBAC, ConfigMaps, Secrets, and Kubernetes API state. The Argo CD components I am editing do not run as Kubernetes workloads in the default inner loop. They run as Aspire host processes on my machine.
+The topology is still the important part: the Kind cluster is state-only. It holds the Argo CD namespace, CRDs, RBAC, ConfigMaps, Secrets, and Kubernetes API state. The Argo CD components I am editing do not run as Kubernetes workloads in the default inner loop. They run as Aspire host processes on my machine.
 
 Redis is a container resource. The UI is a `pnpm` host process. The Argo CD Go binaries are `AddGoApp` resources. The dependency graph is explicit with `.WaitFor()`.
 
@@ -139,13 +140,15 @@ That is not magic; it is better than magic because it is boring code you can rea
 The happy path is now the thing I wanted when I first cloned Argo CD:
 
 ```powershell
-git clone https://github.com/tamirdresher/aspire-argocd-dev-loop
-.\scripts\clone-argocd.ps1
+git clone https://github.com/tamirdresher/argo-cd
+cd argo-cd
+git switch aspire-dev-loop
+cd contrib\aspire-dev
 $env:GOMAXPROCS="2"
 aspire start
 ```
 
-That replaces days of contributor onboarding with a few commands and an executable graph.
+That is one clone, not two. No path wiring. No script whose main job is to go fetch the real project from somewhere else. Just switch to the branch, move into `contrib/aspire-dev`, and run the graph.
 
 To be honest, there were still sharp edges, because reality remains undefeated and occasionally enjoys slapstick.
 
@@ -159,7 +162,7 @@ Those are exactly the kinds of problems I want the local loop to catch. Not afte
 
 The other caveat is memory. Argo CD is not a tiny Go program. The full inner loop can compile seven Go binaries in parallel, and on this specific machine the host paging file is too small for that much `Process.Start` pressure. The code is correct; the machine is memory-constrained. That is why the quickstart sets `$env:GOMAXPROCS="2"`. It lowers the pressure enough for laptop-class development.
 
-The validation matched that story. After the package refactor, `dotnet build` is clean: 0 warnings, 0 errors. The tests are 88 out of 88 passing. The old vendored integration directory is gone, and the sample is back to the shape I wanted: real package, tiny local gap-fillers, executable graph.
+The validation matched that story. In the relocated layout, 84 tests pass. The old vendored integration directory is still gone, the old path-hunting helper is deleted, and the sample is back to the shape I wanted: real package, tiny local gap-fillers, executable graph, and a plausible path upstream because it lives where contributors already are.
 
 The memory caveat still matters for the full Argo CD inner loop, though. If you are trying this on a memory-constrained laptop, set `GOMAXPROCS=2` before you blame yourself, the repo, Go, Kubernetes, Windows, or the moon.
 
@@ -198,12 +201,14 @@ A while back I spent days getting Argo CD to run, and this time the loop ended i
 Next time, I want the loop to look like this:
 
 ```powershell
-git clone https://github.com/tamirdresher/aspire-argocd-dev-loop
-.\scripts\clone-argocd.ps1
+git clone https://github.com/tamirdresher/argo-cd
+cd argo-cd
+git switch aspire-dev-loop
+cd contrib\aspire-dev
 $env:GOMAXPROCS="2"
 aspire start
 ```
 
-That is days into minutes, and it is the disruption I have been waiting for.
+That is days into minutes, but more importantly it is the onboarding fix living inside the project that needs it, which is the disruption I have been waiting for.
 
 
