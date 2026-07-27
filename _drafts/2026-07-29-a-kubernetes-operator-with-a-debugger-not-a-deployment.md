@@ -330,7 +330,9 @@ builder.Build().Run();
 
 This is the part that makes me grin: `builder.AddKindCluster("dev-cluster")` creates or reuses the local Kind cluster. The package owns the cluster lifecycle, Kubernetes version pinning, worker-node shape, persistent lifetime, Kind config, references to other Aspire resources, Helm charts, and the publish/deploy path through `builder.AddKubernetesEnvironment(name).WithKind()`.
 
-`WithApplyGreeterCommand()` and `WithDeleteGreetersCommand()` are mine, and they are the reason the dashboard has buttons on it.
+![Aspire dashboard resources list with the dev-cluster context menu open, showing View details, Console logs, Export JSON, and below them the two custom commands: Apply Greeter (timestamped) and Delete all Greeters](/assets/kubernetes-operator-debugger/dashboard-resource-commands-menu.png)
+
+`WithApplyGreeterCommand()` and `WithDeleteGreetersCommand()` are mine, and they are the reason the dashboard has buttons on it. In the screenshot above they sit in the `dev-cluster` context menu, right below the built-in View details, Console logs, and Export JSON entries — which is exactly where a contributor would look for them without being told.
 
 Aspire lets you attach commands to any resource with `WithCommand`, and they show up in the dashboard's context menu next to the built-in Start and Stop actions. That turns out to be one of the most useful and least advertised things in the whole model, because the dashboard stops being a read-only status page and becomes the place where you drive the loop. Here is the whole thing:
 
@@ -444,7 +446,11 @@ configMapName := fmt.Sprintf("greeting-%s", greeter.Spec.Name)
 
 Line 36 rather than the top of `Reconcile()` because `r.Get()` has already populated `greeter` by then, so the Variables panel shows real fields instead of a zero value.
 
-Then press F5, wait for the dashboard, and click **Apply Greeter (timestamped)** on the cluster resource. The breakpoint hits, and the Call Stack shows two debug sessions side by side: the C# AppHost running, and the Go operator paused. One keypress, two languages, one cluster.
+Then press F5 and wait for the dashboard. Aspire prints the dashboard URL to the Debug Console as it starts, and the **Login URL** line is the one you want — it carries a one-time token, so following it signs you straight in. Ctrl+click it and the browser opens on the resources page:
+
+![VS Code Debug Console showing the Aspire startup output with Dashboard, Login URL, OTLP/gRPC, and OTLP/HTTP addresses, with a Ctrl+click to follow link tooltip over the login URL](/assets/kubernetes-operator-debugger/aspire-dashboard-login-url.png)
+
+Then click **Apply Greeter (timestamped)** on the cluster resource. The breakpoint hits, and the Call Stack shows two debug sessions side by side: the C# AppHost running, and the Go operator paused. One keypress, two languages, one cluster.
 
 ![VS Code paused in the Go reconciler with the Aspire AppHost still running and the Go operator paused on a breakpoint](/assets/kubernetes-operator-debugger/vscode-breakpoint-call-stack.png)
 
