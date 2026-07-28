@@ -6,17 +6,17 @@ tags: [dotnet-aspire, platform-engineering, devops, argo-cd, kubernetes, kind, c
 description: "The working Argo CD Aspire AppHost loop: a real F5 Go breakpoint, a Kind cluster holding only state, and repo-owned topology that the next contributor can inherit."
 ---
 
-> This is the real-world version of the pattern I wrote about in [When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering]({% post_url 2026-07-28-aspire-kubernetes-operator-inner-loop %}): a Kind cluster as part of the local topology, not a prerequisite hiding in a README. You can start here without reading that post first; the short version is the same pattern, bigger project, more archaeology.
+> This is the real-world version of the pattern I wrote about in [When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering]({% post_url 2026-07-28-aspire-kubernetes-operator-inner-loop %}): a Kind cluster (Kubernetes running inside Docker containers on your machine) as part of the local topology, not a prerequisite hiding in a README. You can start here without reading that post first; the short version is the same pattern, bigger project, more archaeology.
 
 ## The breakpoint is the product
 
-Here is the loop now: I press **F5** in VS Code, the Aspire AppHost starts the Argo CD topology, the dashboard opens, every resource settles into Running and Healthy, the UI answers on `:4000`, and a breakpoint in Go code binds instead of waiting behind a setup guide.
+Here is the loop now: I press **F5** in VS Code. The Aspire AppHost — a small C# program that declares which processes, containers, and clusters make up the app, then starts them together with their wiring — starts the Argo CD topology. Argo CD is a GitOps continuous-delivery controller for Kubernetes: it watches Git repositories and makes the cluster match what is declared there. The Aspire dashboard — the web UI Aspire starts alongside the app, with resources, logs, health, and per-resource commands — opens, every resource settles into Running and Healthy, the UI answers on `:4000`, and a breakpoint in Go code binds instead of waiting behind a setup guide.
 
 ![The Aspire dashboard listing the Argo CD topology: Redis as a container, seven Argo CD control-plane processes running as host executables, and the Kind cluster, with every long-running resource showing Running](/assets/aspire-argocd-inner-loop/argocd-aspire-dashboard-resources.png)
 
-The dashboard shows nine resources: a persistent Kind cluster, Redis as a container, and seven Argo CD control-plane processes running as host executables. The Kind cluster is not pretending to be production. It holds the Kubernetes state this loop actually needs — CRDs, RBAC, and `argocd-cm` — while the code I want to edit stays on my machine, close to Delve and VS Code.
+It shows nine resources: a persistent Kind cluster, Redis as a container, and seven Argo CD control-plane processes running as host executables. The Kind cluster is not pretending to be production. It holds the Kubernetes state this loop actually needs — CRDs, which teach the Kubernetes API server new resource types, RBAC permissions, and `argocd-cm`, Argo CD's own configuration ConfigMap — while the code I want to edit stays on my machine, close to Delve, Go's debugger, and VS Code.
 
-That is the whole control plane. `api-server` on 8080, `repo-server` on 8081, `commit-server` on 8086, `applicationset-controller` on 12345, the UI on 4000, and `application-controller` and `notifications-controller` doing their work without an HTTP surface. `dev-mounter` shows as Finished because it is a one-shot setup step rather than a service, which is exactly what you want it to look like once it has done its job.
+That is the whole control plane. `api-server` on 8080, `repo-server` on 8081, `commit-server` on 8086, `applicationset-controller` on 12345, the UI on 4000, and `application-controller` and `notifications-controller` doing their work without an HTTP surface. In practical terms, `api-server` serves Argo CD's API, the UI serves the browser, `repo-server` fetches and renders manifests from Git, and `application-controller` reconciles Applications against the cluster; the others fill out the same local topology. `dev-mounter` shows as Finished because it is a one-shot setup step rather than a service.
 
 That is the product. Not the fluent API. Not the architecture diagram I can draw to feel clever. The product is the moment a contributor can stop setting up the world and start understanding the code.
 
@@ -34,7 +34,7 @@ This is the part of open source we under-talk about. We measure time-to-first-is
 
 ## What the loop actually runs
 
-Quick refresher before the topology: Aspire is a code-first, polyglot orchestrator for distributed apps. The center is an AppHost — a small program, in C#, TypeScript, JavaScript, and other supported shapes — that describes your app as a resource graph. Containers, processes, cloud resources, dependencies, endpoints, health, and startup ordering live together. When you run it, Aspire starts the graph and gives you a dashboard with logs, state, health, traces, and resource actions. The shortest version lives at [aspire.dev](https://aspire.dev): compose, debug, and deploy distributed applications from code.
+Quick refresher before the topology: Aspire is a code-first, polyglot orchestrator for distributed apps. Containers, processes, cloud resources, dependencies, endpoints, health, and startup ordering live together in the AppHost resource graph. The shortest version lives at [aspire.dev](https://aspire.dev): compose, debug, and deploy distributed applications from code.
 
 For cloud-native inner loops, the missing piece is often the cluster, and that is where `CommunityToolkit.Aspire.Hosting.Kind` comes in. It gives the AppHost a real local Kubernetes cluster as a first-class Aspire resource instead of a paragraph in a README that says, "Before you start, create a cluster and apply these things."
 
@@ -96,11 +96,11 @@ public static string ComputeTag(string shortGitCommit, bool dirty, DateTimeOffse
 
 So a local build looks like `7ca0120-dirty-20260722T193201Z`, and the timestamp means Kind sees a new image every time instead of quietly reusing a cached tag. I like that `ComputeTag` is deliberately a tiny pure function too; the test project can prove the tag shape and distinct-timestamp behavior without needing Docker, Kind, or git.
 
-The smaller commands make the same argument. **Show admin credentials** runs `kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath={.data.password}` and decodes the password in managed code instead of asking everyone to pipe through `base64 -d`, which is fine until the contributor is on Windows without a POSIX shell. It also knows this loop starts `api-server` with `--disable-auth=true`. In that mode the secret is not there because no password is needed, so the command returns a successful explanation instead of dumping a raw Kubernetes error on the person who clicked the button.
+The smaller commands make the same argument. **Show admin credentials** runs Kubernetes' command-line client, `kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath={.data.password}`, and decodes the password in managed code instead of asking everyone to pipe through `base64 -d`, which is fine until the contributor is on Windows without a POSIX shell. It also knows this loop starts `api-server` with `--disable-auth=true`. In that mode the secret is not there because no password is needed, so the command returns a successful explanation instead of dumping a raw Kubernetes error on the person who clicked the button.
 
 **Delete Kind cluster (clean shutdown)** is there for the opposite end of the loop. The dashboard command runs `kind delete cluster --name ...`, waits for it to finish, and then best-effort removes the generated kubeconfig. The important bit is the wait: resource commands are awaited by the Aspire dashboard and CLI, while process shutdown is allowed to move on. Teardown is not just a line in a README; it is an operation the tool can own to completion.
 
-That is why `WithCommand` feels bigger here than a convenience API. It gives local platform work a home. A multi-step rebuild, a cross-platform credential helper, and a clean teardown button sit on the resource that needs them, next to logs and health, instead of hiding in paragraphs a contributor has to find before they can use the system.
+That is why `WithCommand`, Aspire's way to attach dashboard and CLI actions to a resource, feels bigger here than a convenience API. It gives local platform work a home. A multi-step rebuild, a cross-platform credential helper, and a clean teardown button sit on the resource that needs them, next to logs and health, instead of hiding in paragraphs a contributor has to find before they can use the system.
 
 ## Health that means something
 
@@ -116,7 +116,7 @@ That is the earned claim: seven Go control-plane components as host executables,
 
 Running the full loop is still the only proof that the loop runs. But not every lesson from the loop has to stay expensive forever.
 
-The startup-order contract now has a regression test built with `DistributedApplicationTestingBuilder`, which builds the AppHost resource graph without starting anything. No Docker. No Kind. No Go build. It can run in CI on any machine in milliseconds, which is a very different beast from "please launch the whole cloud-native sandwich and hope the laptop is in a good mood."
+The startup-order contract now has a regression test built with `DistributedApplicationTestingBuilder`, which builds the AppHost's resource graph in memory without starting anything. No Docker. No Kind. No Go build. It can run in CI on any machine in milliseconds, which is a very different beast from "please launch the whole cloud-native sandwich and hope the laptop is in a good mood."
 
 Here is the test:
 
