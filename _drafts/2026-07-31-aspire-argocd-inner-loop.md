@@ -239,7 +239,7 @@ This is the first test in this project that uses `DistributedApplicationTestingB
 
 The detail I like is that the test does not list today's six or seven component names. It derives the set. `ReceivesKubeconfig` is a small local helper that asks each Go resource for its environment and checks whether it receives `KUBECONFIG`. So the assertion is not "these named processes wait for the cluster." It is "everything that reads cluster state waits for the cluster." If another Go component gets added next month and receives a kubeconfig, it is covered automatically.
 
-`Assert.NotEmpty` is there on purpose too. Without it, a bug in the detection logic could make the set empty and the test would pass with the confidence of a Starfleet officer who has definitely not checked the sensors.
+`Assert.NotEmpty` is there on purpose too. Without it, a bug in the detection logic could make the set empty, and the test would pass by asserting nothing at all — green for exactly the wrong reason.
 
 This is the relationship I want between tests and the running loop: the test cannot tell me that F5 hits a Go breakpoint, that the UI answers on port 4000, or that the cluster has exactly the state I need. Only running the loop can do that. But once running the loop reveals a topology bug, a cheap graph test can pin the shape so the same bug does not quietly return.
 
