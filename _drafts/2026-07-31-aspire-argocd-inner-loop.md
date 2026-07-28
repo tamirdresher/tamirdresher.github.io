@@ -182,24 +182,68 @@ I do not want to overdramatize this. Startup ordering bugs happen. Namespace mis
 
 ## Green is not the same as running
 
-This was the most sobering observation from the day: the build was clean, 87 tests passed, and the dashboard could show `api-server` as `Running / Healthy` on a port with nothing actually bound to it.
+This was the most sobering observation from the day: the build was clean, 87 tests passed, and the dashboard could show `api-server` as `Running` / `Healthy` while `/api/version` still refused connections.
 
-That is not an indictment of tests or dashboards. It is a reminder that a model is not the same thing as the loop. You can have the right graph shape and still miss the timeout that only appears when Delve builds a cold debug binary. You can have green checks and still discover that the CRD is too large for client-side apply. You can have a resource look healthy until the first real HTTP probe tells you whether anything is listening.
+That sentence needs the precise mechanism, because otherwise it sounds like an Aspire defect. It was not. Our AppHost had modeled `api-server` with `WithHttpEndpoint`, but without an explicit health check. For a resource with no health check, Aspire treats the process as healthy once it has started. So `Healthy` meant "the process launched," not "the endpoint answers."
 
-After the fixes, the observed state is the one I care about:
+That is our topology under-describing health, which is exactly the point. A dashboard can only report what the graph tells it. If I do not model health, green degrades to "something started," which is as useful as it sounds. The fix is not to distrust the dashboard; the fix is to describe health properly so the green light means something.
 
-- All seven Go control-plane components run as host processes and show `Running` / `Healthy`.
+The broader lesson still stands. You can have the right graph shape and still miss the timeout that only appears when Delve builds a cold debug binary. You can have green checks and still discover that the CRD is too large for client-side apply. You can have a dashboard that faithfully reports the model and still learn, by running the loop, that the model is not yet specific enough.
+
+After today's fixes and the new graph test, the observed state is the one I care about:
+
+- All seven Go control-plane components run as host processes.
 - The UI serves HTTP 200 on `:4000`.
 - `api-server` answers HTTP 200 on `/api/version`.
 - The Kind cluster holds state only: CRDs and `argocd-cm`, not Argo CD Deployments.
-- The build is clean, with 87 tests passing.
+- The build is clean, now with 88 tests passing.
 - F5 in VS Code hits a Go breakpoint.
 
 That is the earned claim. Nothing more mystical than that, and nothing less important.
 
-The AppHost does not make Argo CD simple. Good. Argo CD is not simple. The AppHost makes the local topology visible enough that the next failure has a place to go. A timeout becomes `DCP_IDE_REQUEST_TIMEOUT_SECONDS` in launch config. A CRD apply limit becomes server-side apply in the manifest resource. A startup race becomes `.WaitFor(cluster)`. A namespace mismatch becomes environment wiring.
+The AppHost does not make Argo CD simple. Good. Argo CD is not simple. The AppHost makes the local topology visible enough that the next failure has a place to go. A timeout becomes `DCP_IDE_REQUEST_TIMEOUT_SECONDS` in launch config. A CRD apply limit becomes server-side apply in the manifest resource. A startup race becomes `.WaitFor(cluster)`. A namespace mismatch becomes environment wiring. A health mismatch points at an explicit health check instead of a misleading shade of green.
 
 That is the difference between documenting a workaround and giving the workaround a home.
+
+## The cheap test for the expensive lesson
+
+Running the full loop is still the only proof that the loop runs. But not every lesson from the loop has to stay expensive forever.
+
+The startup-order bug now has a regression test built with `DistributedApplicationTestingBuilder`, which builds the AppHost resource graph without starting anything. No Docker. No Kind. No Go build. It can run in CI on any machine in milliseconds, which is a very different beast from "please launch the whole cloud-native sandwich and hope the laptop is in a good mood."
+
+Here is the test:
+
+```csharp
+[Fact]
+public async Task ComponentsThatReadArgocdCm_WaitForTheKindCluster()
+{
+    await using var builder = await CreateAppHostBuilderAsync();
+
+    var cluster = Assert.Single(builder.Resources, r => r.Name.StartsWith("argocd-dev-", StringComparison.Ordinal));
+    var clusterReaders = builder.Resources
+        .OfType<GoAppResource>()
+        .Where(ReceivesKubeconfig)
+        .ToArray();
+
+    Assert.NotEmpty(clusterReaders);
+    Assert.All(clusterReaders, component =>
+    {
+        Assert.Contains(
+            component.Annotations.OfType<WaitAnnotation>(),
+            wait => wait.Resource == cluster);
+    });
+}
+```
+
+This is the first test in this project that uses `DistributedApplicationTestingBuilder`; the existing 87 tests did not. And it is aimed at a bug that actually happened: `api-server` started before the cluster was ready, could not find `argocd-cm`, and exited with status 20.
+
+The detail I like is that the test does not list today's six or seven component names. It derives the set. `ReceivesKubeconfig` is a small local helper that asks each Go resource for its environment and checks whether it receives `KUBECONFIG`. So the assertion is not "these named processes wait for the cluster." It is "everything that reads cluster state waits for the cluster." If another Go component gets added next month and receives a kubeconfig, it is covered automatically.
+
+`Assert.NotEmpty` is there on purpose too. Without it, a bug in the detection logic could make the set empty and the test would pass with the confidence of a Starfleet officer who has definitely not checked the sensors.
+
+This is the relationship I want between tests and the running loop: the test cannot tell me that F5 hits a Go breakpoint, that the UI answers on port 4000, or that the cluster has exactly the state I need. Only running the loop can do that. But once running the loop reveals a topology bug, a cheap graph test can pin the shape so the same bug does not quietly return.
+
+An end-to-end version was tempting. It was also slow and unreliable, and a flaky test in a public contribution is worse than none. This one is narrow, fast, and honest about what it proves.
 
 ## The practical friction drawer
 
