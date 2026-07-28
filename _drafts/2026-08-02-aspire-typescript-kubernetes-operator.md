@@ -6,7 +6,7 @@ tags: [dotnet-aspire, typescript, platform-engineering, kubernetes, operator, ki
 description: "Aspire's polyglot claim is real. The same Greeter operator from the C# AppHost post runs under a TypeScript AppHost — no C#, no .NET SDK in the AppHost itself. Same Kind cluster, same dashboard shape, different language."
 ---
 
-> This post stands on its own, but it is also connected to two earlier experiments: [When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering]({% post_url 2026-07-29-aspire-kubernetes-operator-inner-loop %}) built the Greeter operator with a C# AppHost, and [The Kind Resource: My argo-cd Story, and Why Aspire Is Quietly Disrupting DevOps]({% post_url 2026-07-31-aspire-argocd-inner-loop %}) took the same pattern into a real cloud-native project. Here I keep the operator and the cluster the same, then swap only the AppHost to TypeScript, because the interesting question is whether the loop survives outside .NET.
+> This post stands on its own, but it is also connected to two earlier experiments: [When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering]({% post_url 2026-07-28-aspire-kubernetes-operator-inner-loop %}) built the Greeter operator with a C# AppHost, and [The Kind Resource: My argo-cd Story, and Why Aspire Is Quietly Disrupting DevOps]({% post_url 2026-07-31-aspire-argocd-inner-loop %}) took the same pattern into a real cloud-native project. Here I keep the operator and the cluster the same, then swap only the AppHost to TypeScript, because the interesting question is whether the loop survives outside .NET.
 
 There is a very specific reason I care about this post existing.
 
@@ -178,5 +178,5 @@ Read the root `README.md` for both quickstarts side by side, then pick your lang
 - Aspire's TypeScript AppHost docs: <https://aspire.dev>
 - CommunityToolkit.Aspire.Hosting.Kind on NuGet: <https://www.nuget.org/packages/CommunityToolkit.Aspire.Hosting.Kind/13.4.1-beta.687>
 - Manifest support PR (`AddManifest` / `AddManifestFromContent`, 174 tests as of HEAD `5c80dc4b`): <https://github.com/CommunityToolkit/Aspire/pull/1481>
-- [When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering]({% post_url 2026-07-29-aspire-kubernetes-operator-inner-loop %})
+- [When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering]({% post_url 2026-07-28-aspire-kubernetes-operator-inner-loop %})
 - [The Kind Resource: My argo-cd Story, and Why Aspire Is Quietly Disrupting DevOps]({% post_url 2026-07-31-aspire-argocd-inner-loop %})
