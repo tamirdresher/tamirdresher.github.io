@@ -6,48 +6,21 @@ tags: [dotnet-aspire, platform-engineering, devops, argo-cd, kubernetes, kind, c
 description: "The working Argo CD Aspire AppHost loop: a real F5 Go breakpoint, a Kind cluster holding only state, and repo-owned topology that the next contributor can inherit."
 ---
 
-> This is the real-world version of the pattern I wrote about in [When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering]({% post_url 2026-07-28-aspire-kubernetes-operator-inner-loop %}): a Kind cluster as part of the local topology, not a prerequisite hiding in a README. You can start here without reading that post first; the short version is the same pattern, bigger project, more archaeology. If you want the polyglot angle afterward, I also show the same loop with a [TypeScript AppHost]({% post_url 2026-08-02-aspire-typescript-kubernetes-operator %}) for readers who don't live in .NET; that Greeter sample lives at <https://github.com/tamirdresher/aspire-kubernetes-operator-sample>, while the Argo CD work below lives in the `aspire-dev-loop` branch of <https://github.com/tamirdresher/argo-cd>.
+> This is the real-world version of the pattern I wrote about in [When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering]({% post_url 2026-07-28-aspire-kubernetes-operator-inner-loop %}): a Kind cluster as part of the local topology, not a prerequisite hiding in a README. You can start here without reading that post first; the short version is the same pattern, bigger project, more archaeology.
 
 ## The breakpoint is the product
 
 Here is the loop now: I press **F5** in VS Code, the Aspire AppHost starts the Argo CD topology, the dashboard opens, every resource settles into Running and Healthy, the UI answers on `:4000`, and a breakpoint in Go code binds instead of waiting behind a setup guide.
 
-The dashboard shows nine resources: a persistent Kind cluster, Redis as a container, and seven Argo CD control-plane processes running as host executables. The Kind cluster is not pretending to be production. It holds the Kubernetes state this loop actually needs — CRDs, RBAC, and `argocd-cm` — while the code I want to edit stays on my machine, close to Delve and VS Code.
-
 ![The Aspire dashboard listing the Argo CD topology: Redis as a container, seven Argo CD control-plane processes running as host executables, and the Kind cluster, with every long-running resource showing Running](/assets/aspire-argocd-inner-loop/argocd-aspire-dashboard-resources.png)
+
+The dashboard shows nine resources: a persistent Kind cluster, Redis as a container, and seven Argo CD control-plane processes running as host executables. The Kind cluster is not pretending to be production. It holds the Kubernetes state this loop actually needs — CRDs, RBAC, and `argocd-cm` — while the code I want to edit stays on my machine, close to Delve and VS Code.
 
 That is the whole control plane. `api-server` on 8080, `repo-server` on 8081, `commit-server` on 8086, `applicationset-controller` on 12345, the UI on 4000, and `application-controller` and `notifications-controller` doing their work without an HTTP surface. `dev-mounter` shows as Finished because it is a one-shot setup step rather than a service, which is exactly what you want it to look like once it has done its job.
 
-## The dashboard buttons matter too
-
-The dashboard is not just a prettier `ps`. The Kind cluster resource also carries three commands: show admin credentials, delete the cluster, and rebuild `repo-server` from the current source. That matters because in the normal Kubernetes loop, these operations usually live as shell incantations in docs. Attached to the resource, they become part of the loop: discoverable, cross-platform, and close to the thing they operate on.
-
-The most interesting one is **Rebuild repo-server (source override)**. The default loop runs Argo CD's Go processes on the laptop because that is what makes F5 and Delve useful. But sometimes I want the in-cluster path too: build the real `argocd-repo-server` image from the current tree, load it into Kind, patch the Deployment, restart it, and confirm the new binary is the one running. That is a lot of small steps to ask a contributor to assemble by hand.
-
-The command does not invent a parallel build system. Its source follows the same path as `make image DEV_IMAGE=true`: build the `argocd-base` target, run `go build` with the Makefile's ldflags and gcflags, package with `Dockerfile.dev`, load the image into Kind, patch and roll out `argocd-repo-server`, then check the logs for the commit. The reason it does this in C# instead of simply invoking `make` is practical: `make` and bash are not reliably available on Windows. The README can still show the equivalent commands for macOS and Linux contributors, but the button works the same way everywhere.
-
-The image tag is a small detail with an outsized payoff. Every rebuild gets a tag built from the short commit, the tree state, and a UTC timestamp:
-
-```csharp
-public static string ComputeTag(string shortGitCommit, bool dirty, DateTimeOffset utcNow)
-{
-    ArgumentException.ThrowIfNullOrEmpty(shortGitCommit);
-
-    var suffix = dirty ? "dirty" : "clean";
-    var timestamp = utcNow.UtcDateTime.ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture);
-    return $"{shortGitCommit}-{suffix}-{timestamp}";
-}
-```
-
-So a local build looks like `7ca0120-dirty-20260722T193201Z`, and the timestamp means Kind sees a new image every time instead of quietly reusing a cached tag. I like that `ComputeTag` is deliberately a tiny pure function too; the test project can prove the tag shape and distinct-timestamp behavior without needing Docker, Kind, or git.
-
-The smaller commands make the same argument. **Show admin credentials** runs `kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath={.data.password}` and decodes the password in managed code instead of asking everyone to pipe through `base64 -d`, which is fine until the contributor is on Windows without a POSIX shell. It also knows this loop starts `api-server` with `--disable-auth=true`. In that mode the secret is not there because no password is needed, so the command returns a successful explanation instead of dumping a raw Kubernetes error on the person who clicked the button.
-
-**Delete Kind cluster (clean shutdown)** is there for the opposite end of the loop. The dashboard command runs `kind delete cluster --name ...`, waits for it to finish, and then best-effort removes the generated kubeconfig. The important bit is the wait: resource commands are awaited by the Aspire dashboard and CLI, while process shutdown is allowed to move on. Teardown is not just a line in a README; it is an operation the tool can own to completion.
-
-That is why `WithCommand` feels bigger here than a convenience API. It gives local platform work a home. A multi-step rebuild, a cross-platform credential helper, and a clean teardown button sit on the resource that needs them, next to logs and health, instead of hiding in paragraphs a contributor has to find before they can use the system.
-
 That is the product. Not the fluent API. Not the architecture diagram I can draw to feel clever. The product is the moment a contributor can stop setting up the world and start understanding the code.
+
+## The contributor pilgrimage
 
 The reason I cared enough to build this loop was practical. A while back I wanted a feature in Argo CD: [issue #18000 — `syncPolicy.DisableHelmChartCache=true`](https://github.com/argoproj/argo-cd/issues/18000). Leland Knight had opened it, we had been discussing it, and I decided to try building the fix myself.
 
@@ -61,11 +34,13 @@ This is the part of open source we under-talk about. We measure time-to-first-is
 
 ## What the loop actually runs
 
-Quick refresher, especially if this is where you are starting: Aspire is a code-first, polyglot orchestrator for distributed apps. The center is an AppHost — a small program, in C#, TypeScript, JavaScript, and other supported shapes — that describes your app as a resource graph. Containers, processes, cloud resources, dependencies, endpoints, health, and startup ordering live together. When you run it, Aspire starts the graph and gives you a dashboard with logs, state, health, traces, and resource actions. The shortest version lives at [aspire.dev](https://aspire.dev): compose, debug, and deploy distributed applications from code.
+Quick refresher before the topology: Aspire is a code-first, polyglot orchestrator for distributed apps. The center is an AppHost — a small program, in C#, TypeScript, JavaScript, and other supported shapes — that describes your app as a resource graph. Containers, processes, cloud resources, dependencies, endpoints, health, and startup ordering live together. When you run it, Aspire starts the graph and gives you a dashboard with logs, state, health, traces, and resource actions. The shortest version lives at [aspire.dev](https://aspire.dev): compose, debug, and deploy distributed applications from code.
 
 For cloud-native inner loops, the missing piece is often the cluster, and that is where `CommunityToolkit.Aspire.Hosting.Kind` comes in. It gives the AppHost a real local Kubernetes cluster as a first-class Aspire resource instead of a paragraph in a README that says, "Before you start, create a cluster and apply these things."
 
 The Argo CD topology is deliberately split: Kind holds state, Redis runs in a container, and the editable Argo CD processes run as host executables. The cluster does **not** run the Argo CD Deployments in this loop. It provides the Kubernetes API, CRDs, ConfigMaps, Secrets, and state texture the controllers need; the code I want to edit runs on my machine, close to the debugger.
+
+![Diagram of the Argo CD Aspire inner loop split: seven Go control-plane processes and Redis running on the laptop, a Kind cluster holding CRDs, RBAC, and argocd-cm, and KUBECONFIG connecting the host processes to the cluster](/assets/aspire-argocd-inner-loop/what-runs-where.svg)
 
 The actual cluster wiring in this branch is small. The AppHost derives a per-checkout cluster name, renders the Argo CD state manifest, then creates a persistent Kind cluster and applies that generated manifest:
 
@@ -97,6 +72,35 @@ This branch still carries a small local extension because the package version I 
 Startup order is part of that same topology. Every component that reads Kubernetes configuration waits for the Kind cluster and its state manifest, while `commit-server` is correctly excluded because it never talks to Kubernetes. Namespace wiring lives there too: the local processes run in `default`, and the generated state lines up with that expectation.
 
 That is the difference I care about. The README can still explain the loop, but the graph carries the loop. A `.WaitFor(cluster)` edge is not glamorous; it is exactly the kind of platform detail that makes a contributor loop feel reliable.
+
+## The dashboard buttons matter too
+
+Once that graph is visible, the dashboard is not just a prettier `ps`. The Kind cluster resource also carries three commands: show admin credentials, delete the cluster, and rebuild `repo-server` from the current source. That matters because in the normal Kubernetes loop, these operations usually live as shell incantations in docs. Attached to the resource, they become part of the loop: discoverable, cross-platform, and close to the thing they operate on.
+
+The most interesting one is **Rebuild repo-server (source override)**. The default loop runs Argo CD's Go processes on the laptop because that is what makes F5 and Delve useful. But sometimes I want the in-cluster path too: build the real `argocd-repo-server` image from the current tree, load it into Kind, patch the Deployment, restart it, and confirm the new binary is the one running. That is a lot of small steps to ask a contributor to assemble by hand.
+
+The command does not invent a parallel build system. Its source follows the same path as `make image DEV_IMAGE=true`: build the `argocd-base` target, run `go build` with the Makefile's ldflags and gcflags, package with `Dockerfile.dev`, load the image into Kind, patch and roll out `argocd-repo-server`, then check the logs for the commit. The reason it does this in C# instead of simply invoking `make` is practical: `make` and bash are not reliably available on Windows. The README can still show the equivalent commands for macOS and Linux contributors, but the button works the same way everywhere.
+
+The image tag is a small detail with an outsized payoff. Every rebuild gets a tag built from the short commit, the tree state, and a UTC timestamp:
+
+```csharp
+public static string ComputeTag(string shortGitCommit, bool dirty, DateTimeOffset utcNow)
+{
+    ArgumentException.ThrowIfNullOrEmpty(shortGitCommit);
+
+    var suffix = dirty ? "dirty" : "clean";
+    var timestamp = utcNow.UtcDateTime.ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture);
+    return $"{shortGitCommit}-{suffix}-{timestamp}";
+}
+```
+
+So a local build looks like `7ca0120-dirty-20260722T193201Z`, and the timestamp means Kind sees a new image every time instead of quietly reusing a cached tag. I like that `ComputeTag` is deliberately a tiny pure function too; the test project can prove the tag shape and distinct-timestamp behavior without needing Docker, Kind, or git.
+
+The smaller commands make the same argument. **Show admin credentials** runs `kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath={.data.password}` and decodes the password in managed code instead of asking everyone to pipe through `base64 -d`, which is fine until the contributor is on Windows without a POSIX shell. It also knows this loop starts `api-server` with `--disable-auth=true`. In that mode the secret is not there because no password is needed, so the command returns a successful explanation instead of dumping a raw Kubernetes error on the person who clicked the button.
+
+**Delete Kind cluster (clean shutdown)** is there for the opposite end of the loop. The dashboard command runs `kind delete cluster --name ...`, waits for it to finish, and then best-effort removes the generated kubeconfig. The important bit is the wait: resource commands are awaited by the Aspire dashboard and CLI, while process shutdown is allowed to move on. Teardown is not just a line in a README; it is an operation the tool can own to completion.
+
+That is why `WithCommand` feels bigger here than a convenience API. It gives local platform work a home. A multi-step rebuild, a cross-platform credential helper, and a clean teardown button sit on the resource that needs them, next to logs and health, instead of hiding in paragraphs a contributor has to find before they can use the system.
 
 ## Health that means something
 
@@ -176,7 +180,7 @@ contrib/aspire-dev/
 
 Moving the AppHost in-tree deleted an entire class of "find the other repo" problems. The repo root is structurally known as `../../..` from the AppHost project, resolved at build time through MSBuild metadata instead of discovered at runtime by filesystem archaeology. That is the same lesson as the AppHost itself: if a path, dependency, startup order, or prerequisite is part of the system, model it where the system can see it instead of asking the reader to remember it.
 
-The dashboard commands are where this stops being a pretty graph and starts feeling like contributor tooling. The Kind cluster resource wires commands directly in `AppHost.cs`: show admin credentials, delete the Kind cluster cleanly, and rebuild `repo-server` from the current source override. Those are exactly the kinds of buttons serious projects eventually grow: seed data, rotate a secret, force a resync, rebuild the one component you are actually editing.
+The same dashboard commands are where this stops being a pretty graph and starts feeling like contributor tooling. The Kind cluster resource wires commands directly in `AppHost.cs`: show admin credentials, delete the Kind cluster cleanly, and rebuild `repo-server` from the current source override. Those are exactly the kinds of buttons serious projects eventually grow: seed data, rotate a secret, force a resync, rebuild the one component you are actually editing.
 
 The happy path is now the thing a contributor should see first:
 
