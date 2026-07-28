@@ -14,7 +14,7 @@ You know the one. It starts friendly. Install these tools. Run this script. Star
 
 At some point you are not debugging the code anymore. You are debugging your eligibility to begin, so I wanted to show the opposite loop.
 
-So in this post we are going to build a minimal Kubernetes operator from scratch. Not a fake one. Not a console app pretending to be a controller. A real `controller-runtime` operator watching a real CRD in a real Kind cluster, creating a real ConfigMap, and updating real Kubernetes status.
+So in this post we are going to build a minimal Kubernetes operator from scratch. Not a fake one. Not a console app pretending to be a controller. A real `controller-runtime` operator watching a real CRD in a real [Kind](https://kind.sigs.k8s.io/) cluster, creating a real ConfigMap, and updating real Kubernetes status. Kind is Kubernetes running inside Docker containers on your machine: a real, disposable cluster with a genuine API server that `kubectl` and the same client libraries talk to.
 
 Then we are going to run the operator as a host process under Aspire, press F5, set a breakpoint in `Reconcile()`, apply a custom resource, and step through the code, which is the whole trick.
 
