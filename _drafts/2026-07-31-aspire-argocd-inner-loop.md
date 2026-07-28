@@ -14,11 +14,11 @@ Here is the loop now: I press **F5** in VS Code, the Aspire AppHost starts the A
 
 The dashboard shows nine resources: a persistent Kind cluster, Redis as a container, and seven Argo CD control-plane processes running as host executables. The Kind cluster is not pretending to be production. It holds the Kubernetes state this loop actually needs — CRDs, RBAC, and `argocd-cm` — while the code I want to edit stays on my machine, close to Delve and VS Code.
 
-<!-- SCREENSHOT: aspire dashboard, all argo-cd resources running -->
+![The Aspire dashboard listing the Argo CD topology: Redis as a container, seven Argo CD control-plane processes running as host executables, and the Kind cluster, with every long-running resource showing Running](/assets/aspire-argocd-inner-loop/argocd-aspire-dashboard-resources.png)
+
+That is the whole control plane. `api-server` on 8080, `repo-server` on 8081, `commit-server` on 8086, `applicationset-controller` on 12345, the UI on 4000, and `application-controller` and `notifications-controller` doing their work without an HTTP surface. `dev-mounter` shows as Finished because it is a one-shot setup step rather than a service, which is exactly what you want it to look like once it has done its job.
 
 That is the product. Not the fluent API. Not the architecture diagram I can draw to feel clever. The product is the moment a contributor can stop setting up the world and start understanding the code.
-
-<!-- SCREENSHOT: vs code paused on a go breakpoint in argo-cd -->
 
 The reason I cared enough to build this loop was practical. A while back I wanted a feature in Argo CD: [issue #18000 — `syncPolicy.DisableHelmChartCache=true`](https://github.com/argoproj/argo-cd/issues/18000). Leland Knight had opened it, we had been discussing it, and I decided to try building the fix myself.
 
