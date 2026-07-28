@@ -188,20 +188,24 @@ That sentence needs the precise mechanism, because otherwise it sounds like an A
 
 That is our topology under-describing health, which is exactly the point. A dashboard can only report what the graph tells it. If I do not model health, green degrades to "something started," which is as useful as it sounds. The fix is not to distrust the dashboard; the fix is to describe health properly so the green light means something.
 
+The AppHost now wires those checks with `WithHttpHealthCheck(path, endpointName: ...)`: `api-server` checks `/api/version`, `repo-server` checks `/healthz` on its metrics endpoint at port 8084, `commit-server` checks `/healthz` on its metrics endpoint at port 8087, and the UI checks `/`. `applicationset-controller` is the honest wrinkle: its `/healthz` and `/readyz` return 404, so the check uses `/metrics` on port 12345. That proves the process is serving HTTP, not that the controller has declared itself ready. `application-controller` and `notifications-controller` do not serve HTTP at all, so they do not get pretend health checks bolted on for symmetry. Symmetry is nice in diagrams; lies are less nice in repos.
+
+The result is exactly the direction I want. Before, there could be up to **90 seconds of false green**. After the health checks, `/api/version` returned 200 at `11:43:34.243`, and Aspire reported Healthy at `11:43:37.090`. The endpoint served **2.8 seconds before** the green light. That is a conservative signal: slightly late is fine; early is how you get haunted by dashboards.
+
 The broader lesson still stands. You can have the right graph shape and still miss the timeout that only appears when Delve builds a cold debug binary. You can have green checks and still discover that the CRD is too large for client-side apply. You can have a dashboard that faithfully reports the model and still learn, by running the loop, that the model is not yet specific enough.
 
-After today's fixes and the new graph test, the observed state is the one I care about:
+After today's fixes and the new graph tests, the observed state is the one I care about:
 
 - All seven Go control-plane components run as host processes.
 - The UI serves HTTP 200 on `:4000`.
 - `api-server` answers HTTP 200 on `/api/version`.
 - The Kind cluster holds state only: CRDs and `argocd-cm`, not Argo CD Deployments.
-- The build is clean, now with 88 tests passing.
+- The build is clean, now with 89 tests passing.
 - F5 in VS Code hits a Go breakpoint.
 
 That is the earned claim. Nothing more mystical than that, and nothing less important.
 
-The AppHost does not make Argo CD simple. Good. Argo CD is not simple. The AppHost makes the local topology visible enough that the next failure has a place to go. A timeout becomes `DCP_IDE_REQUEST_TIMEOUT_SECONDS` in launch config. A CRD apply limit becomes server-side apply in the manifest resource. A startup race becomes `.WaitFor(cluster)`. A namespace mismatch becomes environment wiring. A health mismatch points at an explicit health check instead of a misleading shade of green.
+The AppHost does not make Argo CD simple. Good. Argo CD is not simple. The AppHost makes the local topology visible enough that the next failure has a place to go. A timeout becomes `DCP_IDE_REQUEST_TIMEOUT_SECONDS` in launch config. A CRD apply limit becomes server-side apply in the manifest resource. A startup race becomes `.WaitFor(cluster)`. A namespace mismatch becomes environment wiring. A health mismatch becomes a real health check instead of a misleading shade of green.
 
 That is the difference between documenting a workaround and giving the workaround a home.
 
@@ -242,6 +246,8 @@ The detail I like is that the test does not list today's six or seven component 
 `Assert.NotEmpty` is there on purpose too. Without it, a bug in the detection logic could make the set empty, and the test would pass by asserting nothing at all — green for exactly the wrong reason.
 
 This is the relationship I want between tests and the running loop: the test cannot tell me that F5 hits a Go breakpoint, that the UI answers on port 4000, or that the cluster has exactly the state I need. Only running the loop can do that. But once running the loop reveals a topology bug, a cheap graph test can pin the shape so the same bug does not quietly return.
+
+There is now a companion test, `ResourcesWithHttpEndpoints_HaveHealthChecks`, that does the same kind of derived assertion for health: every resource with an HTTP endpoint must have a health check annotation. I do not need to quote it in full because the pattern is the same. The value is that the false-green gap we just fixed cannot quietly reopen the next time someone adds an endpoint and forgets to describe health.
 
 An end-to-end version was tempting. It was also slow and unreliable, and a flaky test in a public contribution is worse than none. This one is narrow, fast, and honest about what it proves.
 
