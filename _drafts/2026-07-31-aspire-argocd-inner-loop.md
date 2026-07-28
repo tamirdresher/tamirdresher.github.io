@@ -10,82 +10,25 @@ description: "What happened when the Argo CD Aspire AppHost finally ran end to e
 
 ## The breakpoint is the product
 
-A while back I wanted a feature in Argo CD.
+Here is the loop now: I press **F5** in VS Code, the Aspire AppHost starts the Argo CD topology, the dashboard opens, every resource settles into Running and Healthy, the UI answers on `:4000`, and a breakpoint in Go code binds instead of waiting behind a setup guide.
 
-Specifically, [issue #18000 — `syncPolicy.DisableHelmChartCache=true`](https://github.com/argoproj/argo-cd/issues/18000). Leland Knight had opened it, we had been discussing it, and I decided to try building the fix myself.
+The dashboard shows nine resources: a persistent Kind cluster, Redis as a container, and seven Argo CD control-plane processes running as host executables. The Kind cluster is not pretending to be production. It holds the Kubernetes state this loop actually needs — CRDs, RBAC, and `argocd-cm` — while the code I want to edit stays on my machine, close to Delve and VS Code.
 
-The request was practical: let a Helm-source Application say, "do not cache the chart." That matters in dev loops. It also matters with OCI Helm registries where charts can be updated in-place without a version bump. If the chart content changes but the version string does not, the cache becomes the enemy. And like most good feature requests, it sounded easy before I actually touched the code, which is how software lures us into the cave.
+<!-- SCREENSHOT: aspire dashboard, all argo-cd resources running -->
 
-The standard OSS move is simple enough: clone the repo, follow the contributor guide, and get to the code path behind the feature request. The hard part is that mature cloud-native projects accumulate local-dev sediment: a Makefile layer here, a `hack` script there, a Procfile, a Kind cluster, Tilt, Kubernetes patches, UI dependencies, Corepack shims, generated assets, and one guide linking to another guide linking to a note that assumes you already ran the thing from the previous guide. None of those pieces is irrational. Each one exists because someone solved a real problem at a real moment.
+That is the product. Not the fluent API. Not the architecture diagram I can draw to feel clever. The product is the moment a contributor can stop setting up the world and start understanding the code.
+
+<!-- SCREENSHOT: vs code paused on a go breakpoint in argo-cd -->
+
+The reason I cared enough to build this loop was practical. A while back I wanted a feature in Argo CD: [issue #18000 — `syncPolicy.DisableHelmChartCache=true`](https://github.com/argoproj/argo-cd/issues/18000). Leland Knight had opened it, we had been discussing it, and I decided to try building the fix myself.
+
+The request sounded small: let a Helm-source Application say, "do not cache the chart." That matters in dev loops. It also matters with OCI Helm registries where charts can be updated in-place without a version bump. If the chart content changes but the version string does not, the cache becomes the enemy. And like most good feature requests, it sounded easy before I actually touched the code, which is how software lures us into the cave.
+
+The standard OSS move is simple enough: clone the repo, follow the contributor guide, and get to the code path behind the feature request. The hard part is that mature cloud-native projects accumulate local-dev sediment: Makefiles, `hack` scripts, Procfiles, Kind clusters, Tilt, Kubernetes patches, UI dependencies, Corepack shims, generated assets, and one guide linking to another guide that assumes you already ran the thing from the previous guide. None of those pieces is irrational. Each one exists because someone solved a real problem at a real moment.
 
 The problem is what happens after years of real moments: you do not get a clean contributor loop, you get a pilgrimage. Argo CD is a mature CNCF project with serious maintainers, real documentation, real developer workflows, and a codebase that has earned every bit of its operational complexity. This is not a dunk on Argo CD. I like Argo CD. That is why the local loop matters: the sooner a contributor gets from "I cloned the repo" to "I am stepping through the code path I care about," the sooner the project benefits from their attention.
 
 This is the part of open source we under-talk about. We measure time-to-first-issue, time-to-merge, review latency, CI health, and coverage. Those are all useful. But there is another metric hiding underneath them: how long does it take a motivated contributor to reach the first useful breakpoint?
-
-Today, the answer for this branch changed from a theory to an observed loop: I pressed **F5** in VS Code, the Aspire AppHost started the Argo CD topology, and a breakpoint in Go code was hit.
-
-That is the product. Not the dashboard screenshot. Not the fluent API. Not the architecture diagram I can draw to feel clever. The product is the moment a contributor can stop setting up the world and start understanding the code.
-
-## The first F5 failed for exactly the right reason
-
-The most interesting discovery was not that the graph had a missing edge or that Kubernetes had an opinion. The most interesting discovery was a timeout.
-
-On the first F5 attempt, most of the Go components showed `Finished` in the Aspire dashboard. The logs had this sequence:
-
-```text
-[sys] Timeout of 120 seconds exceeded waiting for the IDE to start a run session;
-      you can set the DCP_IDE_REQUEST_TIMEOUT_SECONDS environment variable to override this
-      Put "https://localhost:62985/run_session?api-version=2025-10-01": context deadline exceeded
-[sys] Starting process...: Cmd = go.exe, Args = ["--loglevel", "debug", "--port", "8081", ...]
-flag provided but not defined: -loglevel
-```
-
-Then Go printed its usage banner and exited, which is Go's way of saying, "I have no idea what ceremony you thought was happening, but this is not it."
-
-The cause was subtle and very real. `dlv debug` does not use the same build-cache entry as a normal `go build`. It compiles with:
-
-```text
--gcflags="all=-N -l"
-```
-
-That disables optimizations and inlining so the debugger can do its job. It also means that a repo with a warm normal build can still face a cold debug build.
-
-Measured on this machine:
-
-- `go build ./cmd`, warm: **114 seconds**
-- `go build -gcflags="all=-N -l" ./cmd`, cold: **463 seconds**
-- DCP's default IDE request timeout: **120 seconds**
-
-Aspire was waiting for the IDE to start the run session. The Go debug build was still compiling. DCP gave up after two minutes and fell back to launching the executable directly. But without the IDE debug run session, it did not get the Delve `run ./cmd` shape. The process received only the application's flags, saw `--loglevel`, and died because the `go` command itself does not have that flag.
-
-That is a perfect example of the kind of problem you only learn by running the loop. The build was clean. The tests were green. The graph looked plausible. The actual contributor experience still had a two-minute assumption hidden inside it.
-
-The fix is now one line in the repo, inside `.vscode/launch.json`:
-
-```jsonc
-{
-  "name": "Debug Aspire AppHost",
-  "type": "aspire",
-  "request": "launch",
-  "program": "${workspaceFolder}/contrib/aspire-dev/ArgoCd.Aspire.AppHost/ArgoCd.Aspire.AppHost.csproj",
-  "dashboardBrowser": "openExternalBrowser",
-  "env": {
-    "DCP_IDE_REQUEST_TIMEOUT_SECONDS": "900"
-  }
-}
-```
-
-That is the series argument arriving without asking permission. The fix is not a paragraph that says, "If debugging times out, set this environment variable." It is not a tribal note in a setup guide. It is a checked-in launch configuration. The next contributor clones, installs the recommended extensions, presses F5, and inherits the extra time budget.
-
-It is also an honest limitation. Aspire's default assumes debug builds start quickly. That is a reasonable default for many applications. A Go monorepo the size of Argo CD breaks that assumption, especially on the first debug build. The right answer is not to pretend the default was silly; the right answer is to make this repo's reality executable.
-
-The other small but lovely setting is:
-
-```jsonc
-"dashboardBrowser": "openExternalBrowser"
-```
-
-That makes F5 open the Aspire dashboard automatically. If you prefer a different shape, the setting also supports `none`, `notification`, `integratedBrowser`, and `debugChrome` / `debugEdge` / `debugFirefox`. The debug-browser options are nice for web apps because they auto-close when debugging ends. For this loop, I want the dashboard to feel like part of pressing F5, not like a URL I copied from a terminal while pretending that counts as polish.
 
 ## What the loop actually runs
 
@@ -93,16 +36,7 @@ Quick refresher, especially if this is where you are starting: Aspire is a code-
 
 For cloud-native inner loops, the missing piece is often the cluster, and that is where `CommunityToolkit.Aspire.Hosting.Kind` comes in. It gives the AppHost a real local Kubernetes cluster as a first-class Aspire resource instead of a paragraph in a README that says, "Before you start, create a cluster and apply these things."
 
-The Argo CD topology I wanted is deliberately split:
-
-- Kind holds Kubernetes state: CRDs and `argocd-cm`.
-- Redis runs as a container resource.
-- The UI runs as a host process and serves HTTP 200 on port 4000.
-- The Go control-plane components run as host processes.
-- `api-server` answers HTTP 200 on `/api/version`.
-- The cluster does **not** run the Argo CD Deployments in this loop.
-
-That last point matters. The cluster is real, but it is state-only for the inner loop. It provides the Kubernetes API, CRDs, ConfigMaps, Secrets, and state texture the controllers need. The code I want to edit runs on my machine, close to the debugger.
+The Argo CD topology is deliberately split: Kind holds state, Redis runs in a container, and the editable Argo CD processes run as host executables. The cluster does **not** run the Argo CD Deployments in this loop. It provides the Kubernetes API, CRDs, ConfigMaps, Secrets, and state texture the controllers need; the code I want to edit runs on my machine, close to the debugger.
 
 The actual cluster wiring in this branch is intentionally small. The AppHost derives a per-checkout cluster name, renders the Argo CD state manifest, then creates a persistent Kind cluster and applies that generated manifest:
 
@@ -135,16 +69,11 @@ This branch still carries a small local extension because the package version I 
 
 ## The CRD was too big for client-side apply
 
-The manifest apply failed outright with this:
+The manifest apply mode is now part of the topology because Argo CD carries serious Kubernetes resources, not toy-sample YAML.
 
-```text
-kubectl apply failed (exit 1): The CustomResourceDefinition "applicationsets.argoproj.io" is invalid:
-metadata.annotations: Too long: may not be more than 262144 bytes
-```
+Client-side `kubectl apply` writes the whole resource into the `kubectl.kubernetes.io/last-applied-configuration` annotation. That is convenient until the resource is a very large CRD. Argo CD's ApplicationSet CRD crosses the 256 KB annotation ceiling, so ordinary client-side apply cannot carry this state reliably.
 
-Client-side `kubectl apply` writes the whole resource into the `kubectl.kubernetes.io/last-applied-configuration` annotation. That is convenient until the resource is a very large CRD. Argo CD's ApplicationSet CRD crosses the 256 KB annotation ceiling, so the state manifest could not be applied that way.
-
-The fix is server-side apply:
+The AppHost needs server-side apply:
 
 ```csharp
 [
@@ -160,54 +89,31 @@ The fix is server-side apply:
 
 This is where a toolkit API stops being aesthetic and starts being practical. `WithServerSideApply` in [CommunityToolkit/Aspire#1481](https://github.com/CommunityToolkit/Aspire/pull/1481) exists for exactly this class of problem. Not because every sample needs it. Because the minute you point a local topology at a serious Kubernetes project, you meet the same limits maintainers already know from production-grade manifests.
 
-Again, the interesting part is where the fix lives. The next person should not need to read a blog post that says, "Oh, by the way, Argo CD's ApplicationSet CRD is too large for client-side apply." The AppHost should know. The graph should carry the right apply mode.
+The next person should not need to read a blog post that says, "Oh, by the way, Argo CD's ApplicationSet CRD is too large for client-side apply." The AppHost should know. The graph should carry the right apply mode.
 
 ## Startup order is part of the topology
 
-The next failure was more ordinary, which does not make it less useful.
+Startup order is now modeled where it belongs: in the graph.
 
-`api-server` waited on Redis and `repo-server`, but it did not wait on the cluster. That meant it could start while the Kind cluster was still provisioning and while the state manifest had not finished applying. The error was exactly what you would expect once you see the missing edge:
+Every component that reads Kubernetes configuration waits for the Kind cluster and its state manifest. That means `api-server`, `repo-server`, and the controllers do not race ahead of `argocd-cm`, CRDs, and RBAC. `commit-server` is correctly excluded because it never talks to Kubernetes.
 
-```text
-configmap "argocd-cm" not found
-```
-
-Then `api-server` exited with status 20.
-
-The fix was to add `.WaitFor(cluster)` in `WithKindEnvironment(...)`, covering every component that reads Kubernetes configuration. `commit-server` is correctly excluded because it never talks to Kubernetes.
-
-There was one more small wiring issue in the same neighborhood: namespace. The local processes run in `default`, while part of the state was being applied elsewhere. That mismatch is the sort of thing a README can warn about forever and a graph can simply model correctly.
+There was one more small wiring detail in the same neighborhood: namespace. The local processes run in `default`, while part of the state had to line up with that expectation. That mismatch is the sort of thing a README can warn about forever and a graph can simply model correctly.
 
 I do not want to overdramatize this. Startup ordering bugs happen. Namespace mismatches happen. The point is that the remedy belongs in the resource graph, not in a note that says, "If this fails, wait a bit and try again." A `.WaitFor(cluster)` edge is not glamorous, but it is exactly the kind of unglamorous platform work that makes a contributor loop feel reliable.
 
 ## Green is not the same as running
 
-This was the most sobering observation from the day: the build was clean, 87 tests passed, and the dashboard could show `api-server` as `Running` / `Healthy` while `/api/version` still refused connections.
+This is the idea I most want to keep: green is not the same as running.
 
-That sentence needs the precise mechanism, because otherwise it sounds like an Aspire defect. It was not. Our AppHost had modeled `api-server` with `WithHttpEndpoint`, but without an explicit health check. For a resource with no health check, Aspire treats the process as healthy once it has started. So `Healthy` meant "the process launched," not "the endpoint answers."
-
-That is our topology under-describing health, which is exactly the point. A dashboard can only report what the graph tells it. If I do not model health, green degrades to "something started," which is as useful as it sounds. The fix is not to distrust the dashboard; the fix is to describe health properly so the green light means something.
+A process can start, the dashboard can show `Running`, and the endpoint a contributor actually needs can still refuse connections. That is not an Aspire defect. It is a modeling problem. A dashboard can only report what the graph tells it. If I do not model health, green degrades to "something started," which is as useful as it sounds.
 
 The AppHost now wires those checks with `WithHttpHealthCheck(path, endpointName: ...)`: `api-server` checks `/api/version`, `repo-server` checks `/healthz` on its metrics endpoint at port 8084, `commit-server` checks `/healthz` on its metrics endpoint at port 8087, and the UI checks `/`. `applicationset-controller` is the honest wrinkle: its `/healthz` and `/readyz` return 404, so the check uses `/metrics` on port 12345. That proves the process is serving HTTP, not that the controller has declared itself ready. `application-controller` and `notifications-controller` do not serve HTTP at all, so they do not get pretend health checks bolted on for symmetry. Symmetry is nice in diagrams; lies are less nice in repos.
 
-The result is exactly the direction I want. Before, there could be up to **90 seconds of false green**. After the health checks, `/api/version` returned 200 at `11:43:34.243`, and Aspire reported Healthy at `11:43:37.090`. The endpoint served **2.8 seconds before** the green light. That is a conservative signal: slightly late is fine; early is how you get haunted by dashboards.
+The result is exactly the direction I want. Before, there could be up to **90 seconds of false green**. After the health checks, `/api/version` returned 200 at `11:43:34.243`, and Aspire reported Healthy at `11:43:37.090`. The green light arrived **2.8 seconds late**. That is a conservative signal: slightly late is fine; early is how you get haunted by dashboards.
 
-The broader lesson still stands. You can have the right graph shape and still miss the timeout that only appears when Delve builds a cold debug binary. You can have green checks and still discover that the CRD is too large for client-side apply. You can have a dashboard that faithfully reports the model and still learn, by running the loop, that the model is not yet specific enough.
+That is the earned claim: seven Go control-plane components as host executables, Redis as a container, a Kind cluster holding state only, the UI answering on `:4000`, `api-server` answering `/api/version`, and F5 hitting a Go breakpoint. The AppHost does not make Argo CD simple. Good. Argo CD is not simple. The AppHost makes the local topology visible enough that the next failure has a place to go.
 
-After today's fixes and the new graph tests, the observed state is the one I care about:
-
-- All seven Go control-plane components run as host processes.
-- The UI serves HTTP 200 on `:4000`.
-- `api-server` answers HTTP 200 on `/api/version`.
-- The Kind cluster holds state only: CRDs and `argocd-cm`, not Argo CD Deployments.
-- The build is clean, now with 89 tests passing.
-- F5 in VS Code hits a Go breakpoint.
-
-That is the earned claim. Nothing more mystical than that, and nothing less important.
-
-The AppHost does not make Argo CD simple. Good. Argo CD is not simple. The AppHost makes the local topology visible enough that the next failure has a place to go. A timeout becomes `DCP_IDE_REQUEST_TIMEOUT_SECONDS` in launch config. A CRD apply limit becomes server-side apply in the manifest resource. A startup race becomes `.WaitFor(cluster)`. A namespace mismatch becomes environment wiring. A health mismatch becomes a real health check instead of a misleading shade of green.
-
-That is the difference between documenting a workaround and giving the workaround a home.
+A CRD apply limit becomes server-side apply in the manifest resource. A startup race becomes `.WaitFor(cluster)`. A namespace mismatch becomes environment wiring. A health mismatch becomes a real health check instead of a misleading shade of green. That is the difference between documenting a workaround and giving the workaround a home.
 
 ## The cheap test for the expensive lesson
 
@@ -239,7 +145,7 @@ public async Task ComponentsThatReadArgocdCm_WaitForTheKindCluster()
 }
 ```
 
-This is the first test in this project that uses `DistributedApplicationTestingBuilder`; the existing 87 tests did not. And it is aimed at a bug that actually happened: `api-server` started before the cluster was ready, could not find `argocd-cm`, and exited with status 20.
+This is the first test in this project that uses `DistributedApplicationTestingBuilder`; the existing tests did not. And it is aimed at a bug that actually happened: `api-server` started before the cluster was ready, could not find `argocd-cm`, and exited with status 20.
 
 The detail I like is that the test does not list today's six or seven component names. It derives the set. `ReceivesKubeconfig` is a small local helper that asks each Go resource for its environment and checks whether it receives `KUBECONFIG`. So the assertion is not "these named processes wait for the cluster." It is "everything that reads cluster state waits for the cluster." If another Go component gets added next month and receives a kubeconfig, it is covered automatically.
 
@@ -253,7 +159,11 @@ An end-to-end version was tempting. It was also slow and unreliable, and a flaky
 
 ## The practical friction drawer
 
-One tiny practical note, because local development is still local development: every `dlv debug` run leaves a `__debug_bin*.exe` next to the package being debugged. In this repo, each one is roughly 190 MB. A few F5 sessions accumulated about 1.87 GB in the working tree.
+One practical note for large Go repos: `dlv debug` compiles with optimizations disabled, which means it uses a different build-cache entry from `go build`, so a cold debug build of Argo CD's `./cmd` can take several minutes. DCP's default 120-second wait for the IDE debug session is not enough; when it expires, the fallback launches the process without `run ./cmd`, which fails in a confusing shape. The fix lives in `.vscode/launch.json` as `DCP_IDE_REQUEST_TIMEOUT_SECONDS`, so the next contributor inherits the time budget instead of rediscovering it.
+
+The launch config also keeps `"dashboardBrowser": "openExternalBrowser"`, which makes F5 open the Aspire dashboard as part of the loop instead of turning the dashboard URL into another thing to copy from a terminal.
+
+One more local-development thing: every `dlv debug` run leaves a `__debug_bin*.exe` next to the package being debugged. In this repo, each one is roughly 190 MB. A few F5 sessions accumulated nearly 2 GB in the working tree.
 
 That is now covered by `.gitignore`. Not a grand architectural point. Just the kind of thing worth fixing once so everyone else does not wonder why their checkout gained the mass of a small moon.
 
