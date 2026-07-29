@@ -152,7 +152,19 @@ This is the relationship I want between tests and the running loop: the test can
 
 There is now a companion test, `ResourcesWithHttpEndpoints_HaveHealthChecks`, that does the same kind of derived assertion for health: every resource with an HTTP endpoint must have a health check annotation. I do not need to quote it in full because the pattern is the same. The value is that health stays part of the topology the next time someone adds an endpoint.
 
-An end-to-end version was tempting. It was also slow and unreliable, and a flaky test in a public contribution is worse than none. This one is narrow, fast, and honest about what it proves.
+And then the expensive test earned its place too.
+
+It is gated behind `ARGOCD_ASPIRE_E2E=1` because it needs Docker, Kind, Go, and network access to GitHub. It takes about five minutes, which is not "run this every time you save a file" territory. But it now starts the real AppHost, waits for the API server and `application-controller`, applies an Argo CD `Application` for the canonical guestbook example, watches it move from `OutOfSync` and `Missing` to `Synced` and `Healthy`, asks the Argo CD API for the same answer, and verifies that Kind has `deployment/guestbook-ui` in the expected namespace.
+
+That is not inner-loop feedback. That is pre-merge or nightly confidence. And it caught two bugs the cheap tests could not have found.
+
+The first was Redis. The AppHost used `.WithHostPort(6379)`, while the Go components still hard-coded `--redis localhost:6379`, copied from Argo CD's Procfile. But in Aspire, `6379` is a preference, not a promise. If the port is free, everything looks fine. If something else is already using it, Aspire allocates a different host port, and the components fail Redis authentication in a way that does not look like a port conflict at all. The fix was to thread Aspire's resolved endpoint through `REDIS_SERVER` instead of trusting the literal.
+
+The second was Windows. `repo-server` shells out to `git-verify-wrapper.sh` during manifest generation, and Go's `exec` cannot run a `.sh` file on Windows. The sync symptom was a bare `EOF`, not a helpful message about shells, extensions, or process launch. The fix was a small Windows executable shim in the wrapper's place.
+
+That is the useful boundary. The topology tests can prove the graph shape: anything that receives `KUBECONFIG` waits for the cluster, and anything with an HTTP endpoint has a health check. They cannot prove that a preferred port became the actual port, or that a helper executable can launch on the current OS, or that a real guestbook Application reaches `Healthy`. The graph was correct; the values were wrong.
+
+So I want both. Cheap graph tests on every change. One expensive real run when the branch is ready for merge, or on a nightly schedule. Different costs, different questions, both worth answering.
 
 ## The machine can use the same loop
 
@@ -162,7 +174,7 @@ An AppHost gives the loop a surface a machine can actually drive. `aspire start`
 
 That is not theoretical hand-waving. The same surface is useful to a developer and to an agent because the environment exposes the work instead of hiding it in prose. If `api-server` cannot start because `configmap "argocd-cm" not found`, `aspire logs api-server` is a direct path to the clue. If `aspire describe` says something is healthy, a real HTTP request can verify whether anything is actually listening. If health turns green before the endpoint serves, polling both signals makes the gap visible. If the cluster state is in question, `kind get clusters` and a Kubernetes query answer it without someone remembering which page of the guide mentioned the cluster name.
 
-None of this makes the hard parts easy. The end-to-end GitOps test is still genuinely hard to make reliable, and a machine-readable environment does not mean every workflow is now automatable. It means the observable parts are observable by anyone: the maintainer, the contributor who joined last week, and the agent that has no tribal knowledge at all. In that sense, an agent is just the most extreme newcomer. If the loop is discoverable enough, has one entry point, reports structured state, and keeps its operations with the code, then optimizing for the confused human on day one turns out to produce something a machine can drive too.
+None of this makes the hard parts free. The end-to-end GitOps test works, but five minutes plus Docker, Kind, Go, and network access is a real cost. A machine-readable environment does not mean every workflow belongs in the keystroke loop, or that every workflow is now automatable. It means the observable parts are observable by anyone: the maintainer, the contributor who joined last week, and the agent that has no tribal knowledge at all. In that sense, an agent is just the most extreme newcomer. If the loop is discoverable enough, has one entry point, reports structured state, and keeps its operations with the code, then optimizing for the confused human on day one turns out to produce something a machine can drive too.
 
 ## The practical friction drawer
 
