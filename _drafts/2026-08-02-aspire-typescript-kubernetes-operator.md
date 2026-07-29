@@ -111,9 +111,9 @@ When the dashboard opens, the graph is the same shape as the C# version: `dev-cl
 For now, apply the sample Greeter from another terminal:
 
 ```powershell
-kubectl --kubeconfig ..\.kube\dev-cluster.yaml apply -f ..\examples\greeter-sample.yaml
-kubectl --kubeconfig ..\.kube\dev-cluster.yaml get configmap greeting-tamir -o yaml
-kubectl --kubeconfig ..\.kube\dev-cluster.yaml get greeter tamir -o yaml
+kubectl --context kind-dev-cluster apply -f ..\examples\greeter-sample.yaml
+kubectl --context kind-dev-cluster get configmap greeting-tamir -o yaml
+kubectl --context kind-dev-cluster get greeter tamir -o yaml
 ```
 
 The operator's `Reconcile()` function creates a ConfigMap named `greeting-{name}`. The operator code has not changed. The CRD has not changed. The Kind cluster is still the real Kubernetes state store. Only the AppHost language moved.
