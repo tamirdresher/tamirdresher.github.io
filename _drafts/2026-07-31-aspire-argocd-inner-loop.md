@@ -154,6 +154,16 @@ There is now a companion test, `ResourcesWithHttpEndpoints_HaveHealthChecks`, th
 
 An end-to-end version was tempting. It was also slow and unreliable, and a flaky test in a public contribution is worse than none. This one is narrow, fast, and honest about what it proves.
 
+## The machine can use the same loop
+
+There is another consequence hiding in the same shape: anything an agent can execute and observe, it can start to work with. A setup guide is neither. A traditional cloud-native inner loop assumes a human who can read between the lines: install these tools, run this script, remember the Windows note halfway down the next page, and if the controller does not start, try to guess which generated file you missed. That is hard enough for a person on day one. For an agent, it is mostly fog. It cannot reliably know whether step four worked, why a pod is unhealthy, or which of six diagnostic commands answers "is the system up yet?"
+
+An AppHost gives the loop a surface a machine can actually drive. `aspire start` and `aspire stop` are one entry point for the whole topology. `aspire describe` and `aspire ps` expose current state, health, endpoints, and URLs as structured output. `aspire logs <resource>` gets the logs for the thing that failed without first knowing whether that thing is a container, a host process, or a Kubernetes component. Resource commands make the same dashboard buttons invocable, so rebuilding `repo-server` is one operation instead of a recipe. And the topology tests let the agent check the shape of the environment in milliseconds without Docker, Kind, or a prayer to the laptop fan.
+
+That is not theoretical hand-waving. The same surface is useful to a developer and to an agent because the environment exposes the work instead of hiding it in prose. If `api-server` cannot start because `configmap "argocd-cm" not found`, `aspire logs api-server` is a direct path to the clue. If `aspire describe` says something is healthy, a real HTTP request can verify whether anything is actually listening. If health turns green before the endpoint serves, polling both signals makes the gap visible. If the cluster state is in question, `kind get clusters` and a Kubernetes query answer it without someone remembering which page of the guide mentioned the cluster name.
+
+None of this makes the hard parts easy. The end-to-end GitOps test is still genuinely hard to make reliable, and a machine-readable environment does not mean every workflow is now automatable. It means the observable parts are observable by anyone: the maintainer, the contributor who joined last week, and the agent that has no tribal knowledge at all. In that sense, an agent is just the most extreme newcomer. If the loop is discoverable enough, has one entry point, reports structured state, and keeps its operations with the code, then optimizing for the confused human on day one turns out to produce something a machine can drive too.
+
 ## The practical friction drawer
 
 One practical note for large Go repos: `dlv debug` compiles with optimizations disabled, which means it uses a different build-cache entry from `go build`, so a cold debug build of Argo CD's `./cmd` can take several minutes. The launch configuration sets `DCP_IDE_REQUEST_TIMEOUT_SECONDS` in `.vscode/launch.json`, so the debug session gets the time budget this repo needs.
