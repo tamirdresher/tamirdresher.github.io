@@ -322,9 +322,9 @@ One more local-development thing: every `dlv debug` run leaves a `__debug_bin*.e
 
 ## How the Contribution Is Packaged
 
-The sample started life as a standalone companion repo, and that first shape was useful because it let me move fast without pretending I understood the upstream contribution path yet. But it also recreated the exact onboarding smell this post is about: one repo had the AppHost, another repo had Argo CD, and then a helper had to wander around the filesystem trying to find the checkout it was supposed to orchestrate. That worked, but it was a polite way of saying "please solve path discovery before you can solve the real problem."
+The work lives inside my Argo CD fork itself: `https://github.com/tamirdresher/argo-cd`, on the `aspire-dev-loop` branch, under `contrib/aspire-dev/`. That placement is the point. Argo CD already has a `contrib/` convention, so this is not a side experiment that has to live forever next to the real project — it can be proposed upstream as an actual contribution candidate. The fix to the onboarding problem can live in the project that has the onboarding problem.
 
-The better version now lives inside my Argo CD fork itself: `https://github.com/tamirdresher/argo-cd`, on the `aspire-dev-loop` branch, under `contrib/aspire-dev/`. That matters because Argo CD already has a `contrib/` convention, so this is no longer just a side experiment that has to live forever next to the real project. It can be proposed upstream as an actual contribution candidate, and that lands the thesis much harder: the fix to the onboarding problem can live in the project that has the onboarding problem.
+Living in-tree also removes a class of problem outright. When the AppHost sits in a separate repository, something has to find the Argo CD checkout it is supposed to orchestrate, and you end up solving path discovery before you can solve anything real. In-tree, the repo root is structurally known.
 
 The layout is plain on purpose, because the point is to see the contribution path instead of admire the scaffolding:
 
