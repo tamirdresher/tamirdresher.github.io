@@ -37,10 +37,17 @@ layout: page
 
 {% assign default_num = paginator.posts | size | minus: pinned_num  %}
 {% assign default_end = default_beg | plus: default_num | minus: 1 %}
+{% assign last_default_index = default.size | minus: 1 %}
+{% if default_end > last_default_index %}
+  {% assign default_end = last_default_index %}
+{% endif %}
 
 {% if default_num > 0 %}
   {% for i in (default_beg..default_end) %}
-    {% assign posts = posts | push: default[i] %}
+    {% comment %}Guard filtered-vs-paginator mismatches from rendering nil phantom posts.{% endcomment %}
+    {% if default[i] %}
+      {% assign posts = posts | push: default[i] %}
+    {% endif %}
   {% endfor %}
 {% endif %}
 
