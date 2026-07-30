@@ -3,14 +3,14 @@ layout: post
 title: "You Do Not Need C# to Use Aspire: The Same Kubernetes Operator Loop in TypeScript"
 date: 2026-08-02T07:15:00+03:00
 tags: [aspire, dotnet-aspire, typescript, platform-engineering, kubernetes, operator, kind, polyglot, inner-loop]
-description: "Aspire is not a .NET-only local orchestration story: the same Greeter operator loop from Part 1 runs with a TypeScript AppHost, the same Kind cluster, the same CRD, and the same Go operator."
+description: "Aspire is not a .NET-only local orchestration story: the same Greeter operator loop from Part 1 runs with a TypeScript AppHost, including the Kind cluster, CRD, Go operator, and dashboard commands."
 ---
 
 Parts 1 and 2 both used a C# AppHost, and that is a reasonable place for some readers to stop. Plenty of excellent engineers do not write C#, do not want to write C#, and would naturally assume Aspire is a .NET tool wearing a cloud-native jacket. Fair assumption. Wrong conclusion.
 
 Aspire's AppHost is a model of your local topology. C# is one way to author that model, and it is still a great one, especially for the .NET audience I usually write for. But it is not the only door into the room. TypeScript is a first-class way to write an AppHost too.
 
-So this post rebuilds the Greeter operator example from Part 1 with nothing but a TypeScript AppHost. Same Go operator. Same CRD. Same Kind cluster. Same Aspire dashboard shape. The only thing that changes is the language used to describe the graph.
+So this post rebuilds the Greeter operator example from Part 1 with nothing but a TypeScript AppHost. Same Go operator. Same CRD. Same Kind cluster. Same Aspire dashboard shape, including the custom Apply and Delete commands. The only thing that changes is the language used to describe the graph.
 
 Everything in this post is in the sample repository. The TypeScript AppHost lives under `ts-apphost/`, and the default branch is `master`:
 
@@ -248,6 +248,54 @@ mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 
 `ctrl.GetConfigOrDie()` finds `KUBECONFIG`, and Aspire supplies that environment variable through `withKindClusterReference(cluster)`. That is the same trick as the C# AppHost version, just projected through the TypeScript SDK.
 
+### Dashboard Commands Are TypeScript Too
+
+The last visible gap in the TypeScript sample was the dashboard command story. That gap is gone. The TypeScript AppHost now attaches the same useful action to the Kind resource with `withCommand`:
+
+```typescript
+let cluster = builder.addKindCluster('dev-cluster').withClusterLifetime(ClusterLifetime.Persistent);
+
+cluster = cluster.withCommand(
+  'apply-greeter',
+  'Apply Greeter (timestamped)',
+  async (context) => {
+    const stamp = formatStamp();
+    const crName = `greeter-${stamp}`;
+    const specName = `tamir-${stamp}`;
+    const kubeconfigPath = await getKubeconfigPath(await context.resourceName());
+    const yaml = `apiVersion: hello.tamirdresher.dev/v1alpha1
+kind: Greeter
+metadata:
+  name: ${crName}
+  namespace: default
+spec:
+  name: ${specName}
+`;
+
+    const result = await runKubectl(['--kubeconfig', kubeconfigPath, 'apply', '-f', '-'], yaml);
+
+    if (result.exitCode !== 0) {
+      return commandFailure(`kubectl apply failed for ${crName}.`, result.stderr || result.stdout);
+    }
+
+    return commandSuccess(`Applied ${crName} (spec.name=${specName})`, result.stdout.trim());
+  },
+  {
+    commandOptions: {
+      description: 'Applies a timestamped Greeter custom resource to trigger the operator reconcile loop.',
+      iconName: 'Add',
+      updateState: async () => ResourceCommandState.Enabled,
+    },
+  },
+);
+```
+
+There is a companion `delete-greeters` command that runs `kubectl delete greeters --all -n default --ignore-not-found`, so the dashboard now has both sides of the loop: create a fresh Greeter and clean up all Greeters afterward.
+
+The timestamp is what makes **Apply Greeter** useful rather than just convenient. Every click creates a new Greeter name and a new `spec.name`, which means every click is a fresh trip through `Reconcile()` with a value you can watch change in the debugger. It is the same point as Part 1, now coming from a TypeScript AppHost.
+
+The helper functions are ordinary plumbing. `formatStamp()` creates the `yyyyMMdd-HHmmss` suffix. `runKubectl()` delegates to `runProcess()`, sending YAML on stdin when needed and collecting stdout, stderr, and exit code. `commandSuccess()` and `commandFailure()` return dashboard-friendly command results with `CommandResultFormat.Text` and `displayImmediately: true`. The interesting helper is `getKubeconfigPath()`, because it exposes a real maturity seam: `withCommand` is projected into TypeScript, but `KubeconfigPath` is not.
+
 ## Try It Yourself
 
 Start with Docker Desktop running and the prerequisites from the sample README installed: Node.js, the Aspire CLI, Go, Kind, and `kubectl`.
@@ -281,16 +329,24 @@ greeter-crd       Executable    Finished  -
 greeter-operator  Executable    Running   Healthy
 ```
 
-When the dashboard opens, the graph is the same shape as the C# version: `dev-cluster` is the Kind cluster, `greeter-crd` applies the CRD, and `greeter-operator` starts after both are ready. The custom dashboard buttons from the C# AppHost are not wired into this TypeScript sample yet. The generated TypeScript SDK exposes `withCommand`, so that is sample parity work, not a platform wall.
+When the dashboard opens, the graph is the same shape as the C# version: `dev-cluster` is the Kind cluster, `greeter-crd` applies the CRD, and `greeter-operator` starts after both are ready. The `dev-cluster` resource also has **Apply Greeter (timestamped)** and **Delete all Greeters** commands, so you can drive the same loop from the dashboard instead of keeping the command sequence in your head.
 
-The terminal is enough for this post because the TypeScript sample is proving terminal-run parity.
+The terminal path is still useful because it is reproducible, but the dashboard parity is no longer theoretical. The commands were also verified directly:
+
+```powershell
+aspire resource dev-cluster apply-greeter --non-interactive
+# configmap/greeting-tamir-20260731-001029
+
+aspire resource dev-cluster delete-greeters --non-interactive
+# Greeters and their ConfigMaps removed
+```
 
 ### Point `kubectl` at the Aspire-Managed Cluster
 
-The TypeScript Kind resource exposes its kubeconfig path through `aspire describe dev-cluster --format Json`. Copy the `KubeConfigPath` value, then set it in the second terminal:
+The TypeScript Kind binding does not expose `KubeconfigPath` as a property yet, but Aspire does include it in the resource description. Run `aspire describe --non-interactive --format Json`, copy `dev-cluster.properties.KubeConfigPath`, then set it in the second terminal:
 
 ```powershell
-$env:KUBECONFIG = "<KubeConfigPath from aspire describe>"
+$env:KUBECONFIG = "<dev-cluster.properties.KubeConfigPath>"
 kubectl get crd greeters.hello.tamirdresher.dev
 ```
 
@@ -400,7 +456,11 @@ Then stop `aspire run` with **Ctrl+C**. If you want to remove the persistent Kin
 kind delete cluster --name dev-cluster
 ```
 
-The C# AppHost sample has dashboard commands for cleanup. The TypeScript sample does not wire those buttons yet, so the explicit terminal cleanup is the honest path today.
+You can also use the dashboard command or the equivalent CLI path once you are done:
+
+```powershell
+aspire resource dev-cluster delete-greeters --non-interactive
+```
 
 ## What Is Real, and What Is Still Catching Up
 
@@ -408,7 +468,9 @@ The generated-SDK model is real, but it is still a preview-shaped developer expe
 
 The Kind story is also real. `CommunityToolkit.Aspire.Hosting.Kind` comes through the packages block and generates usable TypeScript bindings. The gap is specific: `withManifest` has not shipped for this path yet, so the CRD apply step remains a tiny executable resource. That is the kind of helper you delete later, not the foundation of the cluster story.
 
-The dashboard experience is real where the sample models resources: logs, state, dependencies, restart controls, and the same resource graph. The missing custom commands are a sample gap. The generated TypeScript SDK already has the shape needed to add buttons like **Apply Greeter** or **Delete all Greeters**.
+The dashboard experience is real where the sample models resources: logs, state, dependencies, restart controls, the same resource graph, and now the same custom commands. `withCommand` came across into the generated TypeScript SDK just fine. The remaining gap is more specific: the TypeScript Kind binding does not project `KubeconfigPath`, while the C# command can read `cluster.Resource.KubeconfigPath` directly.
+
+The workaround is concrete and pragmatic: `getKubeconfigPath()` shells out to `aspire describe --non-interactive --format Json`, finds the `dev-cluster` resource by name or display name, and reads `resource.properties.KubeConfigPath`. That is not as nice as a strongly typed property, but it is a narrow binding gap, not a missing dashboard-command model.
 
 The F5 story is also catching up rather than missing. The sample repo has a TypeScript launch configuration checked into the root `.vscode/launch.json` alongside the C# one:
 
