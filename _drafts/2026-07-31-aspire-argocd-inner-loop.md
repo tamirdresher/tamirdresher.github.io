@@ -161,6 +161,10 @@ var repoServer = builder
 
 Once that graph is visible, the dashboard is not just a prettier `ps`. The Kind cluster resource also carries the two contributor operations that should be close to the cluster itself: show the admin credentials, and delete the cluster cleanly. In the normal Kubernetes loop there is nowhere obvious to put a button, so these operations usually become shell incantations in docs. Attached to the resource, they become discoverable, cross-platform, and owned by the same tool that owns the lifecycle.
 
+![The Aspire dashboard with the Kind cluster resource's context menu open, showing the built-in View details, Console logs and Export JSON entries above the two custom commands: Delete Kind cluster (clean shutdown) and Show admin credentials](/assets/aspire-argocd-inner-loop/dashboard-command-menu.png)
+
+They appear in the resource's context menu, directly below the built-in **View details**, **Console logs**, and **Export JSON** entries — which is exactly where someone would look for them without being told.
+
 The registration lives next to the cluster declaration:
 
 ```csharp
