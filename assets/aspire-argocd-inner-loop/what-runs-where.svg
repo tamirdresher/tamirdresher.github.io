@@ -1,0 +1,83 @@
+<svg width="100%" height="470" viewBox="0 0 820 470" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="0" width="100%" height="100%" fill="#ffffff"/>
+
+  <!-- ================= LEFT: your laptop ================= -->
+  <rect x="20" y="50" width="400" height="390" fill="#ffffff" stroke="#dedede" stroke-width="1.5" rx="8"/>
+  <text x="40" y="76" font-size="13" font-weight="600" fill="#5c5c5c">Your laptop</text>
+  <text x="40" y="94" font-size="10" fill="#9a9a9a">host processes — editable, debuggable, restartable</text>
+
+  <!-- VS Code -->
+  <rect x="42" y="110" width="356" height="44" fill="#0078d4" rx="4" opacity="0.10"/>
+  <rect x="42" y="110" width="4" height="44" fill="#0078d4" rx="2"/>
+  <text x="58" y="130" font-size="12" font-weight="600" fill="#0078d4">VS Code</text>
+  <text x="58" y="146" font-size="10" fill="#5c5c5c">F5 — one launch config, Delve attaches to the Go processes</text>
+
+  <!-- AppHost -->
+  <rect x="42" y="164" width="356" height="44" fill="#0078d4" rx="4" opacity="0.10"/>
+  <rect x="42" y="164" width="4" height="44" fill="#0078d4" rx="2"/>
+  <text x="58" y="184" font-size="12" font-weight="600" fill="#0078d4">Aspire AppHost  (C#)</text>
+  <text x="58" y="200" font-size="10" fill="#5c5c5c">AddKindCluster · AddGoApp · WaitFor · WithCommand</text>
+
+  <!-- Argo CD control plane: the star -->
+  <rect x="42" y="218" width="356" height="152" fill="#b11f4b" rx="4" opacity="0.12"/>
+  <rect x="42" y="218" width="4" height="152" fill="#b11f4b" rx="2"/>
+  <text x="58" y="238" font-size="12" font-weight="600" fill="#b11f4b">Argo CD control plane  (Go)</text>
+  <text x="58" y="255" font-size="10" fill="#9a9a9a">seven host executables — the code you actually edit</text>
+
+  <text x="58" y="276" font-size="10" fill="#5c5c5c">api-server  :8080</text>
+  <text x="215" y="276" font-size="10" fill="#5c5c5c">repo-server  :8081</text>
+  <text x="58" y="293" font-size="10" fill="#5c5c5c">commit-server  :8086</text>
+  <text x="215" y="293" font-size="10" fill="#5c5c5c">applicationset  :12345</text>
+  <text x="58" y="310" font-size="10" fill="#5c5c5c">application-controller</text>
+  <text x="215" y="310" font-size="10" fill="#5c5c5c">notifications-controller</text>
+  <text x="58" y="327" font-size="10" fill="#5c5c5c">ui  :4000</text>
+
+  <line x1="58" y1="340" x2="384" y2="340" stroke="#b11f4b" stroke-width="0.75" opacity="0.25"/>
+  <text x="58" y="358" font-size="10" fill="#5c5c5c">redis — container, the one thing that stays containerised</text>
+
+  <text x="42" y="396" font-size="10" fill="#9a9a9a">no image build · no kind load · no Deployment patch in the loop</text>
+  <text x="42" y="412" font-size="10" fill="#9a9a9a">edit Go source, restart one resource, breakpoint still binds</text>
+
+  <!-- ================= RIGHT: the cluster ================= -->
+  <rect x="530" y="50" width="270" height="390" fill="#ffffff" stroke="#dedede" stroke-width="1.5" rx="8"/>
+  <text x="550" y="76" font-size="13" font-weight="600" fill="#5c5c5c">Kind cluster  (Docker)</text>
+  <text x="550" y="94" font-size="10" fill="#9a9a9a">real Kubernetes — state only</text>
+
+  <rect x="552" y="120" width="226" height="150" fill="#f59e0b" rx="4" opacity="0.12"/>
+  <rect x="552" y="120" width="4" height="150" fill="#f59e0b" rx="2"/>
+  <text x="568" y="142" font-size="12" font-weight="600" fill="#b8760b">Cluster state</text>
+  <text x="568" y="164" font-size="10" fill="#5c5c5c">applications.argoproj.io</text>
+  <text x="568" y="181" font-size="10" fill="#5c5c5c">applicationsets.argoproj.io</text>
+  <text x="568" y="198" font-size="10" fill="#5c5c5c">appprojects.argoproj.io</text>
+  <text x="568" y="220" font-size="10" fill="#5c5c5c">RBAC · ServiceAccounts</text>
+  <text x="568" y="237" font-size="10" fill="#5c5c5c">argocd-cm · Secrets</text>
+  <text x="568" y="258" font-size="10" fill="#9a9a9a">applied with server-side apply</text>
+
+  <rect x="552" y="292" width="226" height="76" fill="#ffffff" stroke="#dedede" stroke-width="1" stroke-dasharray="4 3" rx="4"/>
+  <text x="568" y="314" font-size="11" font-weight="600" fill="#9a9a9a">What is NOT here</text>
+  <text x="568" y="333" font-size="10" fill="#9a9a9a">no Argo CD Deployments</text>
+  <text x="568" y="350" font-size="10" fill="#9a9a9a">no controller images to build or load</text>
+
+  <text x="550" y="396" font-size="10" fill="#9a9a9a">the API server is real, so nothing</text>
+  <text x="550" y="412" font-size="10" fill="#9a9a9a">about the controllers has to be faked</text>
+
+  <!-- ================= ARROWS ================= -->
+  <defs>
+    <marker id="arrowBlue" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#0078d4"/>
+    </marker>
+    <marker id="arrowGrey" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#9a9a9a"/>
+    </marker>
+  </defs>
+
+  <line x1="420" y1="200" x2="528" y2="200" stroke="#0078d4" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+  <text x="428" y="192" font-size="10" font-weight="600" fill="#0078d4">KUBECONFIG</text>
+  <text x="428" y="215" font-size="9" fill="#9a9a9a">one env var, injected by</text>
+  <text x="428" y="227" font-size="9" fill="#9a9a9a">WithKindClusterReference</text>
+
+  <line x1="528" y1="290" x2="420" y2="290" stroke="#9a9a9a" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arrowGrey)"/>
+  <text x="432" y="282" font-size="10" fill="#5c5c5c">watch stream</text>
+  <text x="432" y="304" font-size="9" fill="#9a9a9a">CRD change events reach the</text>
+  <text x="432" y="316" font-size="9" fill="#9a9a9a">controllers on your laptop</text>
+</svg>
