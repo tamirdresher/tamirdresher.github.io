@@ -14,6 +14,17 @@ Contributing to a mature cloud-native project means surviving its local-dev setu
 
 If Argo CD is your world, Aspire is the part that may be new: an **Aspire AppHost** is a small program that declares the processes, containers, clusters, endpoints, health checks, and commands that make up a distributed application. If .NET is your world, **Argo CD** is the GitOps continuous-delivery controller that watches Git repositories and reconciles Kubernetes to match. This loop connects both sides: the whole Argo CD control plane runs as debuggable host processes against a real Kind cluster, driven by one AppHost, with a Go breakpoint that binds when you press F5.
 
+Everything in this post is real code you can clone and run. It lives in my Argo CD fork, on the `aspire-dev-loop` branch, under `contrib/aspire-dev/`:
+
+```powershell
+git clone https://github.com/tamirdresher/argo-cd
+cd argo-cd
+git switch aspire-dev-loop
+code .
+```
+
+Browse it here: [github.com/tamirdresher/argo-cd/tree/aspire-dev-loop/contrib/aspire-dev](https://github.com/tamirdresher/argo-cd/tree/aspire-dev-loop/contrib/aspire-dev)
+
 ## Why the Breakpoint Matters
 
 Here is the loop now: you press **F5** in VS Code, the **Aspire AppHost** starts the Argo CD topology, the dashboard opens, every resource settles into Running and Healthy, the UI answers on `:4000`, and a breakpoint in Go code binds instead of waiting behind a setup guide.
@@ -619,14 +630,7 @@ Moving the AppHost in-tree deleted an entire class of "find the other repo" prob
 
 The same dashboard commands are where this stops being a pretty graph and starts feeling like contributor tooling. The Kind cluster resource wires commands directly in `AppHost.cs`: show admin credentials and delete the Kind cluster cleanly. Those are exactly the kinds of buttons serious projects eventually grow: seed data, rotate a secret, force a resync, and cleanly tear down local state.
 
-The happy path is now the thing a contributor should see first:
-
-```powershell
-git clone https://github.com/tamirdresher/argo-cd
-cd argo-cd
-git switch aspire-dev-loop
-code .
-```
+The happy path is now the thing a contributor should see first: clone, switch branch, open in VS Code, press F5.
 
 VS Code prompts for the recommended extensions because the repo includes `.vscode/extensions.json`, and the important ones for this loop are `microsoft-aspire.aspire-vscode` and `golang.go`. If the launch entry ever disappears, you do not have to hand-type JSON: press **Ctrl+Shift+P**, run **Aspire: Configure launch.json**, and let the extension write the AppHost entry. In the current checkout, `.vscode/launch.json` already points at `contrib/aspire-dev/ArgoCd.Aspire.AppHost/ArgoCd.Aspire.AppHost.csproj`, sets the longer DCP timeout, opens the dashboard, and gives the contributor the F5 path.
 
