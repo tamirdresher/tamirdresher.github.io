@@ -8,9 +8,9 @@ description: "The working Argo CD Aspire AppHost loop: a real F5 Go breakpoint, 
 
 > This is the real-world version of the pattern I wrote about in [When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering]({% post_url 2026-07-28-aspire-kubernetes-operator-inner-loop %}): a Kind cluster (Kubernetes running inside Docker containers on your machine) as part of the local topology, not a prerequisite hiding in a README. You can start here without reading that post first; the short version is the same pattern, larger project, real contributor loop.
 
-## The breakpoint is the product
+## Why the Breakpoint Matters
 
-Here is the loop now: I press **F5** in VS Code, the Aspire AppHost starts the Argo CD topology, the dashboard opens, every resource settles into Running and Healthy, the UI answers on `:4000`, and a breakpoint in Go code binds instead of waiting behind a setup guide.
+Here is the loop now: you press **F5** in VS Code, the **Aspire AppHost** starts the Argo CD topology, the dashboard opens, every resource settles into Running and Healthy, the UI answers on `:4000`, and a breakpoint in Go code binds instead of waiting behind a setup guide.
 
 Three terms in that sentence are carrying weight, and depending on which side of the fence you work on, one half will be new. **Argo CD** is a GitOps continuous-delivery controller for Kubernetes: it watches Git repositories and makes the cluster match what is declared there. An **Aspire AppHost** is a small C# program that declares which processes, containers, and clusters make up an application, then starts them together with the wiring between them. The **Aspire dashboard** is the web UI it opens alongside them, showing every resource with its logs, health, and commands.
 
@@ -22,7 +22,7 @@ That is the whole control plane. `api-server` on 8080, `repo-server` on 8081, `c
 
 That is the product. Not the fluent API. Not the architecture diagram I can draw to feel clever. The product is the moment a contributor can stop setting up the world and start understanding the code.
 
-## The contributor pilgrimage
+## The Contributor Problem in Argo CD
 
 The reason I cared enough to build this loop was practical. A while back I wanted a feature in Argo CD: [issue #18000 — `syncPolicy.DisableHelmChartCache=true`](https://github.com/argoproj/argo-cd/issues/18000). Leland Knight had opened it, we had been discussing it, and I decided to try building the fix myself.
 
@@ -34,29 +34,38 @@ The problem is what happens after years of real moments: you do not get a clean 
 
 This is the part of open source we under-talk about. We measure time-to-first-issue, time-to-merge, review latency, CI health, and coverage. Those are all useful. But there is another metric hiding underneath them: how long does it take a motivated contributor to reach the first useful breakpoint?
 
-## What the loop actually runs
+## What the Aspire AppHost Runs
 
 Quick refresher before the topology: Aspire is a code-first, polyglot orchestrator for distributed apps. Containers, processes, cloud resources, dependencies, endpoints, health, and startup ordering live together in the AppHost resource graph. The shortest version lives at [aspire.dev](https://aspire.dev): compose, debug, and deploy distributed applications from code.
 
 For cloud-native inner loops, the missing piece is often the cluster, and that is where `CommunityToolkit.Aspire.Hosting.Kind` comes in. It gives the AppHost a real local Kubernetes cluster as a first-class Aspire resource instead of a paragraph in a README that says, "Before you start, create a cluster and apply these things."
 
-The Argo CD topology is deliberately split: Kind holds state, Redis runs in a container, and the editable Argo CD processes run as host executables. The cluster does **not** run the Argo CD Deployments in this loop. It provides the Kubernetes API, CRDs, ConfigMaps, Secrets — Kubernetes objects for sensitive values — and state texture the controllers need; the code I want to edit runs on my machine, close to the debugger.
+### Kind Holds State; Host Processes Stay Debuggable
+
+The Argo CD topology is deliberately split: **Kind holds state**, Redis runs in a container, and the editable Argo CD processes run as host executables. The cluster does **not** run the Argo CD Deployments in this loop. It provides the Kubernetes API, CRDs, ConfigMaps, Secrets — Kubernetes objects for sensitive values — and state texture the controllers need; the code I want to edit runs on my machine, close to the debugger.
 
 ![Diagram of the Argo CD Aspire inner loop split: seven Go control-plane processes and Redis running on the laptop, a Kind cluster holding CRDs, RBAC, and argocd-cm, and KUBECONFIG connecting the host processes to the cluster](/assets/aspire-argocd-inner-loop/what-runs-where.svg)
+
+### The Cluster Bootstrap Lives in the Graph
 
 The actual cluster wiring in this branch is small. The AppHost derives a per-checkout cluster name, renders the Argo CD state manifest, then creates a persistent Kind cluster and applies that generated manifest:
 
 ```csharp
+// Give each checkout a stable, repo-derived cluster name.
 var kindClusterName = ArgoCdClusterName.Resolve(repoRoot);
+
+// Render only the Kubernetes state Argo CD needs locally: CRDs, RBAC, ConfigMaps, Secrets.
 var stateManifestPath = ArgoCdManifestSet.RenderStateOnlyManifest(
     Path.Combine(AppContext.BaseDirectory, "generated", "argocd-state.yaml"),
     enableDex);
 
+// Model the Kind cluster as part of the Aspire graph, then apply the generated manifest.
 var cluster = builder
     .AddKindCluster(kindClusterName)
     .WithClusterLifetime(ClusterLifetime.Persistent)
     .WithManifest(stateManifestPath);
 
+// Put contributor operations on the resource that owns them.
 cluster
     .WithRepoServerOverrideCommand()
     .WithDeleteClusterCommand()
@@ -75,9 +84,11 @@ Startup order is part of that same topology. Every component that reads Kubernet
 
 That is the difference I care about. The README can still explain the loop, but the graph carries the loop. A `.WaitFor(cluster)` edge is not glamorous; it is exactly the kind of platform detail that makes a contributor loop feel reliable.
 
-## The dashboard buttons matter too
+## Dashboard Commands as Contributor Tools
 
 Once that graph is visible, the dashboard is not just a prettier `ps`. The Kind cluster resource also carries three commands: show admin credentials, delete the cluster, and rebuild `repo-server` from the current source. That matters because in the normal Kubernetes loop, these operations usually live as shell incantations in docs. Attached to the resource, they become part of the loop: discoverable, cross-platform, and close to the thing they operate on.
+
+### Rebuild repo-server from source
 
 The most interesting one is **Rebuild repo-server (source override)**. The default loop runs Argo CD's Go processes on the laptop because that is what makes F5 and Delve useful. But sometimes I want the in-cluster path too: build the real `argocd-repo-server` image from the current tree, load it into Kind, patch the Deployment, restart it, and confirm the new binary is the one running. That is a lot of small steps to ask a contributor to assemble by hand.
 
@@ -90,6 +101,7 @@ public static string ComputeTag(string shortGitCommit, bool dirty, DateTimeOffse
 {
     ArgumentException.ThrowIfNullOrEmpty(shortGitCommit);
 
+    // Keep the tag explainable: commit, tree state, and a timestamp Kind cannot cache away.
     var suffix = dirty ? "dirty" : "clean";
     var timestamp = utcNow.UtcDateTime.ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture);
     return $"{shortGitCommit}-{suffix}-{timestamp}";
@@ -98,13 +110,15 @@ public static string ComputeTag(string shortGitCommit, bool dirty, DateTimeOffse
 
 So a local build looks like `7ca0120-dirty-20260722T193201Z`, and the timestamp means Kind sees a new image every time instead of quietly reusing a cached tag. I like that `ComputeTag` is deliberately a tiny pure function too; the test project can prove the tag shape and distinct-timestamp behavior without needing Docker, Kind, or git.
 
+### Credentials and teardown
+
 The smaller commands make the same argument. **Show admin credentials** runs Kubernetes' command-line client, `kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath={.data.password}`, and decodes the password in managed code instead of asking everyone to pipe through `base64 -d`, which is fine until the contributor is on Windows without a POSIX shell. It also knows this loop starts `api-server` with `--disable-auth=true`. In that mode the secret is not there because no password is needed, so the command returns a successful explanation instead of dumping a raw Kubernetes error on the person who clicked the button.
 
 **Delete Kind cluster (clean shutdown)** is there for the opposite end of the loop. The dashboard command runs `kind delete cluster --name ...`, waits for it to finish, and then best-effort removes the generated kubeconfig. The important bit is the wait: resource commands are awaited by the Aspire dashboard and CLI, while process shutdown is allowed to move on. Teardown is not just a line in a README; it is an operation the tool can own to completion.
 
 That is why `WithCommand`, Aspire's way to attach dashboard and CLI actions to a resource, feels bigger here than a convenience API. It gives local platform work a home. A multi-step rebuild, a cross-platform credential helper, and a clean teardown button sit on the resource that needs them, next to logs and health, instead of hiding in paragraphs a contributor has to find before they can use the system.
 
-## Health that means something
+## Health Checks That Mean Something
 
 Green should mean the endpoint a contributor needs is actually answering, not merely that a process launched. That is why the AppHost wires explicit checks with `WithHttpHealthCheck(path, endpointName: ...)`: `api-server` checks `/api/version`, `repo-server` checks `/healthz` on its metrics endpoint at port 8084, `commit-server` checks `/healthz` on its metrics endpoint at port 8087, and the UI checks `/`.
 
@@ -114,78 +128,181 @@ The result is exactly the direction I want: Aspire marks the resource healthy on
 
 That is the earned claim: seven Go control-plane components as host executables, Redis as a container, a Kind cluster holding state only, the UI answering on `:4000`, `api-server` answering `/api/version`, and F5 hitting a Go breakpoint. The AppHost does not make Argo CD simple. Good. Argo CD is not simple. The AppHost makes the local topology visible enough that the health signal means what it says.
 
-## The cheap test for the expensive lesson
+## End-to-End Testing the Real GitOps Loop
 
-Running the full loop is still the only proof that the loop runs. But not every lesson from the loop has to stay expensive forever.
+Running the full loop is still the only proof that the loop runs. But the useful testing split is not "graph tests versus real runs." It is **cheap checks for the topology** and **one real local run for the behavior nothing cheaper can prove**.
 
-The startup-order contract now has a regression test built with `DistributedApplicationTestingBuilder`, which builds the AppHost's resource graph in memory without starting anything. No Docker. No Kind. No Go build. It can run in CI on any machine in milliseconds, which is a very different beast from "please launch the whole cloud-native sandwich and hope the laptop is in a good mood."
+The cheap tests still matter. `ResourcesWithHttpEndpoints_HaveHealthChecks` checks that every resource with an HTTP endpoint has a health check annotation, so health stays part of the topology the next time someone adds an endpoint. That runs without Docker, Kind, Go builds, or network access.
 
-Here is the test:
+But the interesting test is the expensive one: `WhenCanonicalGuestbookApplicationIsApplied_ThenArgoCdSyncsItAndKindRunsIt`. It is gated behind `ARGOCD_ASPIRE_E2E=1` because it needs Docker, Kind, Go, `kubectl`, Node/pnpm, and outbound access to GitHub. On this branch, it takes about six minutes. That is not "run this every time you save a file" feedback. It is pre-merge or nightly confidence.
 
-```csharp
-[Fact]
-public async Task ComponentsThatReadArgocdCm_WaitForTheKindCluster()
-{
-    await using var builder = await CreateAppHostBuilderAsync();
+The real test file keeps some of the plumbing in helpers because that is the right shape for maintainable test code. For the post, here is the same test with the mechanics inlined so you can see what it is actually proving.
 
-    var cluster = Assert.Single(builder.Resources, r => r.Name.StartsWith("argocd-dev-", StringComparison.Ordinal));
-    var clusterReaders = builder.Resources
-        .OfType<GoAppResource>()
-        .Where(ReceivesKubeconfig)
-        .ToArray();
+### Step 1: Start the AppHost and Wait for Argo CD
 
-    Assert.NotEmpty(clusterReaders);
-    Assert.All(clusterReaders, component =>
-    {
-        Assert.Contains(
-            component.Annotations.OfType<WaitAnnotation>(),
-            wait => wait.Resource == cluster);
-    });
-}
-```
-
-This is the first test in this project that uses `DistributedApplicationTestingBuilder`; the existing tests did not. The detail I like is that it does not list today's component names. It derives the set. `ReceivesKubeconfig` is a small local helper that asks each Go resource for its environment and checks whether it receives `KUBECONFIG`. So the assertion is not "these named processes wait for the cluster." It is "everything that reads cluster state waits for the cluster." If another Go component gets added next month and receives a kubeconfig, it is covered automatically.
-
-`Assert.NotEmpty` is there on purpose too. Without it, a bug in the detection logic could make the set empty, and the test would pass by asserting nothing at all — green for exactly the wrong reason.
-
-This is the relationship I want between tests and the running loop: the test cannot tell me that F5 hits a Go breakpoint, that the UI answers on port 4000, or that the cluster has exactly the state I need. Only running the loop can do that. But the graph test can pin the shape that the loop depends on.
-
-There is now a companion test, `ResourcesWithHttpEndpoints_HaveHealthChecks`, that does the same kind of derived assertion for health: every resource with an HTTP endpoint must have a health check annotation. I do not need to quote it in full because the pattern is the same. The value is that health stays part of the topology the next time someone adds an endpoint.
-
-And then expensive end-to-end coverage earned its place too.
-
-The guestbook path is gated behind `ARGOCD_ASPIRE_E2E=1` because it needs Docker, Kind, Go, and network access to GitHub. In practice, it takes about six minutes, so it is not "run this every time you save a file" territory. It starts the real AppHost, waits for the API server and `application-controller`, applies the canonical guestbook `Application`, and then asks a simple behavioral question:
+First, the test starts the real AppHost. No mocked API server, no fake cluster, no "trust me, the controller would have started." It builds the same Aspire model a contributor uses and waits for the Argo CD control plane the same way you would: are the servers up?
 
 ```csharp
-[Fact]
-public async Task WhenCanonicalGuestbookApplicationIsApplied_ThenArgoCdSyncsItAndKindRunsIt()
-{
-    var applicationName = CreateApplicationName();
-    await RunGuestbookScenarioAsync(applicationName, async (_, cluster, httpClient, _, cancellationToken) =>
-    {
-        await ThenArgoCdReportsExpectedGuestbookResourcesAsync(httpClient, applicationName, cancellationToken);
-        await ThenKindRunsGuestbookWorkloadAsync(cluster.KubeconfigPath, cancellationToken);
-    });
-}
+// Build the same AppHost a contributor starts from VS Code or the CLI.
+await using var builder = await DistributedApplicationTestingBuilder
+    .CreateAsync<Projects.ArgoCd_Aspire_AppHost>();
+
+// The Kind cluster is part of the Aspire model, so the test can use its kubeconfig.
+var cluster = builder.Resources.OfType<KindClusterResource>().Single();
+
+await using var app = await builder.BuildAsync(cancellationToken);
+await app.StartAsync(cancellationToken);
+
+// Wait for the Argo CD control plane, not just for processes to exist.
+await app.ResourceNotifications.WaitForResourceHealthyAsync("repo-server", cancellationToken);
+await app.ResourceNotifications.WaitForResourceHealthyAsync("commit-server", cancellationToken);
+await app.ResourceNotifications.WaitForResourceHealthyAsync("api-server", cancellationToken);
+await app.ResourceNotifications.WaitForResourceAsync(
+    "application-controller", KnownResourceStates.Running, cancellationToken);
 ```
 
-The shape is the point. It reads as behavior, not mechanics. The Argo CD API calls and Kubernetes queries live in helpers, but the guarantee is in the body: Argo CD reports expected resources, and Kind runs the workload. A synced Argo CD Application is not the same as usable Kubernetes objects.
+That is already more valuable than a topology assertion. The **real AppHost** has to build, the fixed ports have to be free, the host processes have to launch on the current OS, and Aspire has to resolve the endpoints it modeled.
 
-The UI-side test, `WhenCanonicalGuestbookApplicationIsApplied_ThenArgoCdUiShowsItHealthyAndSynced`, uses Playwright to open the real Argo CD UI and confirm the same human-visible `Synced` and `Healthy` state. It passes; it does not skip.
+### Step 2: Apply the Guestbook Application
 
-One Argo CD API detail was worth learning in the real loop: `/api/v1/applications/{name}/resource-tree` looks obvious, but here it consistently returns a 500 with `error getting cached app resource tree: EOF` because it is backed by Argo CD's Redis-cached tree. `status.resources[]` on the Application object itself is stable, so the test reads that instead.
+Then the test writes a real Argo CD `Application` manifest and applies it with `kubectl` against the Kind kubeconfig. The Application points at Argo CD's canonical guestbook sample, enables automated sync, and asks Argo CD to create the target namespace.
 
-That is not inner-loop feedback. That is pre-merge or nightly confidence. That real run covers defect classes the graph cannot see.
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aspire-e2e-guestbook-<unique-suffix>
+  namespace: default
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/argoproj/argocd-example-apps
+    targetRevision: HEAD
+    path: guestbook
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd-aspire-e2e-guestbook
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+```
 
-One is resolved ports. The topology can ask Redis to prefer host port `6379`, while a Go component can still hardcode `--redis localhost:6379`, copied from Argo CD's Procfile. In Aspire, a preferred port is not a promise: if the port is taken, Aspire allocates another host port, and the failure surfaces as Redis authentication noise instead of an obvious conflict. The fix was to thread Aspire's resolved endpoint through `REDIS_SERVER` instead of trusting the literal.
+```csharp
+// Create the Argo CD Application through the Kubernetes API, just like a real user would.
+await Kubectl(
+    "apply",
+    "-f", applicationManifestPath,
+    "--kubeconfig", cluster.KubeconfigPath);
+```
 
-Another is OS-specific process launch. `repo-server` shells out to `git-verify-wrapper.sh` during manifest generation, and Go's `exec` cannot run a `.sh` file on Windows. The sync symptom is a bare `EOF`, far away from the actual cause. The fix was a small Windows executable shim in the wrapper's place.
+Now the test has stopped checking whether the graph is plausible and started checking whether the **GitOps loop** works: Argo CD has to fetch from GitHub, render the guestbook manifests, and reconcile them into the local cluster.
 
-That is the useful boundary. The topology tests can prove the graph shape: anything that receives `KUBECONFIG` waits for the cluster, and anything with an HTTP endpoint has a health check. They cannot prove that a preferred port became the actual port, or that a helper executable can launch on the current OS, or that a real guestbook Application reaches `Healthy`. The graph was correct; the values were wrong.
+### Step 3: Ask Argo CD What It Synced
 
-So I want both. Cheap graph tests on every change. One expensive real run when the branch is ready for merge, or on a nightly schedule. Different costs, different questions, both worth answering.
+Next, the test asks Argo CD through its own API. The important detail is that Aspire resolves the `api-server` endpoint from the model, so the test does not hardcode `localhost:8080` and then pretend that is the same thing as the running topology.
 
-## The machine can use the same loop
+```csharp
+// Aspire resolves the api-server endpoint from the model — no hardcoded localhost:8080.
+var argoCd = app.CreateHttpClient("api-server", "http");
+
+// Poll until the Application reports Synced and Healthy.
+var response = await argoCd.GetAsync(
+    $"/api/v1/applications/{applicationName}?appNamespace=default&refresh=normal",
+    cancellationToken);
+
+using var document = JsonDocument.Parse(
+    await response.Content.ReadAsStringAsync(cancellationToken));
+var status = document.RootElement.GetProperty("status");
+
+Assert.Equal("Synced", status.GetProperty("sync").GetProperty("status").GetString());
+Assert.Equal("Healthy", status.GetProperty("health").GetProperty("status").GetString());
+
+// status.resources[] is what Argo CD believes it manages.
+var managed = status.GetProperty("resources");
+```
+
+The assertion is intentionally exact. The real test requires **exactly** these managed objects:
+
+- `Deployment/guestbook-ui`
+- `Service/guestbook-ui`
+
+Both must be `Synced`, and each must be `Healthy` when Argo CD reports health for it. `requireExactSet: true` matters because it catches a **partial sync** and an accidental extra object, not just a total failure.
+
+One Argo CD API detail was worth learning in the real loop: `/api/v1/applications/{name}/resource-tree` looks obvious, but here it consistently returns a 500 with `error getting cached app resource tree: EOF` because it is backed by Argo CD's Redis-cached tree. `status.resources[]` on the Application object itself is stable, so the test reads that instead. That is the kind of detail you only get from running the actual system.
+
+### Step 4: Ask Kubernetes What Is Actually Running
+
+This is the step that matters most. **Argo CD grading its own homework proves nothing.** A controller saying "Synced" is useful, but the cluster is the system of record for whether a workload is actually running.
+
+So the test asks Kind directly:
+
+```csharp
+// Argo CD believing a sync worked is not the same as the workload running.
+await Kubectl(
+    "wait",
+    "--for=condition=available",
+    "deployment/guestbook-ui",
+    "-n", "argocd-aspire-e2e-guestbook",
+    "--timeout=180s",
+    "--kubeconfig", cluster.KubeconfigPath);
+
+// Read the actual Kubernetes Deployment from the cluster.
+var deployment = await KubectlGetJson(
+    "deployment",
+    "guestbook-ui",
+    "-n", "argocd-aspire-e2e-guestbook",
+    "--kubeconfig", cluster.KubeconfigPath);
+
+Assert.Equal(1, deployment.Spec.Replicas);
+Assert.Equal(1, deployment.Status.ReadyReplicas);
+Assert.True(deployment.Status.AvailableReplicas >= 1);
+Assert.Equal("guestbook-ui", deployment.Spec.Selector.MatchLabels["app"]);
+```
+
+The real code also checks the `Service/guestbook-ui`: it must select `app=guestbook-ui` and expose port `80` to target port `80`. That extra service check is not decorative. It catches the difference between "the Deployment eventually became available" and "the guestbook shape Argo CD applied is actually usable."
+
+This is the useful boundary: the topology test can prove the graph shape, but it cannot prove that a preferred port became the actual port, that a Windows process can launch the helper executable, or that a real guestbook Application reaches `Healthy`. The graph was correct; the values were wrong.
+
+### Step 5: Open the UI with Playwright
+
+The UI test uses the same scenario and then opens the real Argo CD UI with Playwright. Again, Aspire resolves the endpoint from the model; the test does not guess the browser URL.
+
+```csharp
+// Aspire resolves the UI endpoint too.
+using var uiClient = app.CreateHttpClient("ui", "http");
+
+using var playwright = await Playwright.CreateAsync();
+await using var browser = await playwright.Chromium.LaunchAsync(new() { Headless = true });
+var page = await browser.NewPageAsync();
+
+await page.GotoAsync(
+    new Uri(uiClient.BaseAddress!, "applications").ToString(),
+    new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
+
+// api-server runs with --disable-auth=true, so there is no login step.
+Assert.DoesNotContain("/login", page.Url);
+
+await Expect(page.GetByText(applicationName).First).ToBeVisibleAsync();
+await Expect(page.GetByText("Synced").First).ToBeVisibleAsync();
+await Expect(page.GetByText("Healthy").First).ToBeVisibleAsync();
+```
+
+The real test clicks into the application detail page, also checks for `guestbook-ui`, and saves a screenshot under `contrib/aspire-dev/.e2e/`, which makes UI failures much easier to diagnose after the fact.
+
+### What the Real Run Catches
+
+Two bugs from this branch explain why the expensive test earned its place.
+
+One was resolved ports. The topology can ask Redis to prefer host port `6379`, while a Go component can still hardcode `--redis localhost:6379`, copied from Argo CD's Procfile. In Aspire, a preferred port is not a promise: if the port is taken, Aspire allocates another host port, and the failure surfaces as Redis authentication noise instead of an obvious conflict. The fix was to thread Aspire's resolved endpoint through `REDIS_SERVER` instead of trusting the literal.
+
+Another was OS-specific process launch. `repo-server` shells out to `git-verify-wrapper.sh` during manifest generation, and Go's `exec` cannot run a `.sh` file on Windows. The sync symptom is a bare `EOF`, far away from the actual cause. The fix was a small Windows executable shim in the wrapper's place.
+
+So I want both kinds of tests. Cheap graph checks on every change. One expensive real run when the branch is ready for merge, or on a nightly schedule. Different costs, different questions, both worth answering.
+
+## Why Agents Can Use the Same Loop
 
 There is another consequence hiding in the same shape: anything an agent can execute and observe, it can start to work with. A setup guide is neither. A traditional cloud-native inner loop assumes a human who can read between the lines: install these tools, run this script, remember the Windows note halfway down the next page, and if the controller does not start, try to guess which generated file you missed. That is hard enough for a person on day one. For an agent, it is mostly fog. It cannot reliably know whether step four worked, why a pod is unhealthy, or which of six diagnostic commands answers "is the system up yet?"
 
@@ -195,7 +312,7 @@ That is not theoretical hand-waving. The same surface is useful to a developer a
 
 None of this makes the hard parts free. The end-to-end GitOps test works, but five minutes plus Docker, Kind, Go, and network access is a real cost. A machine-readable environment does not mean every workflow belongs in the keystroke loop, or that every workflow is now automatable. It means the observable parts are observable by anyone: the maintainer, the contributor who joined last week, and the agent that has no tribal knowledge at all. In that sense, an agent is just the most extreme newcomer. If the loop is discoverable enough, has one entry point, reports structured state, and keeps its operations with the code, then optimizing for the confused human on day one turns out to produce something a machine can drive too.
 
-## The practical friction drawer
+## Practical Local Development Notes
 
 One practical note for large Go repos: `dlv debug` compiles with optimizations disabled, which means it uses a different build-cache entry from `go build`, so a cold debug build of Argo CD's `./cmd` can take several minutes. The launch configuration sets `DCP_IDE_REQUEST_TIMEOUT_SECONDS` in `.vscode/launch.json`, so the debug session gets the time budget this repo needs.
 
@@ -203,7 +320,7 @@ The launch config also keeps `"dashboardBrowser": "openExternalBrowser"`, which 
 
 One more local-development thing: every `dlv debug` run leaves a `__debug_bin*.exe` next to the package being debugged. In this repo, they are large debug binaries, so `.gitignore` excludes them. Not a grand architectural point. Just the kind of repo hygiene that keeps the inner loop from leaving souvenirs in the working tree.
 
-## The contribution shape
+## How the Contribution Is Packaged
 
 The sample started life as a standalone companion repo, and that first shape was useful because it let me move fast without pretending I understood the upstream contribution path yet. But it also recreated the exact onboarding smell this post is about: one repo had the AppHost, another repo had Argo CD, and then a helper had to wander around the filesystem trying to find the checkout it was supposed to orchestrate. That worked, but it was a polite way of saying "please solve path discovery before you can solve the real problem."
 
@@ -238,7 +355,7 @@ VS Code prompts for the recommended extensions because the repo includes `.vscod
 
 One clone. No path wiring. No script whose main job is to go fetch the real project from somewhere else. The command-line path still exists for automation and constrained machines, but it is no longer the ceremony at the front door.
 
-## The thesis, now with a breakpoint
+## Conclusion
 
 Here is the careful version of the disruption claim: Aspire does not replace Kubernetes, and that is not the interesting sentence. I do not want a local orchestrator pretending production does not exist. I do not want to hide the cluster from platform engineers. The cluster is the thing. Kubernetes is still where the CRDs live, where the API server enforces reality, where controllers observe state, and where production texture matters.
 
@@ -280,3 +397,8 @@ code .
 Then VS Code recommends the extensions, **F5** starts the AppHost, the dashboard opens, and the contributor gets the graph, logs, project-specific commands, and a real Go breakpoint.
 
 That is days into minutes, but more importantly it is the onboarding fix living inside the project that needs it. That is the part I have been waiting for.
+
+## Related Posts
+
+- [Part 1: When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering]({% post_url 2026-07-28-aspire-kubernetes-operator-inner-loop %})
+- [Part 3: The Same Operator Loop, in TypeScript — The AppHost Moves, the Topology Stays](/blog/2026/08/02/aspire-typescript-kubernetes-operator.html)
