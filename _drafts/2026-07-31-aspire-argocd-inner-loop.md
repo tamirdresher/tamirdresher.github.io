@@ -390,9 +390,9 @@ NAME                                      DESIRED   CURRENT   READY   AGE
 replicaset.apps/guestbook-ui-5d6468fd55   1         1         1       3m32s
 ```
 
-<!-- SCREENSHOT: kubectl get all -n guestbook showing the synced guestbook workload -->
+![Terminal showing kubectl get application reporting guestbook as Synced and Healthy, followed by kubectl get all -n guestbook listing an ordinary Pod, Service, Deployment and ReplicaSet](/assets/aspire-argocd-inner-loop/guestbook-synced-kubectl.png)
 
-That output is the point of the loop. A controller cloned a Git repository, rendered its manifests, and created ordinary Kubernetes objects. The screenshot is useful because nothing in it looks special: a Pod, a Service, a Deployment, and a ReplicaSet, all shaped exactly like a normal Kubernetes workload.
+That output is the point of the loop. A controller cloned a Git repository, rendered its manifests, and created ordinary Kubernetes objects. Nothing in it looks special: a Pod, a Service, a Deployment, and a ReplicaSet, all shaped exactly like a normal Kubernetes workload.
 
 The difference is where the controller is running. It is a process on the laptop, under a debugger, with a breakpoint available in `controller/appcontroller.go` during the reconcile. Set that breakpoint before you apply the `Application`, and you can catch the sync in flight instead of trying to reason about it after the fact.
 
