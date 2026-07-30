@@ -264,7 +264,7 @@ Assert.Equal("guestbook-ui", deployment.Spec.Selector.MatchLabels["app"]);
 
 The real code also checks the `Service/guestbook-ui`: it must select `app=guestbook-ui` and expose port `80` to target port `80`. That extra service check is not decorative. It catches the difference between "the Deployment eventually became available" and "the guestbook shape Argo CD applied is actually usable."
 
-This is the useful boundary: the topology test can prove the graph shape, but it cannot prove that a preferred port became the actual port, that a Windows process can launch the helper executable, or that a real guestbook Application reaches `Healthy`. The graph was correct; the values were wrong.
+This is the useful boundary. Building the resource graph in memory can prove the shape of the system: which resources exist, what waits for what, which endpoints carry health checks. It cannot prove that a preferred port became the actual port, that a Windows process can launch a helper executable, or that a real guestbook Application reaches `Healthy`. The graph was correct; the values were wrong.
 
 ### Step 5: Open the UI with Playwright
 
