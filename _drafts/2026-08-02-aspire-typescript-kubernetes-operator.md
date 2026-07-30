@@ -246,18 +246,38 @@ mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 
 ### The Current F5 Boundary
 
-Here is the honest caveat for the TypeScript sample as it exists today: this post claims terminal-run parity today, not verified one-key F5 parity. The checked-in `.vscode/launch.json` points at the C# AppHost, and there is no TypeScript-specific launch configuration under `ts-apphost/`, so the TypeScript AppHost currently starts from the integrated terminal:
+The F5 story is better now, but it still deserves a careful sentence. The sample repo has a TypeScript launch configuration checked into the root `.vscode/launch.json` alongside the C# one:
 
-```powershell
-cd aspire-kubernetes-operator-sample\ts-apphost
-npm install
-aspire restore
-npm run build
-$env:GOMAXPROCS = "2"
-aspire run
+```jsonc
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Aspire AppHost",
+      "type": "aspire",
+      "request": "launch",
+      "program": "${workspaceFolder}/apphost/GreeterOperator.AppHost.csproj"
+    },
+    {
+      "name": "Debug Aspire TypeScript AppHost",
+      "type": "aspire",
+      "request": "launch",
+      "program": "${workspaceFolder}/ts-apphost/apphost.mts",
+      "env": {
+        "DCP_IDE_REQUEST_TIMEOUT_SECONDS": "900"
+      }
+    }
+  ]
+}
 ```
 
-`npm install` pulls the TypeScript-side tools and the runtime dependency the generated Aspire SDK uses to talk to the Aspire runtime. `aspire restore` regenerates the local SDK from `aspire.config.json`. `npm run build` proves the AppHost compiles before the runtime starts it.
+That is a nice little design point: **one VS Code debug type, two AppHost languages**. The Aspire extension treats `program` as a file path. When it points at a `.csproj`, the C# AppHost path runs. When it points at `apphost.mts`, the extension runs `aspire run --apphost <program>` from that file's directory, classifies the file as a TypeScript AppHost, and routes it through the Node AppHost path.
+
+The `DCP_IDE_REQUEST_TIMEOUT_SECONDS` value is the same kind of guard as in the Argo CD post: it raises DCP's default request timeout so a cold Go debug build has time to finish instead of losing the race to startup plumbing.
+
+What I can say now is stronger than the earlier caveat: the launch configuration exists, the TypeScript AppHost runs through the same Aspire debug type, and DCP maps Go resources to the `golang.go` extension and `dlv-dap`, which is the same underlying Go debugging mechanism the C# AppHost path uses.
+
+The remaining caveat is narrow and important: I have not yet confirmed a bound Go breakpoint from the TypeScript launch path in an interactive VS Code session, so I am not claiming verified F5 parity with the C# post. The terminal path below is still the reproducible path this post walks through.
 
 When the dashboard opens, the graph is the same shape as the C# version: `dev-cluster` is the Kind cluster, `greeter-crd` applies the CRD, and `greeter-operator` starts after both are ready. The custom dashboard buttons from the C# AppHost are not wired into this TypeScript sample yet. The generated TypeScript SDK exposes `withCommand`, so that is sample parity work, not a platform wall.
 
@@ -267,7 +287,7 @@ Start with Docker Desktop running and the prerequisites from the sample README i
 
 ### Start the TypeScript AppHost
 
-From the TypeScript AppHost folder:
+From VS Code, choose **Debug Aspire TypeScript AppHost** to launch the `.mts` AppHost through the Aspire extension. For the reproducible terminal path, use the TypeScript AppHost folder directly:
 
 ```powershell
 cd aspire-kubernetes-operator-sample\ts-apphost
@@ -421,7 +441,7 @@ The Kind story is also real. `CommunityToolkit.Aspire.Hosting.Kind` comes throug
 
 The dashboard experience is real where the sample models resources: logs, state, dependencies, restart controls, and the same resource graph. The missing custom commands are a sample gap. The generated TypeScript SDK already has the shape needed to add buttons like **Apply Greeter** or **Delete all Greeters**.
 
-The debugger story is the next place for sample polish. The operator process is still a plain Go process, and `packagePath: '.'` gives the Go integration the right package shape. The remaining work is to add the TypeScript VS Code launch entry that connects that process shape to Delve.
+The debugger story is partially in place now. The TypeScript VS Code launch entry exists, it points at `ts-apphost/apphost.mts`, and the Aspire extension resolves that file through the Node AppHost path while DCP uses the same `golang.go` / `dlv-dap` route for Go resources. The remaining unverified piece is the visible one: pressing F5 in VS Code and seeing the Go breakpoint bind from the TypeScript path.
 
 ## Conclusion
 
