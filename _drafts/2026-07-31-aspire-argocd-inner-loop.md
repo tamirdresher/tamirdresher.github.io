@@ -311,11 +311,16 @@ Once the AppHost is running, the loop is useful because you can drive it like a 
 
 ### Start the AppHost and point kubectl at the cluster
 
+Press **F5** in VS Code, or start it from a terminal:
+
 ```powershell
 cd contrib/aspire-dev
-aspire start --non-interactive
+aspire run
+```
 
-# The AppHost writes a kubeconfig for the Kind cluster it created
+`aspire run` keeps the AppHost in the foreground and streams its output, which is what you want while working. Either way, the AppHost writes a kubeconfig for the Kind cluster it created:
+
+```powershell
 $env:KUBECONFIG = "$env:LOCALAPPDATA\Temp\aspire-kind\<cluster-name>\kubeconfig.yaml"
 kubectl get nodes
 ```

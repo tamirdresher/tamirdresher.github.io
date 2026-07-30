@@ -98,7 +98,7 @@ Here is the honest caveat for the TypeScript sample as it exists today: this pos
 ```powershell
 cd aspire-kubernetes-operator-sample\ts-apphost
 npm install
-aspire restore --non-interactive
+aspire restore
 npm run build
 $env:GOMAXPROCS = "2"
 aspire run
