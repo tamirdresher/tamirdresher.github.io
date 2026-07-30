@@ -405,26 +405,17 @@ That output is the point of the loop. A controller cloned a Git repository, rend
 
 The difference is where the controller is running. It is a process on the laptop, under a debugger, with a breakpoint available in `controller/appcontroller.go` during the reconcile. Set that breakpoint before you apply the `Application`, and you can catch the sync in flight instead of trying to reason about it after the fact.
 
-### Use the argocd CLI
-
-The `argocd` CLI does not need to be installed separately. The running `api-server` serves the Windows binary:
-
-```powershell
-curl -o argocd.exe http://localhost:8080/download/argocd-windows-amd64.exe
-
-.\argocd.exe login localhost:8080 --plaintext --insecure --username admin --password ""
-.\argocd.exe app list
-.\argocd.exe app get guestbook
-.\argocd.exe app sync guestbook
-```
-
-The login is mostly a formality in this loop because `api-server` runs with `--disable-auth=true`. That is the same behavior the **Show admin credentials** dashboard command explains when the admin Secret is absent: no password is required unless you re-enable auth yourself.
-
 ### Clean up
 
 Use the **Delete Kind cluster (clean shutdown)** dashboard command from the previous section when you want to remove the persistent cluster. That keeps cleanup attached to the resource that owns the cluster, instead of turning teardown back into a separate shell ritual.
 
 ## End-to-End Testing the Real GitOps Loop
+
+Everything above was driven by hand. The same graph can be driven by a test.
+
+This is the part that tends to surprise people coming from the Kubernetes side. The AppHost is not a script that happens to start some processes — it is a **model of the application**, and Aspire can hand that model to a test project. `DistributedApplicationTestingBuilder` builds the same graph the dashboard shows, starts it, and gives the test typed access to every resource in it: wait for `api-server` to become healthy, ask Aspire for the URL it allocated, read the Kind cluster's kubeconfig path. No hardcoded ports, no separate docker-compose file for CI, no second definition of the environment that drifts from the first.
+
+So the environment you debug and the environment you test are the same declaration. That is what makes a genuine end-to-end test practical here rather than aspirational.
 
 Running the full loop is still the only proof that the loop runs. But the useful testing split is not "graph tests versus real runs." It is **cheap checks for the topology** and **one real local run for the behavior nothing cheaper can prove**.
 
