@@ -154,7 +154,26 @@ There is now a companion test, `ResourcesWithHttpEndpoints_HaveHealthChecks`, th
 
 And then expensive end-to-end coverage earned its place too.
 
-The guestbook path is gated behind `ARGOCD_ASPIRE_E2E=1` because it needs Docker, Kind, Go, and network access to GitHub. In practice, it takes about five minutes, which is not "run this every time you save a file" territory. But it now starts the real AppHost, waits for the API server and `application-controller`, applies an Argo CD `Application` for the canonical guestbook example, watches it move from `OutOfSync` and `Missing` to `Synced` and `Healthy`, asks the Argo CD API for the same answer, and verifies that Kind has `deployment/guestbook-ui` in the expected namespace.
+The guestbook path is gated behind `ARGOCD_ASPIRE_E2E=1` because it needs Docker, Kind, Go, and network access to GitHub. In practice, it takes about six minutes, so it is not "run this every time you save a file" territory. It starts the real AppHost, waits for the API server and `application-controller`, applies the canonical guestbook `Application`, and then asks a simple behavioral question:
+
+```csharp
+[Fact]
+public async Task WhenCanonicalGuestbookApplicationIsApplied_ThenArgoCdSyncsItAndKindRunsIt()
+{
+    var applicationName = CreateApplicationName();
+    await RunGuestbookScenarioAsync(applicationName, async (_, cluster, httpClient, _, cancellationToken) =>
+    {
+        await ThenArgoCdReportsExpectedGuestbookResourcesAsync(httpClient, applicationName, cancellationToken);
+        await ThenKindRunsGuestbookWorkloadAsync(cluster.KubeconfigPath, cancellationToken);
+    });
+}
+```
+
+The shape is the point. It reads as behavior, not mechanics. The Argo CD API calls and Kubernetes queries live in helpers, but the guarantee is in the body: Argo CD reports expected resources, and Kind runs the workload. A synced Argo CD Application is not the same as usable Kubernetes objects.
+
+The UI-side test, `WhenCanonicalGuestbookApplicationIsApplied_ThenArgoCdUiShowsItHealthyAndSynced`, uses Playwright to open the real Argo CD UI and confirm the same human-visible `Synced` and `Healthy` state. It passes; it does not skip.
+
+One Argo CD API detail was worth learning in the real loop: `/api/v1/applications/{name}/resource-tree` looks obvious, but here it consistently returns a 500 with `error getting cached app resource tree: EOF` because it is backed by Argo CD's Redis-cached tree. `status.resources[]` on the Application object itself is stable, so the test reads that instead.
 
 That is not inner-loop feedback. That is pre-merge or nightly confidence. That real run covers defect classes the graph cannot see.
 
