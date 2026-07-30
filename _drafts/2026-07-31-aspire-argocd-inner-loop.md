@@ -300,6 +300,121 @@ The result is exactly the direction I want: Aspire marks the resource healthy on
 
 That is the earned claim: seven Go control-plane components as host executables, Redis as a container, a Kind cluster holding state only, the UI answering on `:4000`, `api-server` answering `/api/version`, and F5 hitting a Go breakpoint. The AppHost does not make Argo CD simple. Good. Argo CD is not simple. The AppHost makes the local topology visible enough that the health signal means what it says.
 
+
+## Try It Yourself
+
+Once the AppHost is running, the loop is useful because you can drive it like a real Argo CD installation while the controller code stays local and debuggable.
+
+### Start the AppHost and point kubectl at the cluster
+
+```powershell
+cd contrib/aspire-dev
+aspire start --non-interactive
+
+# The AppHost writes a kubeconfig for the Kind cluster it created
+$env:KUBECONFIG = "$env:LOCALAPPDATA\Temp\aspire-kind\<cluster-name>\kubeconfig.yaml"
+kubectl get nodes
+```
+
+A healthy cluster looks like this:
+
+```text
+NAME                                      STATUS   ROLES           AGE    VERSION
+argocd-dev-bf7e035b73ad-control-plane     Ready    control-plane   2d9h   v1.36.1
+```
+
+The cluster name is derived from the repository path. That gives each checkout a stable cluster name, and two different checkouts get two different clusters. If you need the exact name, `aspire describe` shows it.
+
+The age in that output is also part of the design. This is a persistent Kind cluster, created with `ClusterLifetime.Persistent`, so it survives stopping and starting the AppHost. Cluster creation is the slow part of the loop; keeping the cluster means the next run can spend its time on the processes I am actually editing.
+
+### Apply a real Argo CD Application
+
+Create a `guestbook.yaml` file with Argo CD's canonical guestbook sample:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: guestbook
+  namespace: default
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/argoproj/argocd-example-apps
+    targetRevision: HEAD
+    path: guestbook
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: guestbook
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+```
+
+Then apply it:
+
+```powershell
+kubectl apply -f guestbook.yaml
+```
+
+The easy detail to miss is `metadata.namespace: default`. This loop runs the control plane against `default`, not the conventional `argocd` namespace. If you put the `Application` in `argocd`, this local controller will never pick it up. That is the trap most likely to catch someone who already knows Argo CD, exactly because the convention is so familiar.
+
+`CreateNamespace=true` means Argo CD creates the destination namespace for the guestbook workload.
+
+### Watch it reconcile
+
+```powershell
+kubectl get application guestbook -n default -w
+```
+
+The Application walks through `OutOfSync / Missing`, then `Synced / Progressing`, and finally `Synced / Healthy`. After that, ask Kubernetes what is actually running:
+
+```powershell
+kubectl get all -n guestbook
+```
+
+```text
+NAME                                READY   STATUS    RESTARTS   AGE
+pod/guestbook-ui-5d6468fd55-g5gvp   1/1     Running   0          3m32s
+
+NAME                   TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE
+service/guestbook-ui   ClusterIP   10.96.7.225   <none>        80/TCP    3m32s
+
+NAME                           READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/guestbook-ui   1/1     1            1           3m32s
+
+NAME                                      DESIRED   CURRENT   READY   AGE
+replicaset.apps/guestbook-ui-5d6468fd55   1         1         1       3m32s
+```
+
+<!-- SCREENSHOT: kubectl get all -n guestbook showing the synced guestbook workload -->
+
+That output is the point of the loop. A controller cloned a Git repository, rendered its manifests, and created ordinary Kubernetes objects. The screenshot is useful because nothing in it looks special: a Pod, a Service, a Deployment, and a ReplicaSet, all shaped exactly like a normal Kubernetes workload.
+
+The difference is where the controller is running. It is a process on the laptop, under a debugger, with a breakpoint available in `controller/appcontroller.go` during the reconcile. Set that breakpoint before you apply the `Application`, and you can catch the sync in flight instead of trying to reason about it after the fact.
+
+### Use the argocd CLI
+
+The `argocd` CLI does not need to be installed separately. The running `api-server` serves the Windows binary:
+
+```powershell
+curl -o argocd.exe http://localhost:8080/download/argocd-windows-amd64.exe
+
+.\argocd.exe login localhost:8080 --plaintext --insecure --username admin --password ""
+.\argocd.exe app list
+.\argocd.exe app get guestbook
+.\argocd.exe app sync guestbook
+```
+
+The login is mostly a formality in this loop because `api-server` runs with `--disable-auth=true`. That is the same behavior the **Show admin credentials** dashboard command explains when the admin Secret is absent: no password is required unless you re-enable auth yourself.
+
+### Clean up
+
+Use the **Delete Kind cluster (clean shutdown)** dashboard command from the previous section when you want to remove the persistent cluster. That keeps cleanup attached to the resource that owns the cluster, instead of turning teardown back into a separate shell ritual.
+
 ## End-to-End Testing the Real GitOps Loop
 
 Running the full loop is still the only proof that the loop runs. But the useful testing split is not "graph tests versus real runs." It is **cheap checks for the topology** and **one real local run for the behavior nothing cheaper can prove**.
