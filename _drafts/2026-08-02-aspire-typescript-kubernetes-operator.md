@@ -2,7 +2,7 @@
 layout: post
 title: "The Same Operator Loop, in TypeScript — The AppHost Moves, the Topology Stays"
 date: 2026-08-02T07:15:00+03:00
-tags: [dotnet-aspire, typescript, platform-engineering, kubernetes, operator, kind, polyglot, inner-loop]
+tags: [aspire, dotnet-aspire, typescript, platform-engineering, kubernetes, operator, kind, polyglot, inner-loop]
 description: "The Greeter operator loop from the C# AppHost post also runs from a TypeScript AppHost: same Kind cluster, same CRD, same Go operator, and the same Aspire dashboard shape."
 ---
 
@@ -165,4 +165,4 @@ Read the root `README.md` for both quickstarts side by side, then pick your lang
 - CommunityToolkit.Aspire.Hosting.Kind on NuGet: <https://www.nuget.org/packages/CommunityToolkit.Aspire.Hosting.Kind>
 - Manifest support PR (`AddManifest` / `AddManifestFromContent`): <https://github.com/CommunityToolkit/Aspire/pull/1481>
 - [When the Cluster Stops Owning the Inner Loop, and Why Aspire Is Quietly Disrupting Platform Engineering]({% post_url 2026-07-28-aspire-kubernetes-operator-inner-loop %})
-- [The First Breakpoint: My Argo CD Story, and Why Aspire Is Quietly Disrupting DevOps]({% post_url 2026-07-31-aspire-argocd-inner-loop %})
+- [The First Breakpoint: My Argo CD Story, and Why Aspire Is Quietly Disrupting DevOps]({% post_url 2026-07-30-aspire-argocd-inner-loop %})

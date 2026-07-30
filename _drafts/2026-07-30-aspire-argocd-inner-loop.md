@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "The First Breakpoint: My Argo CD Story, and Why Aspire Is Quietly Disrupting DevOps"
-date: 2026-07-31T07:15:00+03:00
-tags: [dotnet-aspire, platform-engineering, devops, argo-cd, kubernetes, kind, cncf, inner-loop]
+date: 2026-07-30
+tags: [aspire, dotnet-aspire, platform-engineering, devops, argo-cd, kubernetes, kind, cncf, inner-loop]
 description: "The working Argo CD Aspire AppHost loop: a real F5 Go breakpoint, a Kind cluster holding only state, and repo-owned topology that the next contributor can inherit."
 ---
 
