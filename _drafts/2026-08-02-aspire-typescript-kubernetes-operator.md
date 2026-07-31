@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "You Do Not Need C# to Use Aspire: The Same Kubernetes Operator Loop in TypeScript"
+title: "Aspire for Platform Engineering, Now in TypeScript: Kubernetes Operator Development Made Easy"
 date: 2026-08-02T07:15:00+03:00
 tags: [aspire, dotnet-aspire, typescript, platform-engineering, kubernetes, operator, kind, polyglot, inner-loop]
 description: "Aspire is not a .NET-only local orchestration story: the same Greeter operator loop from Part 1 runs with a TypeScript AppHost, including the Kind cluster, CRD, Go operator, and dashboard commands."
@@ -32,6 +32,8 @@ If you live in Kubernetes or .NET but not Aspire and TypeScript, an **Aspire App
 
 The useful claim is not that TypeScript gets a novelty badge. It is that the local topology survives the translation. The cluster is still an Aspire resource. The Go operator is still just Go. The AppHost language changes, but the graph does not.
 
+![The Aspire dashboard resources list showing greeter-crd as Finished, greeter-operator as Running, and dev-cluster as Running, with resource type, state, health, and start time columns visible](/assets/aspire-typescript-operator/ts-dashboard-resources.png)
+
 ### C# and TypeScript Side by Side
 
 Part 1's C# AppHost creates the Kind cluster like this:
@@ -45,15 +47,23 @@ var cluster = builder
     .WithDeleteGreetersCommand();
 ```
 
-The TypeScript AppHost creates the same persistent Kind cluster like this:
+The TypeScript AppHost creates the same persistent Kind cluster and attaches the same dashboard commands like this:
 
 ```typescript
-let cluster = builder.addKindCluster('dev-cluster').withClusterLifetime(ClusterLifetime.Persistent);
+const cluster = builder
+  .addKindCluster('dev-cluster')
+  .withClusterLifetime(ClusterLifetime.Persistent)
+  .withCommand('apply-greeter', 'Apply Greeter (timestamped)', applyGreeter, applyGreeterOptions)
+  .withCommand('delete-greeters', 'Delete all Greeters', deleteGreeters, deleteGreetersOptions);
 ```
 
-That is the point of the post in one small comparison. C# says `AddKindCluster("dev-cluster").WithClusterLifetime(ClusterLifetime.Persistent)`. TypeScript says `addKindCluster('dev-cluster').withClusterLifetime(ClusterLifetime.Persistent)`. Different syntax, same resource in the graph.
+That is the fair comparison. Both versions register `dev-cluster` as a persistent Kind cluster, and both hang the useful dashboard actions from the cluster resource instead of hiding them in README instructions.
 
-The Go operator mapping is the same kind of translation. Part 1 uses the Go hosting integration from C#:
+The real structural difference is how each language gets there. C# has extension methods, so `WithApplyGreeterCommand()` and `WithDeleteGreetersCommand()` are custom extension methods the sample author wrote. Underneath, they still call Aspire's `WithCommand` primitive. TypeScript does not have extension methods, so the AppHost keeps the same readability by extracting `applyGreeter` and `deleteGreeters` into named functions, putting the dashboard metadata in `applyGreeterOptions` and `deleteGreetersOptions`, and passing those names to `withCommand`. Different mechanism, same result: a fluent chain that reads as intent rather than implementation.
+
+There is one remaining asymmetry in that first C# block: `.WithManifest(...)`. The TypeScript Kind package does not publish a projected `withManifest` method yet, so the TypeScript AppHost models the CRD apply as a separate `greeter-crd` executable resource. That is why the next snippet has an explicit CRD helper. The comparison should make the command parity obvious without pretending every Kind helper has already crossed the language boundary.
+
+The Go operator mapping does the same job through a different API shape. Part 1 wires the C# AppHost by setting `KUBECONFIG` directly:
 
 ```csharp
 builder
@@ -63,7 +73,7 @@ builder
     .WaitFor(cluster);
 ```
 
-The TypeScript AppHost uses the projected Go integration:
+The TypeScript AppHost uses the Kind integration's projected reference helper:
 
 ```typescript
 await builder
@@ -74,16 +84,18 @@ await builder
   .waitForCompletion(greeterCrd);
 ```
 
+Those two lines are not direct translations of each other. `withKindClusterReference(cluster)` is a real API from `CommunityToolkit.Aspire.Hosting.Kind`, not sample-local sugar. In C#, it is an overload of `WithReference` that injects the host kubeconfig environment for non-container resources, and the method is annotated with `[AspireExport("withKindClusterReference")]`. TypeScript has no method overloading, so the Kind package gives that overload the explicit TypeScript name `withKindClusterReference`. That is a small but useful sign that the TypeScript surface is designed, not just mechanically transliterated.
+
 The TypeScript version also waits for the CRD helper, because the CRD needs to exist before the operator starts watching Greeters. But the operator is still the same Go package from Part 1. It did not become a Node service, it did not move into the cluster, and it did not learn anything about Aspire.
 
 The topology portion of the TypeScript AppHost fits in one screen:
 
 ```typescript
-import { ClusterLifetime, createBuilder } from './.aspire/modules/aspire.mjs';
-
-const builder = await createBuilder();
-
-let cluster = builder.addKindCluster('dev-cluster').withClusterLifetime(ClusterLifetime.Persistent);
+const cluster = builder
+  .addKindCluster('dev-cluster')
+  .withClusterLifetime(ClusterLifetime.Persistent)
+  .withCommand('apply-greeter', 'Apply Greeter (timestamped)', applyGreeter, applyGreeterOptions)
+  .withCommand('delete-greeters', 'Delete all Greeters', deleteGreeters, deleteGreetersOptions);
 
 const greeterCrd = builder
   .addExecutable('greeter-crd', process.execPath, appHostDir, ['./scripts/apply-crd.mjs', '--crd', crdPath])
@@ -98,7 +110,7 @@ await builder
   .waitForCompletion(greeterCrd);
 ```
 
-Read it top to bottom. First, the AppHost creates or reuses a persistent Kind cluster. Then it runs a small CRD helper against that cluster. Then it starts the Go operator from the `operator/` package directory. The `packagePath` value is `'.'` on purpose: the Go hosting integration needs the package directory, not a Go source file.
+Read it top to bottom. First, the AppHost creates or reuses a persistent Kind cluster and attaches the two dashboard commands. Then it runs a small CRD helper against that cluster. Then it starts the Go operator from the `operator/` package directory. The `packagePath` value is `'.'` on purpose: the Go hosting integration needs the package directory, not a Go source file.
 
 `withKindClusterReference(cluster)` is the important wiring. It gives the executable and the Go operator a kubeconfig for the Kind cluster, so the operator can talk to Kubernetes without the AppHost manually threading a `KUBECONFIG` string through every process. The operator remains a plain Go process, but the cluster relationship is now part of the resource graph.
 
@@ -246,51 +258,46 @@ mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 })
 ```
 
-`ctrl.GetConfigOrDie()` finds `KUBECONFIG`, and Aspire supplies that environment variable through `withKindClusterReference(cluster)`. That is the same trick as the C# AppHost version, just projected through the TypeScript SDK.
+`ctrl.GetConfigOrDie()` finds `KUBECONFIG`, and Aspire supplies that environment variable through `withKindClusterReference(cluster)`. The outcome matches the C# AppHost version, but the API shape is deliberately TypeScript-friendly.
 
 ### Dashboard Commands Are TypeScript Too
 
-The last visible gap in the TypeScript sample was the dashboard command story. That gap is gone. The TypeScript AppHost now attaches the same useful action to the Kind resource with `withCommand`:
+The last visible gap in the TypeScript sample was the dashboard command story. That gap is gone. The TypeScript AppHost now attaches the same useful actions to the Kind resource with `withCommand`, while keeping the fluent chain readable:
 
 ```typescript
-let cluster = builder.addKindCluster('dev-cluster').withClusterLifetime(ClusterLifetime.Persistent);
-
-cluster = cluster.withCommand(
-  'apply-greeter',
-  'Apply Greeter (timestamped)',
-  async (context) => {
-    const stamp = formatStamp();
-    const crName = `greeter-${stamp}`;
-    const specName = `tamir-${stamp}`;
-    const kubeconfigPath = await getKubeconfigPath(await context.resourceName());
-    const yaml = `apiVersion: hello.tamirdresher.dev/v1alpha1
-kind: Greeter
-metadata:
-  name: ${crName}
-  namespace: default
-spec:
-  name: ${specName}
-`;
-
-    const result = await runKubectl(['--kubeconfig', kubeconfigPath, 'apply', '-f', '-'], yaml);
-
-    if (result.exitCode !== 0) {
-      return commandFailure(`kubectl apply failed for ${crName}.`, result.stderr || result.stdout);
-    }
-
-    return commandSuccess(`Applied ${crName} (spec.name=${specName})`, result.stdout.trim());
+const applyGreeterOptions = {
+  commandOptions: {
+    description: 'Applies a timestamped Greeter custom resource to trigger the operator reconcile loop.',
+    iconName: 'Add',
+    updateState: async () => ResourceCommandState.Enabled,
   },
-  {
-    commandOptions: {
-      description: 'Applies a timestamped Greeter custom resource to trigger the operator reconcile loop.',
-      iconName: 'Add',
-      updateState: async () => ResourceCommandState.Enabled,
-    },
+} satisfies WithCommandOptions;
+
+const deleteGreetersOptions = {
+  commandOptions: {
+    description: 'Deletes all Greeter custom resources from the default namespace.',
+    iconName: 'Delete',
+    updateState: async () => ResourceCommandState.Enabled,
   },
-);
+} satisfies WithCommandOptions;
+
+const cluster = builder
+  .addKindCluster('dev-cluster')
+  .withClusterLifetime(ClusterLifetime.Persistent)
+  .withCommand('apply-greeter', 'Apply Greeter (timestamped)', applyGreeter, applyGreeterOptions)
+  .withCommand('delete-greeters', 'Delete all Greeters', deleteGreeters, deleteGreetersOptions);
 ```
 
-There is a companion `delete-greeters` command that runs `kubectl delete greeters --all -n default --ignore-not-found`, so the dashboard now has both sides of the loop: create a fresh Greeter and clean up all Greeters afterward.
+The callbacks are ordinary TypeScript functions, not inline blobs hiding inside the resource declaration:
+
+```typescript
+async function applyGreeter(context: ExecuteCommandContext): Promise<ExecuteCommandResult>
+async function deleteGreeters(context: ExecuteCommandContext): Promise<ExecuteCommandResult>
+```
+
+![The Aspire dashboard resources list with the dev-cluster context menu open, showing built-in View details, Console logs, and Export JSON entries above custom Apply Greeter (timestamped) and Delete all Greeters commands](/assets/aspire-typescript-operator/ts-dashboard-commands.png)
+
+`applyGreeter` creates a timestamped Greeter by sending YAML to `kubectl apply -f -`. `deleteGreeters` runs `kubectl delete greeters --all -n default --ignore-not-found`, so the dashboard has both sides of the loop: create a fresh Greeter and clean up all Greeters afterward.
 
 The timestamp is what makes **Apply Greeter** useful rather than just convenient. Every click creates a new Greeter name and a new `spec.name`, which means every click is a fresh trip through `Reconcile()` with a value you can watch change in the debugger. It is the same point as Part 1, now coming from a TypeScript AppHost.
 
@@ -331,15 +338,7 @@ greeter-operator  Executable    Running   Healthy
 
 When the dashboard opens, the graph is the same shape as the C# version: `dev-cluster` is the Kind cluster, `greeter-crd` applies the CRD, and `greeter-operator` starts after both are ready. The `dev-cluster` resource also has **Apply Greeter (timestamped)** and **Delete all Greeters** commands, so you can drive the same loop from the dashboard instead of keeping the command sequence in your head.
 
-The terminal path is still useful because it is reproducible, but the dashboard parity is no longer theoretical. The commands were also verified directly:
-
-```powershell
-aspire resource dev-cluster apply-greeter --non-interactive
-# configmap/greeting-tamir-20260731-001029
-
-aspire resource dev-cluster delete-greeters --non-interactive
-# Greeters and their ConfigMaps removed
-```
+The terminal path is still useful because it is reproducible, but the dashboard parity is no longer theoretical. The same actions are available from the `dev-cluster` context menu.
 
 ### Point `kubectl` at the Aspire-Managed Cluster
 
@@ -350,116 +349,40 @@ $env:KUBECONFIG = "<dev-cluster.properties.KubeConfigPath>"
 kubectl get crd greeters.hello.tamirdresher.dev
 ```
 
-A ready CRD looks like this:
-
-```text
-NAME                              CREATED AT
-greeters.hello.tamirdresher.dev   2026-07-30T18:42:21Z
-```
-
-That CRD exists because `greeter-crd` ran after the Kind cluster became ready and before the operator started.
+That command should return the `greeters.hello.tamirdresher.dev` CRD. It exists because `greeter-crd` ran after the Kind cluster became ready and before the operator started.
 
 ### Apply a Greeter and Watch the ConfigMap Appear
 
-Create `greeter-reader.yaml`:
-
-```yaml
-apiVersion: hello.tamirdresher.dev/v1alpha1
-kind: Greeter
-metadata:
-  name: reader
-  namespace: default
-spec:
-  name: reader
-```
-
-Then apply it:
-
-```powershell
-kubectl apply -f .\greeter-reader.yaml
-```
-
-The API server accepts the custom resource:
+Use the dashboard command, or run the same command from a terminal:
 
 ```text
-greeter.hello.tamirdresher.dev/reader created
+aspire resource dev-cluster apply-greeter
+  → greeter.hello.tamirdresher.dev/greeter-20260731-110324 created
+
+kubectl get greeters
+  NAME                      AGE
+  greeter-20260731-110324   11m
+
+kubectl get configmap greeting-tamir-20260731-110324
+  {"message":"Hello, tamir-20260731-110324!"}
 ```
 
-Give the operator a few seconds, then ask for the ConfigMap:
+![Terminal transcript showing aspire resource dev-cluster apply-greeter creating greeter-20260731-110324, kubectl get greeters listing that resource, and kubectl get configmap greeting-tamir-20260731-110324 returning the JSON message Hello, tamir-20260731-110324](/assets/aspire-typescript-operator/ts-greeter-reconciled.png)
 
-```powershell
-kubectl get configmap greeting-reader
-```
-
-```text
-NAME              DATA   AGE
-greeting-reader   1      5s
-```
-
-Now inspect what the operator created:
-
-```powershell
-kubectl get configmap greeting-reader -o yaml
-```
-
-```yaml
-apiVersion: v1
-data:
-  message: Hello, reader!
-kind: ConfigMap
-metadata:
-  name: greeting-reader
-  namespace: default
-  ownerReferences:
-  - apiVersion: hello.tamirdresher.dev/v1alpha1
-    blockOwnerDeletion: true
-    controller: true
-    kind: Greeter
-    name: reader
-```
-
-The owner reference is doing real Kubernetes work. Delete the Greeter, and Kubernetes garbage collection can remove the ConfigMap because the operator declared ownership.
-
-The Greeter status also shows the reconcile result:
-
-```powershell
-kubectl get greeter reader -o yaml
-```
-
-```yaml
-apiVersion: hello.tamirdresher.dev/v1alpha1
-kind: Greeter
-metadata:
-  name: reader
-  namespace: default
-spec:
-  name: reader
-status:
-  configMapName: greeting-reader
-  lastReconciled: "2026-07-30T18:47:14Z"
-  message: Hello, reader!
-```
-
-That is the proof line. A TypeScript AppHost started the Kind cluster, ordered the CRD apply step, started the Go operator from source, and the real Kubernetes API server stored the resource, the ConfigMap, and the status update.
+That is the proof line. A TypeScript AppHost started the Kind cluster, ordered the CRD apply step, started the Go operator from source, and the real Kubernetes API server stored the resource and the ConfigMap.
 
 ### Clean Up
 
-Remove the Greeter first:
+Use the dashboard command or the equivalent CLI path once you are done:
 
 ```powershell
-kubectl delete greeter reader
+aspire resource dev-cluster delete-greeters --non-interactive
 ```
 
 Then stop `aspire run` with **Ctrl+C**. If you want to remove the persistent Kind cluster too:
 
 ```powershell
 kind delete cluster --name dev-cluster
-```
-
-You can also use the dashboard command or the equivalent CLI path once you are done:
-
-```powershell
-aspire resource dev-cluster delete-greeters --non-interactive
 ```
 
 ## What Is Real, and What Is Still Catching Up
