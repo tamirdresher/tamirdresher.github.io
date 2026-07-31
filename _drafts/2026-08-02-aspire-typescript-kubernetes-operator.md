@@ -32,6 +32,12 @@ If you live in Kubernetes or .NET but not Aspire and TypeScript, an **Aspire App
 
 The useful claim is not that TypeScript gets a novelty badge. It is that the local topology survives the translation. The cluster is still an Aspire resource. The Go operator is still just Go. The AppHost language changes, but the graph does not.
 
+This is the same diagram from Part 1, with one label changed:
+
+![Schematic of the setup: VS Code, the Aspire AppHost written in TypeScript, and the Go operator all running as ordinary processes on the laptop, connected to a real Kind cluster in Docker holding the API server, the Greeter CRD, and the cluster state. KUBECONFIG points from laptop to cluster, and a long-lived watch stream carries change events back.](/assets/aspire-typescript-operator/what-we-are-building-ts.svg)
+
+That is the whole argument in one picture. The box marked *Aspire AppHost* now says TypeScript instead of C#, and the method names beside it are camelCase. Everything else — the laptop holding the code you edit, the cluster holding the state, `KUBECONFIG` as the entire bridge between them, the watch stream carrying change events back — is identical, because none of it depends on the language the AppHost is written in.
+
 ![The Aspire dashboard resources list showing greeter-crd as Finished, greeter-operator as Running, and dev-cluster as Running, with resource type, state, health, and start time columns visible](/assets/aspire-typescript-operator/ts-dashboard-resources.png)
 
 ### C# and TypeScript Side by Side
