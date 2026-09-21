@@ -107,6 +107,8 @@ Let's walk the five lines through three **logical activations**. Here, an activa
 
 This simplified trace follows the public source. It is not three measured deliveries or a promise about physical service batches, and housekeeping events are omitted. With no other durable operations in this example, the inspected Core counter assigns activity IDs **0** and **1**. Those IDs correlate actions with scheduled tasks; they are not positions in the event history.
 
+Read each strip from top to bottom: code position on the left, history cursor on the right, and pending decisions, open result tasks, and locals below. A `TaskCompletionSource` is the helper supplying the awaited task's result. These are settled teaching checkpoints based on the public source, not a live debugger recording. Click any strip to open the full SVG and enlarge it.
+
 ### A: ask for the subtotal
 
 The starting event supplies the input. L1 reads `"order-42"`. L2 calls `ReadSubtotal`, creating action **0** and an open local task. There is no result yet, so the method yields at L2. L3 through L5 have not executed.
@@ -114,6 +116,10 @@ The starting event supplies the input. L1 reads `"order-42"`. L2 calls `ReadSubt
 The executor returns the new decision to schedule `ReadSubtotal` with ID 0. Once that decision is accepted, scheduling history records the operation. The activity runs separately and reports its outcome.
 
 Notice what is missing: no durable record of a local variable called `subtotal` with an instruction pointer beside it.
+
+[![Three snapshots: before ExecutionStarted, waiting at L2 with candidate 0 and a pending result task, then returning the new ReadSubtotal schedule.](/assets/durable-await-replay/durable-replay-state-a.svg)](/assets/durable-await-replay/durable-replay-state-a.svg)
+
+*Figure 2A. Activation A. ExecutionStarted reaches L2 and creates candidate 0 plus a pending local result task. The runner returns Schedule 0 after processing available history. The task is not persisted.*
 
 ### B: use the subtotal, then ask for the charge
 
@@ -135,6 +141,10 @@ L3 calculates `100m + 10m`, producing `110m`. L4 calls `ChargeOrder`, creating t
 
 The outstanding decision is now **Schedule 1: `ChargeOrder`**. There is no new Schedule 0 merely because L2 executed again.
 
+[![Four snapshots: replay recreates activity 0, history matches its schedule, the new result 100 recomputes 110 and opens activity 1 at L4, then Schedule 1 is returned.](/assets/durable-await-replay/durable-replay-state-b.svg)](/assets/durable-await-replay/durable-replay-state-b.svg)
+
+*Figure 2B. Activation B. Matching old Schedule 0 removes the candidate, not the task. With IsReplaying already false, completion 0 advances L2, L3 and L4 and computes 110. The runner returns only the new Schedule 1.*
+
 ### C: use both recorded operations, then return
 
 With the second activity's result available, the method again starts at L1.
@@ -145,9 +155,9 @@ L4 reconstructs action 1. Its recorded scheduling event removes the candidate fr
 
 In this pass, result 0 is replayed past history, while result 1 can be newly arrived history. Neither activity is newly scheduled just because both call sites ran again.
 
-![Three logical activations of the five statements: A reaches L2 and emits Schedule 0; B matches schedule 0, uses result 100, recomputes 110 at L3, and emits Schedule 1 at L4; C matches both schedules, supplies their results, and returns receipt-7 at L5 without new activities.](/assets/durable-await-replay/durable-replay-activations.svg)
+[![Six snapshots: replay rebuilds both awaits, matches their schedules, and recomputes 110. IsReplaying becomes false while L4 still waits. Completion 1 supplies receipt-7; L5 returns and the runner completes the orchestration.](/assets/durable-await-replay/durable-replay-state-c.svg)](/assets/durable-await-replay/durable-replay-state-c.svg)
 
-*Figure 2. The same source lines execute again; the outbound decisions change as history resolves their tasks. A emits Schedule 0, B emits Schedule 1, and C emits orchestration completion. These are three logical activations, not measured deliveries. “Not reached” marks lines beyond an unresolved await.*
+*Figure 2C. Activation C. Both schedules are matched, and recorded result 100 drives a fresh calculation of 110. Past history ends with L4 still waiting. New completion 1 supplies receipt-7, and the runner emits orchestration completion without scheduling either activity again.*
 
 Zoom in on C. Picture the old history as a row of cards, read oldest first. The **read cursor** moves; the cards stay. [Matching a schedule][match-schedule] removes a candidate action, while [processing its completion][complete-task] resolves the open task. One completion can advance several source lines, and an await can span several events.
 
