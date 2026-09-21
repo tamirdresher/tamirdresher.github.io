@@ -47,47 +47,57 @@ The extra `10m` gives us a local calculation to track. When a later invocation r
 
 It calculates it again. Let's see why.
 
-## The keyword yields; the framework schedules
+## Who calls RunAsync, and what happens at await?
 
-Ordinary C# rules still apply. An [`await` whose operand is incomplete][csharp-await] suspends the async method without blocking its thread. If the awaitable has already completed, the method need not suspend. The compiler's async state machine and continuation machinery handle this within the running process.
+Before L1 can run, some application code has to request an orchestration instance. Here, `client` is an already configured `DurableTaskClient`, connected to the same DTS task hub as a running worker. That worker has `OrderFlow`, `ReadSubtotal`, and `ChargeOrder` registered.
 
-What makes L2 different from an arbitrary async call is **the operation being awaited**, not the keyword.
+```csharp
+string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
+    nameof(OrderFlow), input: "order-42");
+```
 
-The [SDK context wrapper][activity-wrapper] delegates `CallActivityAsync<T>` to Core's `ScheduleTask<T>`. The path reaches [`ScheduleTaskInternal`][schedule-task], which allocates a sequence ID, serializes the activity input, and adds a `ScheduleTaskOrchestratorAction` to the pending action map. It also registers a local `TaskCompletionSource<string>` in `openTasks`.
+The [`await` in this starter waits for successful scheduling][client-start] and returns the instance ID. It does not wait for the order to finish, and it does not call `RunAsync` on the starter's call stack. The `[DurableTask]` attribute on our class is a generator marker, not something that starts the method.
 
-That completion source represents the activity's serialized outcome. The async call chain deserializes a successful result into the requested type, `decimal` at L2. For now, without a completion event, the task is incomplete.
+**DTS schedules the work. Your worker runs the C#.** The worker receives orchestration work and the available history from DTS. It [looks up the registered orchestrator][worker-execute] to find the code for `OrderFlow`. The starter and worker can be hosted in the same process; these are different roles, not a requirement for separate machines.
 
-The **scheduling action** is a decision the worker can return for durable scheduling. The **open local task** is the promise this execution waits on in memory. They serve different purposes, and neither creating them nor reaching `await` proves that the service has durably accepted the decision.
+Inside the worker, a library runner reads the available history and drives the orchestration forward. Its .NET name is `TaskOrchestrationExecutor`. This is library code inside the worker, not DTS itself or a class you have to write. When it processes the starting `ExecutionStarted` event, [the SDK adapter deserializes the input and calls `RunAsync`][orchestration-invocation] with the context and `"order-42"`. Now L1 runs.
 
-When L2 awaits the incomplete task, the application method yields. The executor keeps processing **available history**, though. A completion event later in that same pass can let the method continue.
+At L2, `CallActivityAsync` [creates a scheduling instruction and a local result task][schedule-task]. The instruction, called an action, says: ask DTS to run `ReadSubtotal` with `"order-42"` as input. The ordinary .NET task is what L2 awaits to get the subtotal. Both exist in worker memory. Creating them does not mean the activity has been dispatched or that DTS has durably recorded the request.
 
-When the pass finishes, [`TaskOrchestrationExecutor` returns the outstanding actions][executor-pass]. It does not wait for the entire order workflow to finish. The [gRPC worker turns those actions into its response][worker-response].
+If that result task is incomplete, [ordinary C# `await` yields without blocking its thread][csharp-await]. This pauses the method, not the runner's history processing. An already completed task need not make the method pause.
 
-So the method yielding and the worker returning its decisions are different moments. A worker response need not mean the whole order workflow has finished.
+The runner keeps reading any available history. A completion event later in this same pass can supply a result and let the method continue. A previously recorded schedule can be [matched to the reconstructed instruction][match-schedule] instead of sent again.
 
-There isn't a checkpoint after every await: one pass can return multiple actions, and some awaits don't suspend.
+After processing the pass's available history, the runner [returns the decisions still outstanding][executor-pass], and the worker [sends them to DTS][worker-response]. For new activity work, those decisions request scheduling. Finishing this response is not finishing the order workflow. One pass can return several decisions; an `await` is not itself a durable checkpoint.
 
-![Sequence showing an initial orchestration activation creating action 0 and an open task, DTS accepting the scheduling decision, ReadSubtotal running separately, and a later activation reconstructing a task from history before scheduling ChargeOrder.](/assets/durable-await-replay/durable-await-sequence.svg)
+Once a new activity is scheduled, [a separate activity handler in a worker runs it][activity-worker] and [reports its outcome][activity-response]. A recorded outcome can then be supplied as history for another orchestration pass. In the reconstruction path below, `RunAsync` starts again and history resolves the new local task at L2. The activity is not calling back into the old suspended method.
 
-*Figure 1. The reconstruction path from `ReadSubtotal` to `ChargeOrder`. Arrows show causal flow, not measured timing. The DTS lane shows its public managed history and scheduling contract, not an unpublished storage, transaction, or acknowledgement design. Activity execution does not directly resume the original CLR continuation.*
+Here's the same flow as a conventional sequence diagram, read from top to bottom. The client gets an instance ID, the first worker pass asks for `ReadSubtotal`, and its recorded result lets a later pass recompute `110m` and ask for `ChargeOrder`.
+
+The columns are roles, not necessarily separate processes. Activation bars on the orchestration worker's lifeline mark separate passes; a later pass may use the same worker process or a different one. Solid arrows show messages or calls, and dashed arrows show replies. This is a conceptual sequence for the reconstruction path, not a network capture or timing trace. The result reaches the later pass through history, not through a callback to the original waiting task.
+
+![Sequence diagram with client, DTS, orchestration worker, and activity handler lifelines. The client receives an instance ID; two orchestration activations schedule ReadSubtotal, use its recorded result 100, recompute 110, and request ChargeOrder.](/assets/durable-await-replay/durable-await-sequence.svg)
+
+*Figure 1. A conceptual sequence from scheduling `OrderFlow` to the next decision for `ChargeOrder`. The two activation bars on the orchestration worker mark separate history passes, not the lifetime of a process. Arrows show causal flow, not measured timing. The DTS lifeline shows its public history and scheduling contract, not an unpublished storage, transaction, or acknowledgement design. Activity results become history; they do not resume the original CLR task.*
 
 ## What survives is history, not the suspended method
 
-[DTS provides the managed scheduling and state backend][dts-docs]. The worker code shows how application code participates in that contract. It doesn't expose the service's database, queue layout, replication protocol, or transaction implementation.
+Here, an **event** is a stored record in one orchestration instance's execution history. It is not a C# `event` that application code subscribes to. [DTS keeps that history as part of the task hub's managed state][dts-docs], and a worker receives it to reconstruct execution. We are describing that contract, not the service's database or storage layout.
 
-Here is what we need to keep separate:
+For `ReadSubtotal`, two records in our example say:
 
-| Durable execution information | Local execution machinery |
-|---|---|
-| Starting input and the history of durable operations | The current invocation's async state machines and contexts |
-| Activity scheduling information, including identity, name, and serialized input | Pending action objects and open task objects |
-| Recorded outcomes correlated with scheduled activities | Continuations and locals populated while executing code |
+1. Activity **0**, named `ReadSubtotal`, was scheduled with input `"order-42"`.
+2. Activity **0** completed successfully with result **100**.
 
-The public [`TaskScheduledEvent`][scheduled-event] and [`TaskCompletedEvent`][completed-event] types make that relationship concrete: the completion refers to the scheduled task and carries its serialized result. This is not an arbitrary heap snapshot. Supported inputs and results are serialized as data, not preserved as live object graphs.
+These are conceptual descriptions, not an exact data format or the whole history. Starting and housekeeping records are omitted. The **0** identifies the activity, not the record's position in history.
 
-Activity execution happens separately from orchestration execution. The worker's [activity handler][activity-worker] invokes the activity and [reports its outcome][activity-response] through `CompleteActivityTaskAsync`. “Separately” does not require a different machine or process; it means a different execution path with a different responsibility.
+The first record tells the runner that this activity was already scheduled. During replay, L2 creates a candidate action again. The runner [matches the record against that action and removes the candidate from its outgoing decisions][match-schedule], rather than scheduling `ReadSubtotal` anew. This record does **not** say the activity finished, and matching it does **not** complete the await. Core represents this scheduling record with the .NET class [`TaskScheduledEvent`][scheduled-event].
 
-The activity handler does not hold a continuation pointer and call back into the old orchestration method. In the reconstruction path, later history processing completes a **new local task** created by reexecuting that method.
+The second record supplies the successful outcome. [Processing it provides the result to the reconstructed local task][complete-task], so `RunAsync` can continue. Core represents this completion record with [`TaskCompletedEvent`][completed-event]. Its `TaskScheduledId` is **0** here, connecting the result **100** to the activity that was scheduled.
+
+For this call, the action **requests** `ReadSubtotal`, the history events **record** its scheduling and result, and the `Task` is the local object L2 awaits. Those event classes belong to the runtime's bookkeeping. Application code calls the orchestration and activity APIs; it normally does not construct history objects or raise C# events. DTS preserves history data, while the worker interprets it using local .NET objects.
+
+On reconstruction, L2 assigns the recorded result to a fresh `subtotal` variable as `100m`. L3 calculates `110m` again. The old variable slots and `Task` objects are not restored. That does not mean `110m` can never appear in history: L4 sends it as part of `ChargeOrder`'s input. It can be recorded there as serialized input data, not as a snapshot of every local variable or the suspended CLR stack.
 
 No orchestration thread is parked waiting for the activity. The worker process doesn't have to stop at every await either. Ending a pass through history isn't the same as ending a process.
 
@@ -116,6 +126,10 @@ Core's [`HandleTaskScheduledEvent`][match-schedule] matches the recorded schedul
 **Matching the schedule prevents a new scheduling decision; it does not, on its own, supply the result.**
 
 When the executor processes the completion for ID 0, [`HandleTaskCompletedEvent` sets the reconstructed completion source's result][complete-task]. The async chain can then continue within this same activation, deserialize the value, and assign `subtotal = 100m`. Core's [orchestration synchronization context][sync-context] and [synchronous task scheduler][sync-scheduler] keep those continuations inside this pass through history.
+
+> **Why the context matters.** When an ordinary `await` needs to suspend, a captured `SynchronizationContext` controls how its continuation, the code after that `await`, is scheduled. The runtime [installs its own context][sync-context] and uses [its scheduler][sync-scheduler] to keep that code in the runner's controlled history processing. [`ConfigureAwait(false)` opts out of that capture][constraints-docs] and can escape that path, so don't add it inside orchestrator code. It does not necessarily switch threads on every await.
+>
+> Keeping this context does not promise the same OS thread or process across activations. Each reconstruction has its own objects and context. Neither normal capture nor `ConfigureAwait(true)` makes `Task.Delay` or HTTP I/O durable. Activities follow ordinary .NET async guidance separately.
 
 L3 calculates `100m + 10m`, producing `110m`. L4 calls `ChargeOrder`, creating the **new** action 1 with `{ orderId, total }`. Its result is not available yet, so the method yields again.
 
@@ -209,6 +223,7 @@ That is the secret sauce: the method can keep making progress without keeping it
 [generator-calls]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Generators/DurableTaskSourceGenerator.cs#L870-L1038
 [sdk-release]: https://github.com/microsoft/durabletask-dotnet/releases/tag/v1.26.0
 [core-pin]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/Directory.Packages.props#L40-L44
+[client-start]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Client/Core/DurableTaskClient.cs
 [csharp-await]: https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/await
 [activity-wrapper]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Worker/Core/Shims/TaskOrchestrationContextWrapper.cs#L127-L203
 [schedule-task]: https://github.com/Azure/durabletask/blob/af8078ff7073facf5bb6ec8b7ba3beeb7efcf2d8/src/DurableTask.Core/TaskOrchestrationContext.cs#L126-L148
@@ -225,6 +240,7 @@ That is the secret sauce: the method can keep making progress without keeping it
 [sync-scheduler]: https://github.com/Azure/durabletask/blob/af8078ff7073facf5bb6ec8b7ba3beeb7efcf2d8/src/DurableTask.Core/SynchronousTaskScheduler.cs#L20-L33
 [finish-orchestration]: https://github.com/Azure/durabletask/blob/af8078ff7073facf5bb6ec8b7ba3beeb7efcf2d8/src/DurableTask.Core/TaskOrchestrationContext.cs#L714-L745
 [worker-execute]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Worker/Grpc/GrpcDurableTaskWorker.Processor.cs#L840-L869
+[orchestration-invocation]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Worker/Core/Shims/TaskOrchestrationShim.cs#L59-L85
 [functions-runner]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Worker/Grpc/GrpcOrchestrationRunner.cs#L14-L23
 [extended-sessions]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Worker/Grpc/GrpcOrchestrationRunner.cs#L145-L206
 [caching-docs]: https://learn.microsoft.com/en-us/azure/durable-task/durable-functions/durable-functions-perf-and-scale#instance-caching
