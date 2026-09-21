@@ -5,7 +5,7 @@ date: 2026-09-21
 tags: [dotnet, durable-task-sdk, durable-task-scheduler, orchestration, workflows]
 ---
 
-I've written about Durable Task and Durable Task Scheduler (DTS) before, including my [DTS introduction][earlier-post]. It still surprises me how many developers don't really know them, let alone use them. They tackle failure and recovery problems every distributed system has to deal with. Yes, even yours with one microservice and a database.
+I've written about Durable Task and Durable Task Scheduler (DTS) before, including my [DTS introduction][earlier-post]. I've now joined the Durable Task team under Azure Serverless. It still surprises me how many developers don't really know them, let alone use them. They tackle failure and recovery problems every distributed system has to deal with. Yes, even yours with one microservice and a database.
 
 Plenty of us can quote the fallacies of distributed computing. Quoting them, though, isn't the same as handling the failures they describe in our code. Knowing that the network can fail doesn't tell a workflow halfway through an order what to do when it does. Durable Task helps recover workflow progress. It doesn't solve every problem in a distributed system.
 
@@ -13,27 +13,37 @@ I find the Durable Task Framework fascinating, but I think the apparent "magic" 
 
 And we can actually look. The [Durable Task Framework/Core][core-source] and [modern .NET SDK][sdk-source] are open source. We'll follow their worker implementation, not the private internals of the managed DTS backend.
 
-I'll follow the **standalone .NET gRPC worker in Durable Task SDK [v1.26.0][sdk-release]**, whose source [pins DurableTask.Core to 3.9.0][core-pin]. The links use SDK commit `92474e9` and Core commit `af8078f`. That's the implementation path for this walkthrough, not a claim about every deployed package combination or Azure Functions configuration.
+I'll follow the **standalone .NET gRPC worker in Durable Task SDK [v1.26.0][sdk-release]**, which [depends on DurableTask.Core 3.9.0][core-pin]. That's the implementation path for this walkthrough, not a claim about every deployed package combination or Azure Functions configuration.
 
 ## A small orchestration to follow
 
-Here is the method body we'll follow, based on the public source. `context` is a `TaskOrchestrationContext`. Activity implementations and registration are omitted; this is a teaching example, not an executed sample.
+Here is the complete orchestration declaration we'll follow, based on the public source. `[DurableTask]` marks the class for the optional generator described below. Activity implementations and registration are omitted; this is a teaching example, not an executed sample.
 
 ```csharp
-/* L1 */ string orderId = context.GetInput<string>();
-/* L2 */ decimal subtotal = await context.CallActivityAsync<decimal>("ReadSubtotal", orderId);
-/* L3 */ decimal total = subtotal + 10m;
-/* L4 */ string receipt = await context.CallActivityAsync<string>("ChargeOrder", new { orderId, total });
-/* L5 */ return receipt;
+using System.Threading.Tasks;
+using Microsoft.DurableTask;
+
+[DurableTask(nameof(OrderFlow))]
+public sealed class OrderFlow : TaskOrchestrator<string, string>
+{
+    public override async Task<string> RunAsync(TaskOrchestrationContext context, string input)
+    {
+        /* L1 */ string orderId = input;
+        /* L2 */ decimal subtotal = await context.CallActivityAsync<decimal>("ReadSubtotal", orderId);
+        /* L3 */ decimal total = subtotal + 10m;
+        /* L4 */ string receipt = await context.CallActivityAsync<string>("ChargeOrder", new { orderId, total });
+        /* L5 */ return receipt;
+    }
+}
 ```
 
 If you'd rather avoid strings, the optional [`Microsoft.DurableTask.Generators` package][generator-docs] generates strongly typed helpers for activities and orchestrations defined as classes, including calling sub orchestrations and starting orchestrations. The [SDK's typed example][sdk-source] uses `CallSayHelloTypedAsync` and `ScheduleNewHelloCitiesTypedInstanceAsync`. That example uses Functions, but the generator also supports standalone workers.
 
-The [generated methods][generator-calls] still delegate to `CallActivityAsync`, `CallSubOrchestratorAsync`, or `ScheduleNewOrchestrationInstanceAsync`. They add convenience and type safety at compile time, not a different replay or history model. The generator is [versioned separately and still in preview at this pinned source revision][generator-version]; that is not a claim about tested package compatibility or the latest release. I'm keeping the strings here so we can see the scheduling identities.
+The [generated methods][generator-calls] still delegate to `CallActivityAsync`, `CallSubOrchestratorAsync`, or `ScheduleNewOrchestrationInstanceAsync`. They add convenience and type safety at compile time, not a different replay or history model. The generator is [versioned separately and marked as preview in the code we're following][generator-version]; that is not a claim about tested package compatibility or the latest release. I'm keeping the strings here so we can see the scheduling identities.
 
 For the walkthrough, the input is `"order-42"`, `ReadSubtotal` produces `100m`, and `ChargeOrder` produces `"receipt-7"` after receiving a total of `110m`. Those values are illustrative, not measured results.
 
-The extra `10m` is deliberately boring. It gives us a local calculation to track. When a later invocation reaches L3, does it recover a saved `total` variable, or calculate the value again?
+The extra `10m` gives us a local calculation to track. When a later invocation reaches L3, does it recover a saved `total` variable, or calculate the value again?
 
 It calculates it again. Let's see why.
 
