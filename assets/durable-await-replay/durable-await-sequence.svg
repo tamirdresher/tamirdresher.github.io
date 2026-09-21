@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="1520" viewBox="0 0 1320 1520" role="img" aria-labelledby="sequence-title sequence-desc">
+  <title id="sequence-title">How an activity await becomes progress in a later orchestration activation</title>
+  <desc id="sequence-desc">A sequence based on public source with four lanes: the initial orchestration worker and Core activation, the DTS public history and scheduling contract, separate activity execution, and a later orchestration activation. Calling the durable API creates action 0 and an open local task. The incomplete await yields. After processing available history, the executor returns its outstanding decision. DTS accepts the decision for durable history and scheduling, the activity ReadSubtotal executes separately and reports the illustrative result 100, and accepted completion can drive later history processing. The later activation creates a new local task, matches schedule 0, supplies its recorded result, recomputes total 110, and emits action 1 for ChargeOrder. There is no direct resumption of the old CLR continuation by the activity worker. This is a public contract diagram, not a representation of unpublished service storage or transactions, and does not imply an atomic external effect plus scheduler commit.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#1d4ed8"/>
+    </marker>
+    <style>
+      text { font-family: "Segoe UI", Arial, sans-serif; fill: #172b4d; }
+      .title { font-size: 32px; font-weight: 700; fill: #102a43; }
+      .subtitle { font-size: 21px; fill: #475569; }
+      .header { font-size: 23px; font-weight: 700; }
+      .small { font-size: 20px; }
+      .label { font-size: 21px; font-weight: 600; }
+      .muted { font-size: 21px; fill: #475569; }
+      .contract { font-size: 20px; font-weight: 700; fill: #92400e; }
+      .lane { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; }
+      .lifeline { stroke: #94a3b8; stroke-width: 2; stroke-dasharray: 7 7; }
+      .local { fill: #eff6ff; stroke: #1d4ed8; stroke-width: 2; }
+      .service { fill: #fffbeb; stroke: #92400e; stroke-width: 2; }
+      .recorded { fill: #f0fdf4; stroke: #166534; stroke-width: 2; }
+      .flow { fill: none; stroke: #1d4ed8; stroke-width: 2.5; marker-end: url(#arrow); }
+      .caption-bg { fill: #f8fafc; }
+    </style>
+  </defs>
+  <rect width="1320" height="1520" fill="#f8fafc"/>
+  <text x="40" y="56" class="title">From an incomplete await to a later activation</text>
+  <text x="40" y="94" class="subtitle">Causal flow from public source · ReadSubtotal (0) → ChargeOrder (1) · Not measured timing</text>
+
+  <rect x="40" y="126" width="295" height="1260" rx="14" class="lane"/>
+  <rect x="355" y="126" width="290" height="1260" rx="14" class="lane"/>
+  <rect x="665" y="126" width="290" height="1260" rx="14" class="lane"/>
+  <rect x="975" y="126" width="305" height="1260" rx="14" class="lane"/>
+
+  <text x="187" y="167" text-anchor="middle" class="header">Orchestration worker</text>
+  <text x="187" y="199" text-anchor="middle" class="small">Core · initial activation</text>
+  <text x="500" y="167" text-anchor="middle" class="header">DTS</text>
+  <text x="500" y="199" text-anchor="middle" class="contract">PUBLIC CONTRACT</text>
+  <text x="810" y="167" text-anchor="middle" class="header">Activity execution</text>
+  <text x="810" y="199" text-anchor="middle" class="small">Separate execution path</text>
+  <text x="1127" y="167" text-anchor="middle" class="header">Orchestration worker</text>
+  <text x="1127" y="199" text-anchor="middle" class="small">Core · later activation</text>
+
+  <line x1="187" y1="222" x2="187" y2="1364" class="lifeline"/>
+  <line x1="500" y1="222" x2="500" y2="1364" class="lifeline"/>
+  <line x1="810" y1="222" x2="810" y2="1364" class="lifeline"/>
+  <line x1="1127" y1="222" x2="1127" y2="1364" class="lifeline"/>
+
+  <g data-box="initial-local-action">
+    <rect x="52" y="245" width="271" height="151" rx="10" class="local"/>
+    <text x="68" y="277" class="label">L2: CallActivityAsync</text>
+    <text x="68" y="308" class="small">ScheduleTaskInternal</text>
+    <text x="68" y="339" class="small">Action 0 + open local task</text>
+    <text x="68" y="370" class="small">Incomplete await yields</text>
+  </g>
+
+  <rect x="163" y="411" width="365" height="61" rx="6" class="caption-bg"/>
+  <text x="345" y="435" text-anchor="middle" class="small">Executor processes available history</text>
+  <text x="345" y="463" text-anchor="middle" class="label">Returns outstanding decisions</text>
+  <path d="M 187 487 H 500" class="flow"/>
+
+  <g data-box="accept-schedule">
+    <rect x="371" y="511" width="258" height="114" rx="10" class="service"/>
+    <text x="389" y="542" class="label">Accept decision</text>
+    <text x="389" y="573" class="small">Durable history +</text>
+    <text x="389" y="603" class="small">scheduling contract</text>
+  </g>
+  <rect x="54" y="523" width="266" height="114" rx="8" fill="#ffffff"/>
+  <text x="70" y="552" class="muted">Invocation can end.</text>
+  <text x="70" y="585" class="muted">No parked thread.</text>
+  <text x="70" y="618" class="muted">No saved CLR stack.</text>
+
+  <rect x="513" y="646" width="284" height="32" rx="5" class="caption-bg"/>
+  <text x="655" y="670" text-anchor="middle" class="label">Dispatch activity work</text>
+  <path d="M 500 691 H 810" class="flow"/>
+
+  <g data-box="activity-execution">
+    <rect x="681" y="716" width="258" height="105" rx="10" class="local"/>
+    <text x="699" y="747" class="label">Run ReadSubtotal</text>
+    <text x="699" y="779" class="small">Illustrative result: 100</text>
+    <text x="699" y="806" class="small">Report via activity handler</text>
+  </g>
+  <rect x="515" y="839" width="280" height="35" rx="5" class="caption-bg"/>
+  <text x="655" y="865" text-anchor="middle" class="label">Report outcome</text>
+  <path d="M 810 891 H 500" class="flow"/>
+
+  <g data-box="accepted-completion">
+    <rect x="371" y="916" width="258" height="119" rx="10" class="service"/>
+    <text x="389" y="949" class="label">Accepted completion</text>
+    <text x="389" y="980" class="small">Can drive a later</text>
+    <text x="389" y="1011" class="small">pass through history</text>
+  </g>
+
+  <rect x="990" y="289" width="275" height="107" rx="8" fill="#ffffff"/>
+  <text x="1008" y="320" class="muted">Reconstruction, not</text>
+  <text x="1008" y="351" class="muted">the old continuation.</text>
+  <text x="1008" y="382" class="muted">Process may differ.</text>
+
+  <rect x="614" y="1047" width="400" height="34" rx="5" class="caption-bg"/>
+  <text x="814" y="1072" text-anchor="middle" class="label">History: schedule 0 + result 100</text>
+  <path d="M 500 1095 H 1127" class="flow"/>
+
+  <g data-box="reconstructed-task">
+    <rect x="987" y="1120" width="281" height="196" rx="10" class="recorded"/>
+    <text x="1003" y="1149" class="label">Reexecute L1 / L2</text>
+    <text x="1003" y="1179" class="small">Create NEW local task</text>
+    <text x="1003" y="1209" class="small">Match schedule 0</text>
+    <text x="1003" y="1239" class="small">Apply recorded result 100</text>
+    <text x="1003" y="1269" class="small">L3: total = 110</text>
+    <text x="1003" y="1299" class="small">L4: new action 1 + wait</text>
+  </g>
+  <rect x="575" y="1323" width="478" height="32" rx="5" class="caption-bg"/>
+  <text x="814" y="1347" text-anchor="middle" class="label">Next decision: Schedule 1 (ChargeOrder)</text>
+  <path d="M 1127 1370 H 500" class="flow"/>
+
+  <rect x="40" y="1410" width="1240" height="83" rx="10" fill="#e2e8f0"/>
+  <text x="60" y="1442" class="small">DTS lane = PUBLIC CONTRACT, not a service storage or transaction design.</text>
+  <text x="60" y="1474" class="small">No direct resumption of the old continuation; no atomic commit of external effects and scheduling is implied.</text>
+</svg>

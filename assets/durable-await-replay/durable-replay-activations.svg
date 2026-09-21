@@ -1,0 +1,161 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="1160" viewBox="0 0 1320 1160" role="img" aria-labelledby="activations-title activations-desc">
+  <title id="activations-title">Five source lines across three logical orchestration activations</title>
+  <desc id="activations-desc">An illustrative trace based on public source, not measured deliveries. Activation A reads order-42 at L1, creates action 0 for ReadSubtotal at L2, emits Schedule 0, and waits. Activation B reexecutes L1 and L2, matches recorded schedule 0, consumes result 100, recomputes total 110 at L3, and at L4 creates action 1 for ChargeOrder and waits. It emits Schedule 1, not another Schedule 0. Activation C reexecutes L1 through L4, matches both recorded schedules, supplies their results, recomputes 110, and at L5 returns receipt-7. Its outbound decision is orchestration completion, not new activities. IDs 0 and 1 are simplified activity correlation IDs, not positions in the event history. A recorded schedule without a completion remains unresolved and is not automatically redispatched merely because of replay.</desc>
+  <defs>
+    <marker id="step-arrow" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 8 4 L 0 8 Z" fill="#475569"/>
+    </marker>
+    <style>
+      text { font-family: "Segoe UI", Arial, sans-serif; fill: #172b4d; }
+      .title { font-size: 32px; font-weight: 700; fill: #102a43; }
+      .subtitle { font-size: 21px; font-weight: 700; fill: #475569; }
+      .note { font-size: 21px; fill: #475569; }
+      .heading { font-size: 25px; font-weight: 700; }
+      .step { font-size: 21px; font-weight: 700; }
+      .body { font-size: 21px; }
+      .small { font-size: 20px; }
+      .eyebrow { font-size: 18px; font-weight: 700; letter-spacing: 1px; }
+      .new { fill: #eff6ff; stroke: #1d4ed8; stroke-width: 2; }
+      .wait { fill: #fffbeb; stroke: #92400e; stroke-width: 2; }
+      .replay { fill: #f0fdf4; stroke: #166534; stroke-width: 2; }
+      .unreached { fill: #f1f5f9; stroke: #64748b; stroke-width: 1.5; stroke-dasharray: 6 5; }
+      .inactive { font-size: 21px; fill: #475569; }
+      .connector { fill: none; stroke: #475569; stroke-width: 2; marker-end: url(#step-arrow); }
+    </style>
+  </defs>
+  <rect width="1320" height="1160" fill="#f8fafc"/>
+  <text x="32" y="54" class="title">One method body, three logical activations</text>
+  <text x="32" y="91" class="subtitle">THREE LOGICAL ACTIVATIONS, NOT MEASURED DELIVERIES</text>
+  <text x="32" y="127" class="note">Illustrative values: order-42 → subtotal 100 → total 110 → receipt-7</text>
+
+  <rect x="32" y="157" width="402" height="890" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <rect x="458" y="157" width="402" height="890" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <rect x="884" y="157" width="404" height="890" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+
+  <circle cx="77" cy="203" r="25" fill="#1d4ed8"/>
+  <text x="77" y="211" text-anchor="middle" font-size="25" font-weight="700" style="fill:#ffffff">A</text>
+  <text x="118" y="201" class="heading">Initial execution</text>
+  <text x="52" y="250" class="body">History: starting input</text>
+
+  <circle cx="503" cy="203" r="25" fill="#1d4ed8"/>
+  <text x="503" y="211" text-anchor="middle" font-size="25" font-weight="700" style="fill:#ffffff">B</text>
+  <text x="544" y="201" class="heading">Subtotal available</text>
+  <text x="478" y="250" class="body">History adds: result 0 = 100</text>
+
+  <circle cx="929" cy="203" r="25" fill="#1d4ed8"/>
+  <text x="929" y="211" text-anchor="middle" font-size="25" font-weight="700" style="fill:#ffffff">C</text>
+  <text x="970" y="201" class="heading">Receipt available</text>
+  <text x="904" y="250" class="body">History adds: result 1 = receipt-7</text>
+
+  <g data-box="a-l1">
+    <rect x="48" y="278" width="370" height="81" rx="8" class="new"/>
+    <text x="64" y="309" class="step">L1 · Read input</text>
+    <text x="64" y="341" class="body">orderId = "order-42"</text>
+  </g>
+  <g data-box="b-l1">
+    <rect x="474" y="278" width="370" height="81" rx="8" class="replay"/>
+    <text x="490" y="309" class="step">L1 · Reexecute</text>
+    <text x="490" y="341" class="body">orderId = "order-42"</text>
+  </g>
+  <g data-box="c-l1">
+    <rect x="900" y="278" width="372" height="81" rx="8" class="replay"/>
+    <text x="916" y="309" class="step">L1 · Reexecute</text>
+    <text x="916" y="341" class="body">orderId = "order-42"</text>
+  </g>
+  <path d="M 233 360 V 380" class="connector"/>
+  <path d="M 659 360 V 380" class="connector"/>
+  <path d="M 1086 360 V 380" class="connector"/>
+
+  <g data-box="a-l2">
+    <rect x="48" y="382" width="370" height="128" rx="8" class="wait"/>
+    <text x="64" y="413" class="step">L2 · Await ReadSubtotal</text>
+    <text x="64" y="445" class="body">Create action 0 + local task</text>
+    <text x="64" y="477" class="body">No result yet → WAIT</text>
+  </g>
+  <g data-box="b-l2">
+    <rect x="474" y="382" width="370" height="128" rx="8" class="replay"/>
+    <text x="490" y="413" class="step">L2 · Reexecute call site</text>
+    <text x="490" y="445" class="body">ReadSubtotal: match schedule 0</text>
+    <text x="490" y="477" class="body">Apply result 100</text>
+  </g>
+  <g data-box="c-l2">
+    <rect x="900" y="382" width="372" height="128" rx="8" class="replay"/>
+    <text x="916" y="413" class="step">L2 · Reexecute call site</text>
+    <text x="916" y="445" class="body">ReadSubtotal: match schedule 0</text>
+    <text x="916" y="477" class="body">Apply recorded result 100</text>
+  </g>
+  <path d="M 659 511 V 532" class="connector"/>
+  <path d="M 1086 511 V 532" class="connector"/>
+
+  <g data-box="a-l3">
+    <rect x="48" y="534" width="370" height="81" rx="8" class="unreached"/>
+    <text x="64" y="581" class="inactive">L3 · Not reached</text>
+  </g>
+  <g data-box="b-l3">
+    <rect x="474" y="534" width="370" height="81" rx="8" class="replay"/>
+    <text x="490" y="565" class="step">L3 · Recompute local total</text>
+    <text x="490" y="597" class="body">100 + 10 = 110</text>
+  </g>
+  <g data-box="c-l3">
+    <rect x="900" y="534" width="372" height="81" rx="8" class="replay"/>
+    <text x="916" y="565" class="step">L3 · Recompute local total</text>
+    <text x="916" y="597" class="body">100 + 10 = 110</text>
+  </g>
+  <path d="M 659 616 V 637" class="connector"/>
+  <path d="M 1086 616 V 637" class="connector"/>
+
+  <g data-box="a-l4">
+    <rect x="48" y="639" width="370" height="141" rx="8" class="unreached"/>
+    <text x="64" y="710" class="inactive">L4 · Not reached</text>
+  </g>
+  <g data-box="b-l4">
+    <rect x="474" y="639" width="370" height="141" rx="8" class="wait"/>
+    <text x="490" y="670" class="step">L4 · Await ChargeOrder</text>
+    <text x="490" y="702" class="body">Create NEW action 1</text>
+    <text x="490" y="734" class="body">Input: order-42, total 110</text>
+    <text x="490" y="763" class="body">No result yet → WAIT</text>
+  </g>
+  <g data-box="c-l4">
+    <rect x="900" y="639" width="372" height="141" rx="8" class="replay"/>
+    <text x="916" y="670" class="step">L4 · Reexecute call site</text>
+    <text x="916" y="702" class="body">ChargeOrder: match schedule 1</text>
+    <text x="916" y="734" class="body">Apply result receipt-7</text>
+  </g>
+  <path d="M 1086 781 V 802" class="connector"/>
+
+  <g data-box="a-l5">
+    <rect x="48" y="804" width="370" height="70" rx="8" class="unreached"/>
+    <text x="64" y="846" class="inactive">L5 · Not reached</text>
+  </g>
+  <g data-box="b-l5">
+    <rect x="474" y="804" width="370" height="70" rx="8" class="unreached"/>
+    <text x="490" y="846" class="inactive">L5 · Not reached</text>
+  </g>
+  <g data-box="c-l5">
+    <rect x="900" y="804" width="372" height="70" rx="8" class="new"/>
+    <text x="916" y="846" class="step">L5 · Return receipt-7</text>
+  </g>
+
+  <g data-box="a-outbound">
+    <rect x="48" y="898" width="370" height="132" rx="8" class="new"/>
+    <text x="64" y="928" class="eyebrow">OUTBOUND DECISION</text>
+    <text x="64" y="960" class="step">Schedule 0 · ReadSubtotal</text>
+    <text x="64" y="992" class="body">Waits for result 0.</text>
+  </g>
+  <g data-box="b-outbound">
+    <rect x="474" y="898" width="370" height="132" rx="8" class="new"/>
+    <text x="490" y="928" class="eyebrow">OUTBOUND DECISION</text>
+    <text x="490" y="960" class="step">Schedule 1 · ChargeOrder</text>
+    <text x="490" y="992" class="body">No new Schedule 0.</text>
+  </g>
+  <g data-box="c-outbound">
+    <rect x="900" y="898" width="372" height="132" rx="8" class="new"/>
+    <text x="916" y="928" class="eyebrow">OUTBOUND DECISION</text>
+    <text x="916" y="960" class="step">Orchestration completion</text>
+    <text x="916" y="992" class="body">receipt-7 · No new activities</text>
+  </g>
+
+  <text x="32" y="1082" class="small">Solid boxes: executed steps and decisions. Dashed boxes: NOT REACHED beyond the unresolved await.</text>
+  <text x="32" y="1113" class="small">IDs 0 / 1 are activity correlation IDs, not history offsets. A pending schedule without a result stays unresolved.</text>
+  <text x="32" y="1144" class="small">Illustration based on public source; physical batching, delivery counts, and caching behavior can differ.</text>
+</svg>
