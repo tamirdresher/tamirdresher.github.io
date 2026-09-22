@@ -5,7 +5,9 @@ date: 2026-09-21
 tags: [dotnet, durable-task-sdk, durable-task-scheduler, orchestration, workflows]
 ---
 
-I've written about Durable Task and Durable Task Scheduler (DTS) before, including my [DTS introduction][earlier-post]. I've now joined the Durable Task team under Azure Serverless. It still surprises me how many developers don't really know them, let alone use them. They tackle failure and recovery problems every distributed system has to deal with. Yes, even yours with one microservice and a database.
+I've recently joined the Durable Task team under Azure Serverless, and I'm very excited. Durable tasks are such an interesting mix of complexity and elegance.
+
+I've written about Durable Task and Durable Task Scheduler (DTS) before, including my [DTS introduction][earlier-post]. It still surprises me how many developers don't really know them, let alone use them. They tackle failure and recovery problems every distributed system has to deal with. Yes, even yours with one microservice and a database.
 
 Plenty of us can quote the fallacies of distributed computing. Quoting them, though, isn't the same as handling the failures they describe in our code. Knowing that the network can fail doesn't tell a workflow halfway through an order what to do when it does. Durable Task helps recover workflow progress. It doesn't solve every problem in a distributed system.
 
@@ -49,10 +51,6 @@ It calculates it again. Let's see why.
 
 ## Who calls RunAsync, and what happens at await?
 
-Before following the calls, keep **decisions** and **events** separate. A decision, called an action in Core, asks for something next: run `ReadSubtotal` for `"order-42"`. A history event is a stored record of what happened. When that new activity is scheduled, a history event records it. Another records the successful result, `100`. Creating the local action does not itself durably record the request. These are runtime records, not C# events we subscribe to.
-
-Also, our `RunAsync` returns a receipt, not a list of decisions. The worker's runner executes or reconstructs the method against the available history and collects actions through the orchestration context. It returns a result object containing the remaining decisions. During replay, matching recorded schedules removes candidate actions rather than sending them again.
-
 Before L1 can run, some application code has to request an orchestration instance. Here, `client` is an already configured `DurableTaskClient`, connected to the same DTS task hub as a running worker. That worker has `OrderFlow`, `ReadSubtotal`, and `ChargeOrder` registered.
 
 ```csharp
@@ -65,6 +63,10 @@ The [`await` in this starter waits for successful scheduling][client-start] and 
 **DTS schedules the work. Your worker runs the C#.** The worker receives orchestration work and the available history from DTS. It [looks up the registered orchestrator][worker-execute] to find the code for `OrderFlow`. The starter and worker can be hosted in the same process; these are different roles, not a requirement for separate machines.
 
 Inside the worker, a library runner reads the available history and drives the orchestration forward. Its .NET name is `TaskOrchestrationExecutor`. This is library code inside the worker, not DTS itself or a class you have to write. When it processes the starting `ExecutionStarted` event, [the SDK adapter deserializes the input and calls `RunAsync`][orchestration-invocation] with the context and `"order-42"`. Now L1 runs.
+
+At this point, keep **decisions** and **events** separate. A decision, called an action in Core, asks for something next: run `ReadSubtotal` for `"order-42"`. A history event is a stored record of what happened. When that new activity is scheduled, a history event records it. Another records the successful result, `100`. Creating the local action does not itself durably record the request. These are runtime records, not C# events we subscribe to.
+
+Also, our `RunAsync` returns a receipt, not a list of decisions. The worker's runner executes or reconstructs the method against the available history and collects actions through the orchestration context. It returns a result object containing the remaining decisions. During replay, matching recorded schedules removes candidate actions rather than sending them again.
 
 At L2, `CallActivityAsync` [creates a scheduling instruction and a local result task][schedule-task]. The instruction, called an action, says: ask DTS to run `ReadSubtotal` with `"order-42"` as input. The ordinary .NET task is what L2 awaits to get the subtotal. Both exist in worker memory. Creating them does not mean the activity has been dispatched or that DTS has durably recorded the request.
 
