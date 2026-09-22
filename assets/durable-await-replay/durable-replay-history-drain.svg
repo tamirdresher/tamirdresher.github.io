@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1320" height="2144" viewBox="0 0 1320 2144" role="img" aria-labelledby="history-drain-title history-drain-desc">
-  <title id="history-drain-title">A cursor reads history oldest first, reducing the unvisited past without deleting history</title>
-  <desc id="history-drain-desc">Activation C, illustrated as one pass through history based on public source. Walkthrough positions 1 through 5 are not EventId values or activity IDs; the activity correlation IDs are 0 and 1. PAST events are read from oldest to newest with IsReplaying true. Position 1, ExecutionStarted with input order-42, reexecutes L1 and L2, reconstructing candidate action 0 and an open local task; L2 waits. Position 2, TaskScheduled for ReadSubtotal, activity ID 0, matches and removes candidate 0 from the outbound action map without completing its task. Position 3, TaskCompleted with TaskScheduledId 0 and result 100, resolves task 0, lets L2 continue, recomputes total 110 at L3, and reconstructs candidate 1 and open task 1 at L4, which waits. Position 4, TaskScheduled for ChargeOrder, activity ID 1, matches and removes candidate 1 while IsReplaying is still true. The unvisited PAST remainder falls from 4 to 3 to 2 to 1 to 0; visited cards remain visible because history is not deleted. Only after the past loop finishes does the executor set IsReplaying false. Task 1 is still open and the separate NEW event is still unprocessed. Position 5, NEW TaskCompleted with TaskScheduledId 1 and result receipt-7, is then processed with IsReplaying false, resolving L4 so L5 returns the receipt. No activity implementation is rerun by replay. A completion can advance several source lines; an await can span several events. The flag boundary is not workflow completion in general, and a later activation may replay again. Housekeeping events are omitted; this is not physical batching or measured timing.</desc>
+  <title id="history-drain-title">A cursor reads earlier history without deleting the records</title>
+  <desc id="history-drain-desc">Activation C, illustrated as one pass through history based on public source. Walkthrough positions 1 through 5 are not EventId values or activity IDs; the activity correlation IDs are 0 and 1. Earlier history records are read from oldest to newest with IsReplaying true. Position 1, ExecutionStarted with input order-42, reexecutes L1 and L2, reconstructing candidate action 0 and an open local task; L2 waits. Position 2, TaskScheduled for ReadSubtotal, activity ID 0, matches and removes candidate 0 from the outbound action map without completing its task. Position 3, TaskCompleted with TaskScheduledId 0 and result 100, resolves task 0, lets L2 continue, recomputes total 110 at L3, and reconstructs candidate 1 and open task 1 at L4, which waits. Position 4, TaskScheduled for ChargeOrder, activity ID 1, matches and removes candidate 1 while IsReplaying is still true. The count of earlier events left to read falls from 4 to 3 to 2 to 1 to 0. This counts unread earlier records, not pending tasks. Cards already read remain visible because history is not deleted. Only after all earlier records have been read does the executor set IsReplaying false. Task 1 is still open and the result delivered for this step has not yet been processed. New means delivered for this execution step, not necessarily data that has not been durably recorded. Position 5, TaskCompleted with TaskScheduledId 1 and result receipt-7, is then processed with IsReplaying false, resolving L4 so L5 returns the receipt. No activity implementation is rerun by replay. A completion can advance several source lines; an await can span several events. The flag change is not workflow completion in general, and a later activation may replay again. Housekeeping events are omitted; this is not physical batching or measured timing.</desc>
   <defs>
     <marker id="history-cursor-arrow" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse">
       <path d="M 0 0 L 8 4 L 0 8 Z" fill="#1d4ed8"/>
@@ -27,30 +27,30 @@
   </defs>
   <rect width="1320" height="2144" fill="#f8fafc"/>
   <text x="32" y="54" class="title">Replay reads the history; it does not erase it</text>
-  <text x="32" y="91" class="subtitle">Activation C · One pass through history: PAST first, then NEW</text>
+  <text x="32" y="91" class="subtitle">Activation C · Earlier history first, then the result delivered for this step</text>
   <text x="32" y="127" class="body">Positions 1 through 5 are walkthrough order, NOT EventId. Activity correlation IDs are 0 / 1.</text>
 
   <g data-box="reading-key">
     <rect x="32" y="150" width="804" height="192" rx="12" class="panel"/>
-    <text x="52" y="182" class="label">Read the oldest event first; keep every visited card.</text>
-    <text x="52" y="216" class="body">Each row processes one event. Remaining: before → after.</text>
-    <text x="52" y="248" class="body">The unread PAST remainder shrinks; stored history stays.</text>
+    <text x="52" y="182" class="label">Keep every card, including the ones already read.</text>
+    <text x="52" y="216" class="body">Each row reads one earlier event. Count: before → after.</text>
+    <text x="52" y="248" class="body">This counts unread earlier events, not pending tasks.</text>
     <text x="52" y="280" class="body">Schedule matches and task completions are separate.</text>
     <text x="52" y="312" class="body">Call sites execute again; activity implementations do not.</text>
   </g>
   <g data-box="new-event-waiting">
     <rect x="856" y="150" width="432" height="192" rx="12" fill="#fffbeb" stroke="#92400e" stroke-width="2"/>
-    <text x="876" y="182" class="label">NEW · WAIT FOR PAST LOOP</text>
+    <text x="876" y="182" class="label">New result to process</text>
     <text x="876" y="216" class="heading">5 · TaskCompleted</text>
     <text x="876" y="248" class="body">TaskScheduledId 1 · result receipt-7</text>
-    <text x="876" y="280" class="body">Waiting outside the PAST loop.</text>
-    <text x="876" y="312" class="body">Not counted in the PAST remainder.</text>
+    <text x="876" y="280" class="body">Read after all earlier records.</text>
+    <text x="876" y="312" class="body">Not counted among earlier events.</text>
   </g>
 
   <g data-stage="past-position-1">
     <rect x="32" y="364" width="1256" height="250" rx="12" class="panel"/>
     <line x1="850" y1="380" x2="850" y2="598" class="divider"/>
-    <text x="52" y="396" class="label">PAST remaining: 4 → 3</text>
+    <text x="52" y="396" class="label">Earlier events left: 4 → 3</text>
     <text x="144" y="429" text-anchor="middle" class="cursor-label">READ CURSOR</text>
     <path d="M 144 437 V 458" class="cursor"/>
     <g class="current" data-box="read-1">
@@ -91,7 +91,7 @@
   <g data-stage="past-position-2">
     <rect x="32" y="632" width="1256" height="250" rx="12" class="panel"/>
     <line x1="850" y1="648" x2="850" y2="866" class="divider"/>
-    <text x="52" y="664" class="label">PAST remaining: 3 → 2</text>
+    <text x="52" y="664" class="label">Earlier events left: 3 → 2</text>
     <text x="344" y="697" text-anchor="middle" class="cursor-label">READ CURSOR</text>
     <path d="M 344 705 V 726" class="cursor"/>
     <g class="visited" data-box="visited-1-at-2">
@@ -132,7 +132,7 @@
   <g data-stage="past-position-3">
     <rect x="32" y="900" width="1256" height="278" rx="12" class="panel"/>
     <line x1="850" y1="916" x2="850" y2="1162" class="divider"/>
-    <text x="52" y="932" class="label">PAST remaining: 2 → 1</text>
+    <text x="52" y="932" class="label">Earlier events left: 2 → 1</text>
     <text x="544" y="965" text-anchor="middle" class="cursor-label">READ CURSOR</text>
     <path d="M 544 973 V 994" class="cursor"/>
     <g class="visited" data-box="visited-1-at-3">
@@ -174,7 +174,7 @@
   <g data-stage="past-position-4">
     <rect x="32" y="1196" width="1256" height="250" rx="12" class="panel"/>
     <line x1="850" y1="1212" x2="850" y2="1430" class="divider"/>
-    <text x="52" y="1228" class="label">PAST remaining: 1 → 0</text>
+    <text x="52" y="1228" class="label">Earlier events left: 1 → 0</text>
     <text x="744" y="1261" text-anchor="middle" class="cursor-label">READ CURSOR</text>
     <path d="M 744 1269 V 1290" class="cursor"/>
     <g class="visited" data-box="visited-1-at-4">
@@ -209,21 +209,21 @@
     <text x="870" y="1270" class="body">Match schedule for activity 1.</text>
     <text x="870" y="1302" class="body">Remove candidate 1 only.</text>
     <text x="870" y="1334" class="body">L4 still waits on open task 1.</text>
-    <text x="870" y="1382" class="label">No result 1 in PAST.</text>
+    <text x="870" y="1382" class="label">No result 1 in earlier history.</text>
   </g>
 
   <g data-box="past-new-boundary">
     <rect x="32" y="1464" width="1256" height="140" rx="12" fill="#fffbeb" stroke="#92400e" stroke-width="2"/>
-    <text x="52" y="1500" class="heading">AFTER the PAST loop → IsReplaying = false</text>
-    <text x="52" y="1536" class="label">PAST remaining: 0 · Open task: activity ID 1 · NEW position 5: still unprocessed</text>
-    <text x="52" y="1572" class="body">The flag changes when the PAST loop ends, even though a task is open and a NEW event is still waiting.</text>
+    <text x="52" y="1500" class="heading">All earlier records read → IsReplaying = false</text>
+    <text x="52" y="1536" class="label">Earlier events left: 0 · Activity 1 task: pending · New result 5: unread</text>
+    <text x="52" y="1572" class="body">Zero earlier events left does not mean zero pending tasks. The result for this step is still waiting.</text>
   </g>
 
   <g data-stage="new-position-5">
     <rect x="32" y="1622" width="1256" height="356" rx="12" class="panel"/>
     <line x1="850" y1="1638" x2="850" y2="1848" class="divider"/>
-    <text x="52" y="1656" class="label">PAST exhausted · READ CURSOR at END</text>
-    <text x="52" y="1688" class="body">Remaining: 0 · All four persisted cards are VISITED</text>
+    <text x="52" y="1656" class="label">All earlier records read · CURSOR at END</text>
+    <text x="52" y="1688" class="body">Earlier events left: 0 · All four records stay stored</text>
     <g class="visited" data-box="visited-1-at-5">
       <rect x="52" y="1710" width="184" height="136" rx="8"/>
       <text x="64" y="1739" class="status">1 · VISITED</text>
@@ -252,7 +252,7 @@
       <text x="664" y="1800" class="correlation">activity ID 1</text>
       <text x="664" y="1830" class="body">ChargeOrder</text>
     </g>
-    <text x="870" y="1656" class="heading">NEW · IsReplaying = false</text>
+    <text x="870" y="1656" class="heading">New result · IsReplaying = false</text>
     <text x="1071" y="1688" text-anchor="middle" class="cursor-label">READ CURSOR → 5</text>
     <path d="M 1071 1694 V 1706" class="cursor"/>
     <g class="current" data-box="read-5">
@@ -264,7 +264,7 @@
     </g>
     <g data-box="new-completion-outcome">
       <rect x="52" y="1870" width="1220" height="88" rx="8" fill="#eff6ff"/>
-      <text x="68" y="1904" class="label">NEW completion resolves task 1. L4 receives receipt-7; L5 returns it.</text>
+      <text x="68" y="1904" class="label">The new result resolves task 1. L4 receives receipt-7; L5 returns it.</text>
       <text x="68" y="1938" class="body">That return is this example's outcome. IsReplaying = false does not generally mean workflow completion.</text>
     </g>
   </g>

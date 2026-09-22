@@ -151,6 +151,8 @@ This simplified trace follows the public source. It is not three measured delive
 
 Read each strip from top to bottom: code position on the left, history cursor on the right, and pending actions, open result tasks, and locals below. A `TaskCompletionSource` is the helper supplying the awaited task's result. These are settled teaching checkpoints based on the public source, not a live debugger recording. Click any strip to open the full SVG and enlarge it.
 
+The runner reads **Earlier history** first to reconstruct this execution. **New events for this step** are the events newly delivered for the current step; "new" does not mean their data is unrecorded. The read counts track events, not unfinished activities, and records already read stay stored.
+
 ### A: ask for the subtotal
 
 The starting event supplies the input. L1 reads `"order-42"`. L2 calls `ReadSubtotal`, creating action **0** and an open local task. There is no result yet, so the method yields at L2. L3 through L5 have not executed.
@@ -159,9 +161,9 @@ The executor returns the new action to schedule `ReadSubtotal` with ID 0. Once t
 
 Notice what is missing: no durable record of a local variable called `subtotal` with an instruction pointer beside it.
 
-[![Three snapshots: before ExecutionStarted, waiting at L2 with candidate 0 and a pending result task, then returning the new ReadSubtotal schedule.](/assets/durable-await-replay/durable-replay-state-a.svg)](/assets/durable-await-replay/durable-replay-state-a.svg)
+[![Three snapshots: the newly delivered ExecutionStarted record is next to be read, L2 waits with candidate 0 and a pending result task, then the runner returns the new ReadSubtotal schedule.](/assets/durable-await-replay/durable-replay-state-a.svg)](/assets/durable-await-replay/durable-replay-state-a.svg)
 
-*Figure 2A. Activation A. ExecutionStarted reaches L2 and creates candidate 0 plus a pending local result task. The runner returns Schedule 0 after processing available history. The task is not persisted.*
+*Figure 2A. Activation A. With no earlier history to read, ExecutionStarted reaches L2 and creates candidate 0 plus a pending local result task. The runner returns Schedule 0 after processing available history. The task is not persisted.*
 
 ### B: use the subtotal, then ask for the charge
 
@@ -198,9 +200,9 @@ L3 calculates `100m + 10m`, producing `110m`. L4 calls `ChargeOrder`, creating t
 
 The outstanding action is now **Schedule 1: `ChargeOrder`**. There is no new Schedule 0 merely because L2 executed again.
 
-[![Four snapshots: replay recreates activity 0, history matches its schedule, the new result 100 recomputes 110 and opens activity 1 at L4, then Schedule 1 is returned.](/assets/durable-await-replay/durable-replay-state-b.svg)](/assets/durable-await-replay/durable-replay-state-b.svg)
+[![Four snapshots: replay recreates activity 0 and matches its earlier schedule. The result delivered for this step supplies 100, recomputes 110 and opens activity 1 at L4, then Schedule 1 is returned.](/assets/durable-await-replay/durable-replay-state-b.svg)](/assets/durable-await-replay/durable-replay-state-b.svg)
 
-*Figure 2B. Activation B. Matching old Schedule 0 removes the candidate, not the task. With IsReplaying already false, completion 0 advances L2, L3 and L4 and computes 110. The runner returns only the new Schedule 1.*
+*Figure 2B. Activation B. Matching the earlier Schedule 0 removes the candidate, not the task. After all earlier records are read, IsReplaying is false before completion 0 advances L2, L3 and L4 and computes 110. The runner returns only the new Schedule 1.*
 
 ### C: use both recorded operations, then return
 
@@ -210,21 +212,21 @@ L2 reconstructs action 0; history matches its schedule and supplies `100m`. L3 c
 
 L4 reconstructs action 1. Its recorded scheduling event removes the candidate from the outbound map, and its completion supplies `"receipt-7"`. L5 returns that receipt. The executor can now [emit orchestration completion][finish-orchestration], rather than a new activity schedule.
 
-In this pass, result 0 is replayed past history, while result 1 can be newly arrived history. Neither activity is newly scheduled just because both call sites ran again.
+In this pass, result 0 comes from earlier history, while result 1 can be newly delivered for this step. Neither activity is newly scheduled just because both call sites ran again.
 
-[![Six snapshots: replay rebuilds both awaits, matches their schedules, and recomputes 110. IsReplaying becomes false while L4 still waits. Completion 1 supplies receipt-7; L5 returns and the runner completes the orchestration.](/assets/durable-await-replay/durable-replay-state-c.svg)](/assets/durable-await-replay/durable-replay-state-c.svg)
+[![Six snapshots: replay rebuilds both awaits, matches their schedules, and recomputes 110. After all earlier history is read, IsReplaying becomes false while L4 still waits. The newly delivered completion 1 supplies receipt-7; L5 returns and the runner completes the orchestration.](/assets/durable-await-replay/durable-replay-state-c.svg)](/assets/durable-await-replay/durable-replay-state-c.svg)
 
-*Figure 2C. Activation C. Both schedules are matched, and recorded result 100 drives a fresh calculation of 110. Past history ends with L4 still waiting. New completion 1 supplies receipt-7, and the runner emits orchestration completion without scheduling either activity again.*
+*Figure 2C. Activation C. Both schedules are matched, and recorded result 100 drives a fresh calculation of 110. All earlier records have been read while L4 still waits. Completion 1, delivered for this step, supplies receipt-7, and the runner emits orchestration completion without scheduling either activity again.*
 
-Zoom in on C. Picture the old history as a row of cards, read oldest first. The **read cursor** moves; the cards stay. [Matching a schedule][match-schedule] removes a candidate action, while [processing its completion][complete-task] resolves the open task. One completion can advance several source lines, and an await can span several events.
+Zoom in on C. Read the **Earlier history** cards from oldest to newest. **Earlier events left** counts the earlier records still to read, moving from 4 to 0 as the cursor advances. It is not a count of unfinished activities, and reading a card does not delete its stored record. [Matching a schedule][match-schedule] removes a candidate action, while [processing its completion][complete-task] resolves the open task. One completion can advance several source lines, and an await can span several events.
 
-![Event cards read oldest first for activation C: the read cursor advances through past positions 1 through 4 while visited cards remain and the unvisited remainder shrinks to zero. IsReplaying then switches to false with activity task 1 still open, before new completion 5 resolves L4 and lets L5 return receipt-7.](/assets/durable-await-replay/durable-replay-history-drain.svg)
+![Activation C reads earlier history positions 1 through 4, keeping each card visible while the count of earlier events left to read falls from 4 to zero. After all four are read, IsReplaying becomes false while activity task 1 still waits. New result 5 then resolves L4 and lets L5 return receipt-7.](/assets/durable-await-replay/durable-replay-history-drain.svg)
 
-*Figure 3. The unvisited PAST remainder shrinks as the cursor advances; visited history stays. Positions 1 through 5 are walkthrough order, not `EventId` or activity IDs. The new completion waits until the past loop finishes. Housekeeping events are omitted.*
+*Figure 3. "Earlier events left" counts earlier history records still to read, not pending tasks. Positions 1 through 5 are walkthrough order, not `EventId` or activity IDs. The result delivered for this step waits until all earlier records are read. Housekeeping events are omitted.*
 
-Only after the last old card (`TaskScheduled` for activity 1) has been processed does the [executor set `IsReplaying` to `false`, before processing new events][executor-pass]. L4 is still waiting on task 1. The new completion then resolves it, and L5 returns the receipt.
+Only after the last record in the earlier history (`TaskScheduled` for activity 1) has been processed does the [executor set `IsReplaying` to `false`, before processing new events][executor-pass]. L4 is still waiting on task 1. The newly delivered completion then resolves it, and L5 returns the receipt.
 
-Exhausting past history does not mean every task has finished or every incoming event has been processed. It isn't a general signal of workflow completion, and another activation can replay again.
+Reading all the earlier history does not mean every task has finished or every newly delivered event has been processed. It isn't a general signal of workflow completion, and another activation can replay again.
 
 Now suppose history contains `TaskScheduled(0)` but no completion or failure for it. Replay still matches and removes the candidate scheduling action, but the reconstructed task stays incomplete. **Pending does not mean “schedule it again because we replayed.”** Redelivery of an outstanding activity is a separate delivery concern.
 
@@ -279,6 +281,8 @@ The `await` is still ordinary C#. The framework call creates an action to perfor
 So when you see L2 or L3 execute again, ask two separate questions: **which source lines are being replayed, and which actions are actually being emitted?**
 
 That is the secret sauce: the method can keep making progress without keeping its original stack alive. Its activities still have to handle external effects correctly.
+
+Once you can follow the history and the actions, the apparent magic becomes something you can reason about in your own code. In upcoming posts, I'll dig into more of the overlooked capabilities and hidden gems in the Durable Task ecosystem.
 
 [earlier-post]: https://www.tamirdresher.com/blog/2026/04/07/durable-task-scheduler
 [core-source]: https://github.com/Azure/durabletask/blob/af8078ff7073facf5bb6ec8b7ba3beeb7efcf2d8/README.md
