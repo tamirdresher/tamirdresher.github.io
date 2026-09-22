@@ -64,11 +64,15 @@ The [`await` in this starter waits for successful scheduling][client-start] and 
 
 Inside the worker, a library runner reads the available history and drives the orchestration forward. Its .NET name is `TaskOrchestrationExecutor`. This is library code inside the worker, not DTS itself or a class you have to write. When it processes the starting `ExecutionStarted` record in the history, [the SDK adapter deserializes the input and calls `RunAsync`][orchestration-invocation] with the context and `"order-42"`. Now L1 runs.
 
+The runner takes the recorded history and runs or replays our code as far as that history allows, collecting instructions for what should happen next. It returns the remaining instructions to the worker to send to DTS.
+
+Core calls these instructions **actions** and returns them in `OrchestratorExecutionResult.Actions`. When this post or its diagrams say **decisions**, they mean these same actions, not a separate `Decisions` property, list, or return value.
+
 The runner has just read a record saying this instance started and used it to enter `RunAsync`. Records like this are **history events**. They are the incoming history the runner uses to reconstruct progress, not C# events that application code subscribes to.
 
-When `RunAsync` requests `ReadSubtotal` for `"order-42"`, the call adds a request to the orchestration context. That request is a **decision**, called an action in Core: it describes work to ask for next. Creating it locally does not durably record the request. When a new activity is scheduled, a history event records that fact; another records its successful result, `100`.
+When `RunAsync` requests `ReadSubtotal` for `"order-42"`, the call adds a request to the orchestration context. This local action describes work to ask for next. Creating it locally does not durably record the request. When a new activity is scheduled, a history event records that fact; another records its successful result, `100`.
 
-`RunAsync` itself returns the receipt, not those decisions. The runner executes or reconstructs the method against the incoming history and returns a result object containing the decisions still outstanding. During replay, matching recorded schedules removes candidate actions, so they are not sent again.
+`RunAsync` itself returns the receipt, not those actions. The runner executes or reconstructs the method against the incoming history and returns a result object containing the actions still outstanding. During replay, matching recorded schedules removes candidate actions, so they are not sent again.
 
 At L2, `CallActivityAsync` [creates a scheduling instruction and a local result task][schedule-task]. The instruction, called an action, says: ask DTS to run `ReadSubtotal` with `"order-42"` as input. The ordinary .NET task is what L2 awaits to get the subtotal. Both exist in worker memory. Creating them does not mean the activity has been dispatched or that DTS has durably recorded the request.
 
@@ -76,9 +80,9 @@ If that result task is incomplete, [ordinary C# `await` yields without blocking 
 
 The runner keeps reading any available history. A completion event later in this same pass can supply a result and let the method continue. A previously recorded schedule can be [matched to the reconstructed instruction][match-schedule] instead of sent again.
 
-After processing the pass's available history, the runner [returns the decisions still outstanding][executor-pass], and the worker [sends them to DTS][worker-response]. For new activity work, those decisions request scheduling. Finishing this response is not finishing the order workflow. One pass can return several decisions; an `await` is not itself a durable checkpoint.
+After processing the pass's available history, the runner [returns the remaining actions in `OrchestratorExecutionResult.Actions`][executor-pass], and the worker [sends them to DTS][worker-response]. For new activity work, those actions request scheduling. Finishing this response is not finishing the order workflow. One pass can return several actions; an `await` is not itself a durable checkpoint.
 
-Here is the actual return statement from Durable Task Core's [`TaskOrchestrationExecutor.ExecuteCore`][executor-pass], with the surrounding method omitted. `Actions` holds the remaining decisions collected in its orchestration context:
+Here is the actual return statement from Durable Task Core's [`TaskOrchestrationExecutor.ExecuteCore`][executor-pass], with the surrounding method omitted. The `Actions` property contains the remaining actions collected in the orchestration context:
 
 ```csharp
 return new OrchestratorExecutionResult
