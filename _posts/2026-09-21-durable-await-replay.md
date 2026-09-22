@@ -49,6 +49,10 @@ It calculates it again. Let's see why.
 
 ## Who calls RunAsync, and what happens at await?
 
+Before following the calls, keep **decisions** and **events** separate. A decision, called an action in Core, asks for something next: run `ReadSubtotal` for `"order-42"`. A history event is a stored record of what happened. When that new activity is scheduled, a history event records it. Another records the successful result, `100`. Creating the local action does not itself durably record the request. These are runtime records, not C# events we subscribe to.
+
+Also, our `RunAsync` returns a receipt, not a list of decisions. The worker's runner executes or reconstructs the method against the available history and collects actions through the orchestration context. It returns a result object containing the remaining decisions. During replay, matching recorded schedules removes candidate actions rather than sending them again.
+
 Before L1 can run, some application code has to request an orchestration instance. Here, `client` is an already configured `DurableTaskClient`, connected to the same DTS task hub as a running worker. That worker has `OrderFlow`, `ReadSubtotal`, and `ChargeOrder` registered.
 
 ```csharp
@@ -70,6 +74,16 @@ The runner keeps reading any available history. A completion event later in this
 
 After processing the pass's available history, the runner [returns the decisions still outstanding][executor-pass], and the worker [sends them to DTS][worker-response]. For new activity work, those decisions request scheduling. Finishing this response is not finishing the order workflow. One pass can return several decisions; an `await` is not itself a durable checkpoint.
 
+Here is the actual return statement from Durable Task Core's [`TaskOrchestrationExecutor.ExecuteCore`][executor-pass], with the surrounding method omitted. `Actions` holds the remaining decisions collected in its orchestration context:
+
+```csharp
+return new OrchestratorExecutionResult
+{
+    Actions = this.context.OrchestratorActions,
+    CustomStatus = this.taskOrchestration.GetStatus(),
+};
+```
+
 Once a new activity is scheduled, [a separate activity handler in a worker runs it][activity-worker] and [reports its outcome][activity-response]. A recorded outcome can then be supplied as history for another orchestration pass. In the reconstruction path below, `RunAsync` starts again and history resolves the new local task at L2. The activity is not calling back into the old suspended method.
 
 Here's the same flow as a conventional sequence diagram, read from top to bottom. The client gets an instance ID, the first worker pass asks for `ReadSubtotal`, and its recorded result lets a later pass recompute `110m` and ask for `ChargeOrder`.
@@ -82,7 +96,7 @@ The columns are roles, not necessarily separate processes. Activation bars on th
 
 ## What survives is history, not the suspended method
 
-Here, an **event** is a stored record in one orchestration instance's execution history. It is not a C# `event` that application code subscribes to. [DTS keeps that history as part of the task hub's managed state][dts-docs], and a worker receives it to reconstruct execution. We are describing that contract, not the service's database or storage layout.
+[DTS keeps each instance's history as part of the task hub's managed state][dts-docs], and a worker receives those records to reconstruct execution. We are describing that contract, not the service's database or storage layout.
 
 For `ReadSubtotal`, two records in our example say:
 
@@ -130,6 +144,21 @@ The orchestration starts at L1 again. At L2, its code creates a candidate action
 Core's [`HandleTaskScheduledEvent`][match-schedule] matches the recorded scheduling event against the reconstructed action using the sequence ID, action kind, and activity name. It then removes that candidate from the outbound action map.
 
 **Matching the schedule prevents a new scheduling decision; it does not, on its own, supply the result.**
+
+The completion handler uses the recorded activity ID to find its open local task, supplies the serialized result, and then removes the entry. This excerpt from Durable Task Core's [`TaskOrchestrationContext.HandleTaskCompletedEvent`][complete-task] keeps the existence check; the method wrapper and duplicate event branch are omitted:
+
+```csharp
+int taskId = completedEvent.TaskScheduledId;
+if (this.openTasks.ContainsKey(taskId))
+{
+    OpenTaskInfo info = this.openTasks[taskId];
+    info.Result.SetResult(completedEvent.Result);
+
+    this.openTasks.Remove(taskId);
+}
+```
+
+The order matters: `SetResult` runs before removal, and the continuation can run inside that call. The snapshots show the settled state afterward.
 
 When the executor processes the completion for ID 0, [`HandleTaskCompletedEvent` sets the reconstructed completion source's result][complete-task]. The async chain can then continue within this same activation, deserialize the value, and assign `subtotal = 100m`. Core's [orchestration synchronization context][sync-context] and [synchronous task scheduler][sync-scheduler] keep those continuations inside this pass through history.
 
