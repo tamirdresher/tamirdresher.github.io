@@ -113,6 +113,8 @@ For `ReadSubtotal`, two records in our example say:
 
 These are conceptual descriptions, not an exact data format or the whole history. Starting and housekeeping records are omitted. The **0** identifies the activity, not the record's position in history.
 
+> **What about loops?** Calling the same activity in a `for` or `foreach` is fine if, for the same inputs and recorded history, the loop reproduces the same ordered durable calls. Each call gets [its own sequence ID from the runtime counter][schedule-task], and replay recreates those IDs at the same calls. Core [matches the ID, action type, and activity name][match-schedule], not the name alone. These IDs are not loop indices or global counters for an activity: timers, sub orchestrations, and event sends share the sequence. Changing iteration order or which durable calls occur can break matching; the same number of calls is not enough.
+
 The first record tells the runner that this activity was already scheduled. During replay, L2 creates a candidate action again. The runner [matches the record against that action and removes the candidate from its outgoing actions][match-schedule], rather than scheduling `ReadSubtotal` anew. This record does **not** say the activity finished, and matching it does **not** complete the await. Core represents this scheduling record with the .NET class [`TaskScheduledEvent`][scheduled-event].
 
 The second record supplies the successful outcome. [Processing it provides the result to the reconstructed local task][complete-task], so `RunAsync` can continue. Core represents this completion record with [`TaskCompletedEvent`][completed-event]. Its `TaskScheduledId` is **0** here, connecting the result **100** to the activity that was scheduled.
