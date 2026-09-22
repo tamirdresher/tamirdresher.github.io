@@ -66,7 +66,7 @@ Inside the worker, a library runner reads the available history and drives the o
 
 The runner takes the recorded history and runs or replays our code as far as that history allows, collecting instructions for what should happen next. It returns the remaining instructions to the worker to send to DTS.
 
-Core calls these instructions **actions** and returns them in `OrchestratorExecutionResult.Actions`. When this post or its diagrams say **decisions**, they mean these same actions, not a separate `Decisions` property, list, or return value.
+Core calls these instructions **actions** (the orchestration's decisions about what should happen next) and returns them in `OrchestratorExecutionResult.Actions`.
 
 The runner has just read a record saying this instance started and used it to enter `RunAsync`. Records like this are **history events**. They are the incoming history the runner uses to reconstruct progress, not C# events that application code subscribes to.
 
@@ -100,7 +100,7 @@ The columns are roles, not necessarily separate processes. Activation bars on th
 
 ![Sequence diagram with client, DTS, orchestration worker, and activity handler lifelines. The client receives an instance ID; two orchestration activations schedule ReadSubtotal, use its recorded result 100, recompute 110, and request ChargeOrder.](/assets/durable-await-replay/durable-await-sequence.svg)
 
-*Figure 1. A conceptual sequence from scheduling `OrderFlow` to the next decision for `ChargeOrder`. The two activation bars on the orchestration worker mark separate history passes, not the lifetime of a process. Arrows show causal flow, not measured timing. The DTS lifeline shows its public history and scheduling contract, not an unpublished storage, transaction, or acknowledgement design. Activity results become history; they do not resume the original CLR task.*
+*Figure 1. A conceptual sequence from scheduling `OrderFlow` to the next action for `ChargeOrder`. The two activation bars on the orchestration worker mark separate history passes, not the lifetime of a process. Arrows show causal flow, not measured timing. The DTS lifeline shows its public history and scheduling contract, not an unpublished storage, transaction, or acknowledgement design. Activity results become history; they do not resume the original CLR task.*
 
 ## What survives is history, not the suspended method
 
@@ -113,7 +113,7 @@ For `ReadSubtotal`, two records in our example say:
 
 These are conceptual descriptions, not an exact data format or the whole history. Starting and housekeeping records are omitted. The **0** identifies the activity, not the record's position in history.
 
-The first record tells the runner that this activity was already scheduled. During replay, L2 creates a candidate action again. The runner [matches the record against that action and removes the candidate from its outgoing decisions][match-schedule], rather than scheduling `ReadSubtotal` anew. This record does **not** say the activity finished, and matching it does **not** complete the await. Core represents this scheduling record with the .NET class [`TaskScheduledEvent`][scheduled-event].
+The first record tells the runner that this activity was already scheduled. During replay, L2 creates a candidate action again. The runner [matches the record against that action and removes the candidate from its outgoing actions][match-schedule], rather than scheduling `ReadSubtotal` anew. This record does **not** say the activity finished, and matching it does **not** complete the await. Core represents this scheduling record with the .NET class [`TaskScheduledEvent`][scheduled-event].
 
 The second record supplies the successful outcome. [Processing it provides the result to the reconstructed local task][complete-task], so `RunAsync` can continue. Core represents this completion record with [`TaskCompletedEvent`][completed-event]. Its `TaskScheduledId` is **0** here, connecting the result **100** to the activity that was scheduled.
 
@@ -123,19 +123,37 @@ On reconstruction, L2 assigns the recorded result to a fresh `subtotal` variable
 
 No orchestration thread is parked waiting for the activity. The worker process doesn't have to stop at every await either. Ending a pass through history isn't the same as ending a process.
 
+## Does Worker 1 keep all those waiting tasks in memory?
+
+Now, you've all heard something I didn't say. Metaphorically, since you're reading this. You're probably thinking:
+
+> "Worker 1 ran the first pass. If Worker 2 resumes the orchestration after the activity finishes, what happens to Worker 1 and the `TaskCompletionSource` it created?"
+>
+> "If Worker 1 handles 10,000 orchestration instances, each waiting for an activity that takes a week, does it keep 10,000 pending tasks and state machines in memory for that whole week?"
+
+**No. A waiting workflow does not require its original invocation or local tasks to stay alive.** An ordinary async `await` does not park a thread with an OS stack either. Durable execution lets the workflow make progress without its original continuation in memory.
+
+Worker 1 requests `ReadSubtotal` by returning a scheduling action. [Once new actions and history have been committed, the runtime can unload that execution][orchestration-reliability]. When the activity reports `100` and the result is durably recorded, DTS keeps it in the instance history. The next pass needs that history, not Worker 1's memory.
+
+An eligible Worker 2 connected to the same task hub, with compatible code registered, can receive that work. It reruns `RunAsync` and creates a new local `Task` and `TaskCompletionSource`. The `TaskScheduled` record [matches the reconstructed request][match-schedule]; the `TaskCompleted` record, through `TaskScheduledId`, [supplies `100` to Worker 2's new task][complete-task]. Nothing needs to find Worker 1's original helper or call its old continuation. The durable activity ID is not a .NET `Task.Id` or a memory address. Switching workers alone does not rerun an activity whose successful result is already recorded.
+
+The standalone gRPC pass can finish while the workflow waits. It does not require those 10,000 original orchestration task objects to be retained for a week. Once unreferenced, they can be collected. That does not promise immediate garbage collection, zero overhead, free waiting, or scaling to zero. Some hosts cache execution state, but recovery does not depend on the original worker or cache surviving.
+
+There is one important distinction: **a waiting orchestration is not the same as an activity that keeps running for a week.** An activity executing, awaiting I/O, or sleeping for that long can retain activity worker resources. Its execution is not checkpointed in the middle, and failure can require [another attempt with the usual side effect concerns][activity-contract]. If the work is only waiting for time to pass or an outside answer, use a durable timer or wait for an external event instead.
+
 ## Replay, line by line
 
-Let's walk the five lines through three **logical activations**. Here, an activation means one pass in which the worker processes orchestration history and produces decisions.
+Let's walk the five lines through three **logical activations**. Here, an activation means one pass in which the worker processes orchestration history and produces actions.
 
 This simplified trace follows the public source. It is not three measured deliveries or a promise about physical service batches, and housekeeping events are omitted. With no other durable operations in this example, the inspected Core counter assigns activity IDs **0** and **1**. Those IDs correlate actions with scheduled tasks; they are not positions in the event history.
 
-Read each strip from top to bottom: code position on the left, history cursor on the right, and pending decisions, open result tasks, and locals below. A `TaskCompletionSource` is the helper supplying the awaited task's result. These are settled teaching checkpoints based on the public source, not a live debugger recording. Click any strip to open the full SVG and enlarge it.
+Read each strip from top to bottom: code position on the left, history cursor on the right, and pending actions, open result tasks, and locals below. A `TaskCompletionSource` is the helper supplying the awaited task's result. These are settled teaching checkpoints based on the public source, not a live debugger recording. Click any strip to open the full SVG and enlarge it.
 
 ### A: ask for the subtotal
 
 The starting event supplies the input. L1 reads `"order-42"`. L2 calls `ReadSubtotal`, creating action **0** and an open local task. There is no result yet, so the method yields at L2. L3 through L5 have not executed.
 
-The executor returns the new decision to schedule `ReadSubtotal` with ID 0. Once that decision is accepted, scheduling history records the operation. The activity runs separately and reports its outcome.
+The executor returns the new action to schedule `ReadSubtotal` with ID 0. Once that action is accepted, scheduling history records the operation. The activity runs separately and reports its outcome.
 
 Notice what is missing: no durable record of a local variable called `subtotal` with an instruction pointer beside it.
 
@@ -151,7 +169,7 @@ The orchestration starts at L1 again. At L2, its code creates a candidate action
 
 Core's [`HandleTaskScheduledEvent`][match-schedule] matches the recorded scheduling event against the reconstructed action using the sequence ID, action kind, and activity name. It then removes that candidate from the outbound action map.
 
-**Matching the schedule prevents a new scheduling decision; it does not, on its own, supply the result.**
+**Matching the schedule removes the recreated action from the outgoing list; it does not, on its own, supply the result.**
 
 The completion handler uses the recorded activity ID to find its open local task, supplies the serialized result, and then removes the entry. This excerpt from Durable Task Core's [`TaskOrchestrationContext.HandleTaskCompletedEvent`][complete-task] keeps the existence check; the method wrapper and duplicate event branch are omitted:
 
@@ -176,7 +194,7 @@ When the executor processes the completion for ID 0, [`HandleTaskCompletedEvent`
 
 L3 calculates `100m + 10m`, producing `110m`. L4 calls `ChargeOrder`, creating the **new** action 1 with `{ orderId, total }`. Its result is not available yet, so the method yields again.
 
-The outstanding decision is now **Schedule 1: `ChargeOrder`**. There is no new Schedule 0 merely because L2 executed again.
+The outstanding action is now **Schedule 1: `ChargeOrder`**. There is no new Schedule 0 merely because L2 executed again.
 
 [![Four snapshots: replay recreates activity 0, history matches its schedule, the new result 100 recomputes 110 and opens activity 1 at L4, then Schedule 1 is returned.](/assets/durable-await-replay/durable-replay-state-b.svg)](/assets/durable-await-replay/durable-replay-state-b.svg)
 
@@ -212,13 +230,11 @@ No crash is needed for any of this. In the reconstruction path, normal activity 
 
 ## Can the runtime keep the local execution around?
 
-Yes. A host can keep useful execution state, depending on its hosting path and configuration.
+The available caching path depends on the host and its configuration.
 
 The standalone gRPC path used above [constructs a new `TaskOrchestrationExecutor`][worker-execute]. A [separate runner used primarily by Azure Functions isolated hosting][functions-runner] has an [extended sessions path that can reuse an executor and process new events][extended-sessions]. Functions also documents [instance caching that varies by provider][caching-docs].
 
 That tells us what those paths can do, not which options a particular deployment enables. The diagrams show reconstruction, not a promise that every host unloads after every await or replays everything for each notification.
-
-Nonblocking also doesn't guarantee immediate garbage collection, process shutdown, scaling to zero, or free waiting. Worker lifetime, caching, and billing are not properties of the C# keyword.
 
 ## The code restrictions stop looking arbitrary
 
@@ -234,7 +250,7 @@ For a durable wait, the modern API here is [`context.CreateTimer(...)`][timer-ap
 
 And then there are logs. L3 can execute more than once, so an ordinary log beside it can appear more than once. [`context.CreateReplaySafeLogger("OrderFlow")`][context-guid-log] returns a logger that [suppresses writes while `IsReplaying` is true][logger-implementation]. That cuts replay noise. It doesn't guarantee that each audit event is recorded exactly once.
 
-Do not “fix” repeated execution by placing durable decisions inside `if (!context.IsReplaying)`. Replay needs to reconstruct those decisions to match the history. Suppressing the log is useful. Suppressing the operation changes the program.
+Do not “fix” repeated execution by placing durable actions inside `if (!context.IsReplaying)`. Replay needs to reconstruct those actions to match the history. Suppressing the log is useful. Suppressing the operation changes the program.
 
 ## Replay is not retry
 
@@ -252,13 +268,13 @@ When the activity runs again, it can reach that payment system again. History ca
 
 The charge operation still needs idempotency or deduplication at the business level. For example, use a stable key for this particular operation, honored by an integration that supports it. The key must distinguish a duplicate attempt from another legitimate charge.
 
-Now move the failure to after the successful completion has been durably recorded. If worker memory is lost then, replay can supply `"receipt-7"` and advance to L5 without a new scheduling decision for that completed logical activity. That recovers a recorded outcome. It doesn't promise every external effect happened exactly once.
+Now move the failure to after the successful completion has been durably recorded. If worker memory is lost then, replay can supply `"receipt-7"` and advance to L5 without scheduling that completed logical activity again. That recovers a recorded outcome. It doesn't promise every external effect happened exactly once.
 
 ## Back to the debugger
 
-The `await` is still ordinary C#. The framework call creates a decision to perform a durable operation and a local task. History can later match that operation and complete a reconstructed task, letting compatible code calculate its locals and continue.
+The `await` is still ordinary C#. The framework call creates an action to perform a durable operation and a local task. History can later match that operation and complete a reconstructed task, letting compatible code calculate its locals and continue.
 
-So when you see L2 or L3 execute again, ask two separate questions: **which source lines are being replayed, and which decisions are actually being emitted?**
+So when you see L2 or L3 execute again, ask two separate questions: **which source lines are being replayed, and which actions are actually being emitted?**
 
 That is the secret sauce: the method can keep making progress without keeping its original stack alive. Its activities still have to handle external effects correctly.
 
@@ -277,6 +293,7 @@ That is the secret sauce: the method can keep making progress without keeping it
 [executor-pass]: https://github.com/Azure/durabletask/blob/af8078ff7073facf5bb6ec8b7ba3beeb7efcf2d8/src/DurableTask.Core/TaskOrchestrationExecutor.cs#L138-L215
 [worker-response]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Worker/Grpc/GrpcDurableTaskWorker.Processor.cs#L892-L902
 [dts-docs]: https://learn.microsoft.com/en-us/azure/durable-task/scheduler/durable-task-scheduler
+[orchestration-reliability]: https://learn.microsoft.com/en-us/azure/durable-task/common/durable-task-orchestrations#reliability
 [scheduled-event]: https://github.com/Azure/durabletask/blob/af8078ff7073facf5bb6ec8b7ba3beeb7efcf2d8/src/DurableTask.Core/History/TaskScheduledEvent.cs#L65-L81
 [completed-event]: https://github.com/Azure/durabletask/blob/af8078ff7073facf5bb6ec8b7ba3beeb7efcf2d8/src/DurableTask.Core/History/TaskCompletedEvent.cs#L25-L52
 [activity-worker]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Worker/Grpc/GrpcDurableTaskWorker.Processor.cs#L997-L1038
