@@ -13,7 +13,7 @@ Once you understand how a workflow can keep going without its original worker, a
 
 There are useful answers to all three. They are also three different operations, which matters rather more than the fact that all of them can appear in a demo called "make the workflow continue."
 
-I'll use the standalone [Durable Task .NET SDK v1.26.0][sdk-release] with manual registration, without the optional source generator. The code below is based on public API definitions and samples. These are teaching illustrations, not compiled or executed demonstrations. Real activity implementations, connection configuration, and host startup are omitted. The clients and workers are assumed to be configured for the intended DTS task hub.
+I'll use the standalone [Durable Task .NET SDK v1.26.0][sdk-release] with manual registration, without the optional source generator. The code below is based on public API definitions and samples. These are teaching illustrations, not compiled or executed demonstrations. Real activity implementations and connection values are omitted; the shipping example includes host setup and startup. The clients and workers are assumed to be configured for the intended DTS task hub.
 
 ## Keep the workflow together, split the workers
 
@@ -21,7 +21,9 @@ Suppose order validation is inexpensive, but shipping needs a large integration 
 
 The workflow can stay one workflow without making every worker carry every activity.
 
-The distinction is between **coordination** and **where work runs**. An orchestrator requests activities by name. Each worker registers the work it can execute. [Work item filtering][filter-doc] lets DTS deliver work to workers whose configured filters match it.
+The distinction is between **coordination** and **where work runs**. There are three pieces to keep separate. The **registry** maps task names and versions to code a worker can run. **Filters** describe the work that worker asks DTS to send it. An optional **worker version policy** adds acceptance checks. They need to agree: a filter neither registers a missing implementation nor translates its payload.
+
+An orchestrator still requests activities by name. [Work item filtering][filter-doc] lets DTS deliver those work items to eligible workers, without putting worker addresses into the workflow.
 
 Here is a small, independently defined orchestration:
 
@@ -47,29 +49,40 @@ The validation activity is assumed to throw if the order is invalid; its returne
 
 Notice what the method does not contain: a shipping worker address, an HTTP client for that worker, or a discovery service. It asks the orchestration context for named work. DTS handles the delivery, and recorded results allow the orchestration to make progress.
 
-The shipping deployment can register just its shipping activity:
+### Configure the worker, then start the host
+
+For an ordinary specialist worker, register only its own tasks and let the SDK generate the filters. Here is the shipping host, including startup. `connectionString` is an already configured value supplied by the application, and it must target the same scheduler and task hub as the other participants.
 
 ```csharp
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Worker;
 using Microsoft.DurableTask.Worker.AzureManaged;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-public static class ShippingWorkerSetup
+public static class ShippingHost
 {
-    public static void AddShippingWorker(
-        IServiceCollection services,
+    public static async Task RunAsync(
         string connectionString,
-        TaskActivity<string, string> shipOrder)
+        TaskActivity<string, string> shipOrder,
+        CancellationToken cancellation = default)
     {
-        services.AddDurableTaskWorker()
+        HostApplicationBuilder builder = Host.CreateApplicationBuilder();
+        builder.Services.AddDurableTaskWorker()
             .AddTasks(registry =>
                 registry.AddActivity("ShipOrder", shipOrder))
             .UseWorkItemFilters()
             .UseDurableTaskScheduler(connectionString);
+
+        using IHost host = builder.Build();
+        await host.RunAsync(cancellation);
     }
 }
 ```
+
+The registration chain configures a worker; it does not start one. `Build()` creates the host, and `RunAsync` starts it and keeps it running until shutdown.
 
 `shipOrder` is an actual activity implementation supplied by the application. Returning a cheerful string is not a shipping integration, however much easier that would make the example.
 
@@ -82,6 +95,109 @@ The other deployments follow the same setup pattern, with their own registration
 | Shipping | `registry.AddActivity("ShipOrder", shipOrder)` |
 
 Here, both activity implementations are `TaskActivity<string, string>`. **Every participating worker explicitly calls `.UseWorkItemFilters()`**, connects to the same scheduler and task hub, and starts its host. For this SDK configuration, that [explicit builder call][filter-builder] is the filtering setup I rely on, not an assumed default.
+
+The parameterless call generates filters from the completed registry and worker options for that worker when its options are resolved. It does not freeze a list of whichever registrations happen to appear above the call in the file. Finish configuring the host before building and starting it.
+
+### What can you select?
+
+The [custom configuration type][filter-model] is `DurableTaskWorkerWorkItemFilters`, in `Microsoft.DurableTask.Worker`. Its three collection properties separate the kinds of work. The filter item types in the table are nested inside that class.
+
+| Control | Public shape | What it means |
+| :--- | :--- | :--- |
+| `Orchestrations` | `IReadOnlyList<OrchestrationFilter>` | Orchestration names, each with a `Versions` list. |
+| `Activities` | `IReadOnlyList<ActivityFilter>` | Activity names, each with a `Versions` list. |
+| `Entities` | `IReadOnlyList<EntityFilter>` | Entity names only, not individual entity keys or operations. |
+| `UseWorkItemFilters()` | No argument | Generate the selections from the completed registry and worker options. |
+| `UseWorkItemFilters(filters)` | A `DurableTaskWorkerWorkItemFilters` object | Use the supplied selections instead of generating them. This configures whole collections, not an incremental filter addition. |
+| `UseWorkItemFilters(null)` | A null method argument | Disable filtering. This does not pause the worker or mean "receive nothing." |
+
+You can select multiple names and concrete versions for orchestration and activity work. An entity filter has no version property. This is not a predicate engine for payloads, tenants, instance IDs, hardware, or priorities. There is no documented name glob, regex, or prefix syntax here: use the actual registered name, not `Ship*`.
+
+Also, do not treat a custom object with all three lists empty as a "receive nothing" setting. If the intention is to stop processing, stop the worker.
+
+### Optionally advertise less than you register
+
+Sometimes the code a worker contains and the work it should receive are intentionally different. Here, the registry contains `ShipOrder` and `CancelShipment`, both at version `"1"`, but the filter advertises only `ShipOrder` version `"1"`.
+
+This is an **alternative** to the registration chain in `ShippingHost`, not another chain to append to it. Supply both real activity objects to your host setup and call `ShippingSubset.Configure(builder.Services, connectionString, shipOrder, cancelShipment)` before `Build()`, in place of the earlier worker registration chain. Keep the same `Build()` and `RunAsync` lifetime.
+
+```csharp
+using Microsoft.DurableTask;
+using Microsoft.DurableTask.Worker;
+using Microsoft.DurableTask.Worker.AzureManaged;
+using Microsoft.Extensions.DependencyInjection;
+
+public static class ShippingSubset
+{
+    public static void Configure(
+        IServiceCollection services,
+        string connectionString,
+        TaskActivity<string, string> shipOrder,
+        TaskActivity<string, string> cancelShipment)
+    {
+        var filters = new DurableTaskWorkerWorkItemFilters
+        {
+            Activities = new[]
+            {
+                new DurableTaskWorkerWorkItemFilters.ActivityFilter(
+                    "ShipOrder", new[] { "1" }),
+            },
+        };
+
+        services.AddDurableTaskWorker()
+            .AddTasks(registry =>
+            {
+                registry.AddActivity(
+                    "ShipOrder", new TaskVersion("1"), () => shipOrder);
+                registry.AddActivity(
+                    "CancelShipment", new TaskVersion("1"),
+                    () => cancelShipment);
+            })
+            .UseWorkItemFilters(filters)
+            .UseDurableTaskScheduler(connectionString);
+    }
+}
+```
+
+The [versioned registrations][activity-registry] supply implementations; the `ActivityFilter` supplies a name and version selection. This worker can instantiate both activities, but asks to receive only the advertised one. If the workflow needs `CancelShipment`, an eligible worker elsewhere must serve it.
+
+The caller also needs to request the version you advertised. For this optional example, use this separate orchestration rather than assuming the earlier unversioned `OrderRouting` call selects version 1:
+
+```csharp
+using System.Threading.Tasks;
+using Microsoft.DurableTask;
+
+public sealed class ShippingRequest : TaskOrchestrator<string, string>
+{
+    public override Task<string> RunAsync(
+        TaskOrchestrationContext context, string orderId)
+        => context.CallActivityAsync<string>(
+            "ShipOrder", orderId,
+            options: new TaskOptions
+            {
+                Version = new TaskVersion("1"),
+            });
+}
+```
+
+Register `ShippingRequest` on an orchestration worker with `registry.AddOrchestrator<ShippingRequest>("ShippingRequest")`, that worker's own parameterless filters, and the same task hub and host startup pattern. [`TaskOptions.Version`][task-options] here requests activity version `"1"`; it does not register the activity on the caller.
+
+Keep the exact name and version values aligned across the call, filter, and implementation. The SDK's [custom filter validator][filter-validator] checks that the selected names are registered in the corresponding work kind. It does **not** check that every advertised version has an implementation. If you also configure `UseVersioning(...)`, its acceptance policy must agree with those selections. A broader advertisement cannot supply missing code.
+
+For most specialist services, the first pattern is simpler: register only what the role needs and generate its filters. Use the custom subset when that separation is actually useful, not just because another configuration object exists.
+
+### What happens between this worker and DTS?
+
+The public SDK and documented service contract give us the useful sequence without needing to know the scheduler's internal implementation:
+
+1. **Configure the host.** Register the local implementations and choose generated or custom filters. The [worker resolves its filter options when it is constructed][filter-worker].
+2. **Request work.** The SDK [includes the configured eligibility in its work request][filter-request]. Names and versions are part of the [public request contract][filter-protocol]. This is the worker asking DTS for work, not the orchestrator calling the shipping host.
+3. **Receive matching work.** DTS delivers work according to the [documented matching contract][filter-doc]. If no eligible worker is available, that work item stays pending.
+4. **Run the registered implementation.** The [local factory][filter-factory] selects code by the received task name and requested version. Configured worker version checks still apply. The activity runs, and the worker reports its result through the normal protocol.
+
+Configure the registry and filters before starting the host. For a change, rebuild or restart the worker with the new configuration; mutating a running worker's filter object is not a documented hot update mechanism. Set the intended filters on every worker in a mixed pool. Enabling them only on the shipper does not restrict an unfiltered worker beside it.
+
+The diagram follows the simpler setup, with only each role's own tasks registered.
 
 Read the next diagram as a deployment view, not a network trace. The boxes are separately deployable worker roles. Workers establish outbound connections to DTS; the delivery arrows show which registered work they can receive over those connections. The orchestration worker requests named activities through DTS, not by calling the shipping host directly. Click the diagram to enlarge it.
 
@@ -336,3 +452,11 @@ That is what I meant by hidden gems. Once history and actions stop looking like 
 [worker-options]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Worker/Core/DurableTaskWorkerOptions.cs
 [management-doc]: https://learn.microsoft.com/en-us/azure/durable-task/common/durable-task-instance-management#rewind-orchestration-instances
 [client-api]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Client/Core/DurableTaskClient.cs
+[filter-model]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Worker/Core/DurableTaskWorkerWorkItemFilters.cs
+[activity-registry]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Abstractions/DurableTaskRegistry.Activities.cs
+[task-options]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Abstractions/TaskOptions.cs
+[filter-validator]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Worker/Core/DependencyInjection/DurableTaskWorkerWorkItemFiltersValidator.cs
+[filter-worker]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Worker/Grpc/GrpcDurableTaskWorker.cs
+[filter-request]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Worker/Grpc/GrpcDurableTaskWorker.Processor.cs
+[filter-protocol]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Grpc/orchestrator_service.proto
+[filter-factory]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Worker/Core/DurableTaskFactory.cs
