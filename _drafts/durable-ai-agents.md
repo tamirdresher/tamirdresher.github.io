@@ -4,113 +4,29 @@ title: "Durable AI Agents: Remembering the Conversation Is Not Enough"
 tags: [dotnet, ai-agents, agent-framework, durable-task-scheduler, orchestration]
 ---
 
-In [the first post][first-post], we followed what happens when an orchestration awaits an activity. In [the previous post][previous-post], we looked at changing the workers and implementations around a running workflow, and recovering an eligible failed instance. I ended with AI agents, because that is where the difference between remembering a conversation and remembering completed work becomes particularly interesting.
+In [the first post][first-post], we followed durable execution through an activity await. In [the previous post][previous-post], we looked at worker routing, version changes, and recovery. Now let's put an AI agent into that picture: what makes it durable, how do we use it, and what does that give us?
 
-Suppose two agents are reviewing a proposed software change. One checks the design. Another checks failure and recovery risks. An editor will combine their reviews, and a human will decide whether to approve the result.
+We'll build a proposal review. A design reviewer and a risk reviewer examine the same proposal, an editor combines their results, and a human decides whether to approve the review. First, let's look at what changes for just one of those agents.
 
-The design reviewer finishes. The risk reviewer is still working. Then the process coordinating them disappears.
+## What is a durable agent here?
 
-What should happen when it comes back?
+**It is a normal Microsoft Agent Framework `AIAgent`, registered and invoked through the Durable Task integration.** You still choose its model, instructions, and tools. The integration gives its session a durable identity backed by an entity: named persistent state whose operations run one at a time. Agent invocations go through that entity, and their recorded results can be used by a durable orchestration. We'll call that orchestration our **controller**.
 
-I want the design review we already paid for, not another interpretation of the same proposal. I want the risk review to remain pending, not disappear from the plan. And I definitely don't want "the model sounded positive" to become the human approval.
+For the design reviewer, the integration retains conversation messages for later turns in the same session, within its configured lifetime. When the controller has a successfully recorded review result, it can continue from that result after losing its worker instead of requesting another review. The controller adds the coordination: run independent reviewers in parallel, pass their actual results to the editor, and wait for a human without keeping the original controller invocation alive.
 
-The restart should not become a second design meeting. We already have enough of those.
+That is useful even before we add any tools. **Remembering the conversation is not the same as remembering which work completed.** Ordinary agents can persist conversations too; here we also have an invocation protocol that fits durable workflow execution.
 
-**Remembering the conversation is not the same as remembering which work completed.** That is the distinction I want to follow through this post: what a durable agent invocation preserves, where recovery stops, and why those boundaries matter more when several agents work together.
+This is not another model, a saved thread, or a way to make every internal `await` durable. Retained messages are not all of a provider's native state or semantic memory, and neither conversation retention nor recovery is unlimited. We'll look at the exact boundary after using it.
 
-## Three specialists, one piece of work
+## Register ordinary agents, then call them durably
 
-Let's keep the workflow concrete. Our input is a proposal, not an open ended instruction to improve the entire company.
+The code uses **`Microsoft.Agents.AI.DurableTask` `1.16.0-preview.260730.1`**, from the [Agent Framework .NET 1.16.0 release generation][framework-release], with Durable Task AzureManaged `1.18.0`. The durable integration is preview and the Azure OpenAI dependency is beta. The full dependency table follows the example.
 
-The design reviewer receives that proposal and returns a design review. The risk reviewer receives the same proposal and returns a review of failure and recovery concerns. They can work independently. The editor receives those two explicit results and returns a combined review note. Only then does the controller wait for a human decision.
+This source checked teaching example combines the public [concurrent agent][concurrency-sample] and [human decision][hitl-sample] patterns; it was not compiled or executed. It returns a review and a human decision, not a deployment or publication.
 
-The **controller** owns the order of work. The agents supply judgments within that order. The human decision is a separate input, not text extracted from an agent response.
+The application needs an Azure OpenAI **service endpoint**, a compatible chat model deployment, and a DTS task hub. A Foundry project URL is not that service endpoint. All workers and client calls below use the same task hub.
 
-This is a useful division even when none of the agents calls an external tool. Asking the same model again can produce a different answer and another bill. Once tools can create tickets, change configuration, or submit a payment, repeating work is no longer just a question of consistent wording.
-
-For a multiagent system such as [Squad][squad], the same architectural question applies: how do we distinguish a specialist's completed work from a conversation that merely mentions it? This does not mean Squad automatically uses Durable Task Scheduler. It means coordinating several agents gives us more places where one branch has finished and another has not.
-
-Nor does this mean an ordinary Microsoft Agent Framework agent cannot persist a conversation. It can use persisted or service owned history. Conversation persistence and recoverable workflow execution solve different problems.
-
-## Put the durable boundary in the right place
-
-Before the code, here are the roles in the [durable Agent Framework integration][durable-agent].
-
-The controller gets a **durable agent reference**. Calling that reference asks for an operation on an **agent session entity**. The entity runs the registered agent, which calls the model and any ordinary tools it has been given. Those roles can share a worker process; they are not a requirement for four deployments.
-
-In the implementation used here, `TaskOrchestrationContext.GetAgent(...)` returns a `DurableAIAgent`. Its `RunCoreAsync` calls `context.Entities.CallEntityAsync<AgentResponse>(...)` with the session identity and the operation name `"Run"`. The controller is scheduling an entity operation, not opening an HTTP connection to the model from replaying orchestrator code.
-
-The [entity operation][entity] supplies retained conversation messages to the underlying agent, consumes its response, updates its conversation state, and returns the complete response. Once the successful call result is recorded for the controller, a later replay can use it.
-
-The important unit here is **the agent invocation**. It is not automatically every model request, every tool call, or every streamed token inside that invocation.
-
-Read the following sequence from top to bottom. The optional tool exchange happens inside the agent operation, before its full outcome is recorded. The two controller activation bars are separate passes; no controller invocation stays alive across the wait. Click to enlarge.
-
-[![Sequence showing a controller scheduling an agent entity operation, the agent calling a model and optionally an ordinary tool, and a later controller pass using the recorded full response. Interruption before durable completion can repeat model or tool work.](/assets/durable-ai-agents/agent-invocation-boundary.svg)](/assets/durable-ai-agents/agent-invocation-boundary.svg)
-
-*Figure 1. The durable boundary surrounds the agent operation, not each internal model or tool exchange. Arrows describe the public scheduling and completion contract, not a network trace or a transaction spanning the model service and external tools.*
-
-Now move the failure across that boundary.
-
-If the model has answered but the agent operation has not durably committed its outcome, a subsequent attempt can call the model again. The answer might differ. Seeing streamed text is not proof that the full invocation is durably complete.
-
-If an ordinary tool has already changed an external system, that change does not vanish when the agent operation loses its outcome. A later attempt may reach the tool again. An appropriate business operation key, honored by the destination, can support deduplication. Some integrations instead need reconciliation or compensation. Tool authorization still belongs in the application.
-
-If the successful agent response **has** been recorded for the controller, losing the controller's worker is different. Replay can supply that response without asking the agent to produce it again just because the controller restarted.
-
-That is the same distinction we followed with activities in the first post, but at a boundary that may contain several model and tool exchanges. A durable agent does not imply exactly once inference or exactly once external effects.
-
-### A long tool needs an explicit boundary too
-
-What if an agent needs to request work that takes hours?
-
-The public [`DurableAgentContext.ScheduleNewOrchestration(...)` API][agent-context] lets a tool explicitly request a separate workflow. The [long running tool sample][long-tools] uses that pattern. The scheduling request participates in the entity operation's durable state and outgoing work commit; an arbitrary external write performed by a tool does not.
-
-This gives the long operation its own workflow boundary rather than relying on an ordinary tool call remaining suspended for days. It does not retrofit every tool with internal checkpoints.
-
-## "Memory" is doing too much work in this conversation
-
-Our design reviewer has a conversation. Our controller has an execution history. Those are already two different things.
-
-| State | The question it answers |
-| :--- | :--- |
-| Workflow execution history | Which durable operations were requested, and which outcomes can the controller use when reconstructing progress? |
-| Conversation history | Which messages should the agent or model receive as context for another turn? |
-| Session or provider continuation | Which logical conversation are we continuing, and what identity or opaque provider state does it require? |
-| Semantic memory | Which facts, summaries, or retrieved knowledge should the application bring into a future prompt? |
-
-These can support one another. They are not interchangeable.
-
-A transcript containing "the design review is finished" is not the controller's durable completion record. A retrieved summary can help the next review, but it is not a receipt for a tool effect. And neither a session handle nor a serialized conversation is a snapshot of the model's hidden inference state.
-
-There is a version specific detail worth understanding here. In the published preview used below, the [agent entity][entity] creates an inner agent session for an operation and supplies retained messages. That does not prove it restores every provider's native opaque session state. Serializing the outer [`DurableAgentSession` handle][session] is not the same operation as restoring all of the underlying agent's continuation state.
-
-We'll return to that distinction in the work in progress section. First, let's use the published integration for our three specialists.
-
-## A preview package, with a concrete workflow
-
-This example uses **`Microsoft.Agents.AI.DurableTask` version `1.16.0-preview.260730.1`**, from the [Agent Framework .NET 1.16.0 release generation][framework-release]. The durable integration is preview. The Azure OpenAI dependency below is also a beta; the stable Agent Framework version does not change either of those statuses.
-
-The package versions follow that generation's [release metadata][released-version] and [dependency definitions][released-deps]:
-
-| Component | Version |
-| :--- | :--- |
-| Target framework | `net10.0`, with nullable and implicit usings enabled |
-| `Microsoft.Agents.AI.DurableTask` | `1.16.0-preview.260730.1` |
-| `Microsoft.Agents.AI.OpenAI` | `1.16.0` |
-| `Microsoft.DurableTask.Client.AzureManaged` | `1.18.0` |
-| `Microsoft.DurableTask.Worker.AzureManaged` | `1.18.0` |
-| `Azure.AI.OpenAI` | `2.9.0-beta.1` |
-| `Azure.Identity` | `1.21.0` |
-| `Microsoft.Extensions.Hosting` | `10.0.1` |
-
-Notice the Durable Task dependency version. I'm not mixing the previous post's SDK 1.26.0 configuration APIs into this example.
-
-The code combines the public [concurrent agent][concurrency-sample] and [human decision][hitl-sample] patterns in a plain C# orchestration. It is a source checked teaching example, not a compiled or executed demonstration. It returns a review and a decision. It does not deploy anything, publish anything, or report a made up successful tool effect.
-
-The application needs an Azure OpenAI **service endpoint**, a compatible chat model deployment, and a DTS task hub. A Foundry project URL is not the service endpoint expected here. All workers and client calls below use the same task hub.
-
-### Configure the agents outside the controller
+### Program.cs: create and register the agents
 
 Start `Program.cs` with these imports and configuration. The configuration keys are application choices. Their environment variable forms are `AzureOpenAI__Endpoint`, `AzureOpenAI__Deployment`, and `DurableTask__ConnectionString`.
 
@@ -138,7 +54,7 @@ string connectionString = Required(
     "DurableTask:ConnectionString");
 ```
 
-The real model client and the three agents are configured here, outside orchestrator code. `DefaultAzureCredential` follows the public samples' development pattern; a deployed application should select its intended identity explicitly.
+The real model client and agents are configured here, outside orchestrator code. Follow `design` first: `AsAIAgent(...)` creates an ordinary agent named `DesignReviewer`, and `options.AddAIAgent(design)` registers it with the durable integration. The other two registrations use the same pattern. `DefaultAzureCredential` follows the public samples' development pattern; a deployed application should select its intended identity explicitly.
 
 Continue in `Program.cs`:
 
@@ -176,7 +92,7 @@ await host.RunAsync();
 
 There is one `ConfigureDurableAgents` call, with both the worker and client builders. It registers the three agents and the `ProposalReview` controller defined next. `Build()` creates the host; `RunAsync()` starts it and keeps the worker running.
 
-The explicit global session lifetime is seven days. This is [whole session/entity TTL][released-options], not seven days of guaranteed recoverability for every possible caller. Expiry deletes retained entity state, and the deletion check needs a worker; it is not an exact wall clock deletion promise. A recorded controller result and the entity's live conversation history are separate. A future turn can lose conversational context even though an earlier result remains in the controller's history.
+The explicit global session lifetime is seven days. This [whole session/entity TTL][released-options] governs the retained entity state, not how long a human may take to approve this particular review. We'll separate those lifetimes from the controller's history below.
 
 After the top level statements, add the configuration helper:
 
@@ -187,7 +103,13 @@ static string Required(string? value, string setting)
         : throw new InvalidOperationException($"Configure {setting}.");
 ```
 
-### Ask both reviewers, then give the editor their actual results
+### Inside the controller: get a reference, create a session, run the agent
+
+Now follow the same reviewer inside `ProposalReview.RunAsync`. The runtime supplies `context`, the orchestration context, and `proposal`, the workflow's input string. `context.GetAgent("DesignReviewer")` gets a durable reference to the registered name. `CreateSessionAsync()` gives us the session handle, and `design.RunAsync(proposal, designSession)` requests the review through that reference.
+
+The variable named `design` here is **not** the ordinary `AIAgent` created in `Program.cs`. Calling the ordinary agent directly would run its configured model path in the calling process. Calling this `DurableAIAgent` reference schedules agent work through the controller, so its recorded response can participate in replay. We keep the model client out of orchestrator code.
+
+To expand that one reviewer into our complete workflow, start a risk review in its own session before awaiting both. Give the two explicit results to the editor, then wait for a separate human event. The controller owns that order; the agents supply judgments within it. The proposal is the input, not an open ended instruction to improve the entire company.
 
 Add the following declarations after that helper. This is the complete controller and its result types.
 
@@ -330,9 +252,66 @@ That status check is useful preflight, not an atomic lock and not authorization.
 
 If the worker stops, restart the worker. Do not schedule the proposal again and call that recovery. A new workflow request is new work.
 
-## Back to the missing controller
+### Package versions for this example
 
-Now return to the failure we started with. The design result has been durably recorded for the controller. The risk reviewer is still working when the controller worker disappears.
+The complete package set follows that generation's [release metadata][released-version] and [dependency definitions][released-deps]:
+
+| Component | Version |
+| :--- | :--- |
+| Target framework | `net10.0`, with nullable and implicit usings enabled |
+| `Microsoft.Agents.AI.DurableTask` | `1.16.0-preview.260730.1` |
+| `Microsoft.Agents.AI.OpenAI` | `1.16.0` |
+| `Microsoft.DurableTask.Client.AzureManaged` | `1.18.0` |
+| `Microsoft.DurableTask.Worker.AzureManaged` | `1.18.0` |
+| `Azure.AI.OpenAI` | `2.9.0-beta.1` |
+| `Azure.Identity` | `1.21.0` |
+| `Microsoft.Extensions.Hosting` | `10.0.1` |
+
+The stable Agent Framework version does not make the durable integration or Azure OpenAI beta GA. Notice the Durable Task dependency version too: I'm not mixing the previous post's SDK 1.26.0 configuration APIs into this example.
+
+## What did that durable RunAsync actually do?
+
+We've registered an ordinary agent, obtained its durable reference inside the controller, and used its response. Now we can look at the boundary behind that call.
+
+The controller gets a **durable agent reference**. Calling that reference asks for an operation on the **agent session entity** we introduced earlier. The entity runs the registered agent, which calls the model and any ordinary tools it has been given. Those roles can share a worker process; they are not a requirement for four deployments.
+
+In the [implementation used here][durable-agent], `TaskOrchestrationContext.GetAgent(...)` returns a `DurableAIAgent`. Its `RunCoreAsync` calls `context.Entities.CallEntityAsync<AgentResponse>(...)` with the session identity and the operation name `"Run"`. The controller is scheduling an entity operation, not opening an HTTP connection to the model from replaying orchestrator code.
+
+The [entity operation][entity] supplies retained conversation messages to the underlying agent, consumes its response, updates its conversation state, and returns the complete response. Once the successful call result is recorded for the controller, a later replay can use it.
+
+The important unit here is **the agent invocation**. It is not automatically every model request, every tool call, or every streamed token inside that invocation.
+
+Read the following sequence from top to bottom. The optional tool exchange happens inside the agent operation, before its full outcome is recorded. The two controller activation bars are separate passes; no controller invocation stays alive across the wait. Click to enlarge.
+
+[![Sequence showing a controller scheduling an agent entity operation, the agent calling a model and optionally an ordinary tool, and a later controller pass using the recorded full response. Interruption before durable completion can repeat model or tool work.](/assets/durable-ai-agents/agent-invocation-boundary.svg)](/assets/durable-ai-agents/agent-invocation-boundary.svg)
+
+*Figure 1. The durable boundary surrounds the agent operation, not each internal model or tool exchange. Arrows describe the public scheduling and completion contract, not a network trace or a transaction spanning the model service and external tools.*
+
+Now move the failure across that boundary.
+
+If the model has answered but the agent operation has not durably committed its outcome, a subsequent attempt can call the model again. The answer might differ. Seeing streamed text is not proof that the full invocation is durably complete.
+
+If an ordinary tool has already changed an external system, that change does not vanish when the agent operation loses its outcome. A later attempt may reach the tool again. An appropriate business operation key, honored by the destination, can support deduplication. Some integrations instead need reconciliation or compensation. Tool authorization still belongs in the application.
+
+If the successful agent response **has** been recorded for the controller, losing the controller's worker is different. Replay can supply that response without asking the agent to produce it again just because the controller restarted.
+
+That is the same distinction we followed with activities in the first post, but at a boundary that may contain several model and tool exchanges. A durable agent does not imply exactly once inference or exactly once external effects.
+
+### A long tool needs an explicit boundary too
+
+What if an agent needs to request work that takes hours?
+
+The public [`DurableAgentContext.ScheduleNewOrchestration(...)` API][agent-context] lets a tool explicitly request a separate workflow. The [long running tool sample][long-tools] uses that pattern. The scheduling request participates in the entity operation's durable state and outgoing work commit; an arbitrary external write performed by a tool does not.
+
+This gives the long operation its own workflow boundary rather than relying on an ordinary tool call remaining suspended for days. It does not retrofit every tool with internal checkpoints.
+
+## One reviewer finished. Then the controller disappeared.
+
+Suppose the design result has been durably recorded for our controller. The risk reviewer is still working when the controller worker disappears.
+
+I want the design review we already paid for, not another interpretation of the same proposal. I want the risk review to remain pending, not disappear from the plan. And I definitely don't want "the model sounded positive" to become the human approval.
+
+The restart should not become a second design meeting. We already have enough of those.
 
 A compatible worker can reconstruct the controller's progress. It recreates the durable calls and local handles, and history supplies the recorded design response. The pending risk call remains pending. Controller replay alone is not an instruction to rerun both reviewers.
 
@@ -347,6 +326,29 @@ Read the next sequence as one possible partial completion path, not a required n
 Nothing here asks a model to reconstruct the workflow's status from memory. The model supplies the review. The durable execution protocol supplies the evidence that the invocation completed.
 
 There is a related trap outside orchestrations. The integration's [outside client][outside-client] signals an agent entity and exposes a [handle that polls for its correlated response][run-handle]. Starting another client `RunAsync` with the same prompt is not controller replay, and a repeated prompt is not an idempotency key. When an acknowledgement is uncertain, preserve the operation identity and inspect what happened rather than assuming a new invocation is harmless.
+
+For a multiagent system such as [Squad][squad], the same architectural question applies: how do we distinguish a specialist's completed work from a conversation that merely mentions it? This does not mean Squad automatically uses Durable Task Scheduler. It means coordinating several agents gives us more places where one branch has finished and another has not.
+
+## "Memory" is doing too much work in this conversation
+
+Our design reviewer has a conversation. Our controller has an execution history. Those are already two different things.
+
+| State | The question it answers |
+| :--- | :--- |
+| Workflow execution history | Which durable operations were requested, and which outcomes can the controller use when reconstructing progress? |
+| Conversation history | Which messages should the agent or model receive as context for another turn? |
+| Session or provider continuation | Which logical conversation are we continuing, and what identity or opaque provider state does it require? |
+| Semantic memory | Which facts, summaries, or retrieved knowledge should the application bring into a future prompt? |
+
+These can support one another. They are not interchangeable.
+
+A transcript containing "the design review is finished" is not the controller's durable completion record. A retrieved summary can help the next review, but it is not a receipt for a tool effect. And neither a session handle nor a serialized conversation is a snapshot of the model's hidden inference state.
+
+There is a version specific detail worth understanding here. In the published preview used above, the [agent entity][entity] creates an inner agent session for an operation and supplies retained messages. That does not prove it restores every provider's native opaque session state. Serializing the outer [`DurableAgentSession` handle][session] is not the same operation as restoring all of the underlying agent's continuation state.
+
+The seven day TTL we configured is a whole session/entity lifetime, not seven days of guaranteed recoverability for every possible caller. Expiry deletes retained entity state, and the deletion check needs a worker; it is not an exact wall clock deletion promise. A recorded controller result and the entity's live conversation history are separate. A future turn can lose conversational context even though an earlier result remains in the controller's history.
+
+That separation also matters when we want to retain less conversation without losing track of completed work.
 
 ## Work in progress: forgetting context without forgetting completion
 
