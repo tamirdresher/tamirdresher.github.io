@@ -259,57 +259,96 @@ The API for that boundary is [`ContinueAsNew` with `ContinueAsNewOptions.NewVers
 
 > **Version and backend scope.** The released .NET v1.26.0 SDK exposes this API, and the [public standalone migration sample][migration-readme] shows the intended routing model. A compatible backend must support the version change, and the standalone worker must forward it. That is not a claim that every backend or every managed DTS deployment has the same feature rollout. Verify support in the environment you intend to use.
 
-Let's keep the data small: a checkpoint containing a count and a marker that says migration was requested. The count is supplied as input; this example does not claim to have processed that many real jobs.
+The next version can accept a different input shape. Here v1 waits for a count it already computes and puts that value into optional fields on v2's input. V2 reuses it only when the count still means the same thing for the same immutable batch snapshot. Otherwise it calls its own counting activity. These fields are our chosen handoff, not a way for v2 to reach back into v1's completed history.
+
+In this example, v1 already calls `CountRecordsV1` and ends with a continuation. We change what it passes at that existing boundary. Both counting activities are existing read only `TaskActivity<string, long>` implementations supplied by the application.
 
 ```csharp
 using System;
 using System.Threading.Tasks;
 using Microsoft.DurableTask;
 
-public sealed record BatchCheckpoint(
-    int ProcessedCount, bool MigrationRequested = false);
+public sealed record BatchInputV1(
+    string SnapshotReference,
+    bool MigrationRequested = false);
 
-public sealed class BatchLoopV1
-    : TaskOrchestrator<BatchCheckpoint, string>
+public sealed record BatchInputV2(
+    string SnapshotReference,
+    long? CarriedRecordCount = null,
+    string? CountContract = null,
+    bool MigrationRequested = false);
+
+public sealed class BatchLoopV1 : TaskOrchestrator<BatchInputV1, long>
 {
-    public override Task<string> RunAsync(
-        TaskOrchestrationContext context, BatchCheckpoint checkpoint)
+    public override async Task<long> RunAsync(
+        TaskOrchestrationContext context, BatchInputV1 input)
     {
-        if (checkpoint.MigrationRequested)
+        if (input.MigrationRequested)
         {
             throw new NotSupportedException(
-                "Continuation returned to v1; investigate version propagation.");
+                "The migration payload returned to v1. Check version support.");
         }
+
+        // This activity call was already part of the old execution's sequence.
+        long recordCount = await context.CallActivityAsync<long>(
+            "CountRecordsV1", input.SnapshotReference);
 
         context.ContinueAsNew(new ContinueAsNewOptions
         {
-            NewInput = checkpoint with { MigrationRequested = true },
             NewVersion = "2",
+            NewInput = new BatchInputV2(
+                SnapshotReference: input.SnapshotReference,
+                CarriedRecordCount: recordCount,
+                CountContract: "record-count/v1",
+                MigrationRequested: true),
             PreserveUnprocessedEvents = true,
         });
-        return Task.FromResult(string.Empty);
+
+        return recordCount;
     }
 }
 
-public sealed class BatchLoopV2
-    : TaskOrchestrator<BatchCheckpoint, string>
+public sealed class BatchLoopV2 : TaskOrchestrator<BatchInputV2, long>
 {
-    public override Task<string> RunAsync(
-        TaskOrchestrationContext context, BatchCheckpoint checkpoint)
-        => Task.FromResult(
-            $"v2 received checkpoint {checkpoint.ProcessedCount}");
+    public override async Task<long> RunAsync(
+        TaskOrchestrationContext context, BatchInputV2 input)
+    {
+        if (input.CarriedRecordCount is long carried
+            && carried >= 0
+            && input.CountContract == "record-count/v1")
+        {
+            return carried;
+        }
+
+        long recordCount = await context.CallActivityAsync<long>(
+            "CountRecordsV2", input.SnapshotReference);
+
+        if (recordCount < 0)
+        {
+            throw new InvalidOperationException(
+                "The counting activity returned an invalid negative count.");
+        }
+
+        return recordCount;
+    }
 }
 ```
 
-The important payload is `NewInput`. It carries what the next implementation needs. The next execution does not inherit the old local variables, `Task` objects, or CLR continuation.
+`long?` makes missing different from zero. With the matching contract, `0` is a valid carried count and is reused. A missing or negative count, or a different contract, sends v2 to `CountRecordsV2`. A negative result from that activity fails instead of being accepted as a count.
 
-The guard in v1 is intentional. If the continuation comes back to v1 with the migration marker already set, the example fails visibly rather than quietly continuing forever or presenting a fallback as successful migration. The [public migration example][migration-program] highlights that version propagation depends on backend support. A guard is useful; it is not a substitute for verifying that support.
+`CountContract` is an application compatibility rule: the value must describe this same immutable snapshot using our `record-count/v1` definition. The tag is not an SDK check or proof that the input is trustworthy. If the meaning of the count, schema, or business rules changes, validate or translate the carried data, or change the accepted contract and recompute. Presence alone is not enough.
+
+The payload in `NewInput` must match v2's serialized input contract. The [SDK adapter deserializes the input into the selected implementation's input type][version-input-adapter]. It is not a CLR cast from `BatchInputV1` to `BatchInputV2`, or an automatic conversion between arbitrary schemas. V1 constructs the new shape, and its fields, value types and serializer settings must agree with v2.
+
+V2 can take different activity paths because it starts another execution rather than replaying v1's completed history. Its code must still be compatible with its own history as it accumulates. The old local variables, tasks and continuation do not cross the boundary.
+
+Both input types retain `SnapshotReference` and `MigrationRequested`. The guard catches a migrated payload routed back to v1 only if the payload and marker arrive and the converter can read them as `BatchInputV1`. A stricter converter can fail before the guard. The [public migration example][migration-program] highlights the backend dependency; this check is not proof of backend or serializer compatibility.
 
 ### Accepting a version is not the same as implementing it
 
 We need both the worker's version acceptance policy and the right registered implementation. A worker accepting older work does not magically contain the older code.
 
-Here is the configuration inside an existing Generic Host setup, where `builder` is the host builder and `connectionString` identifies the intended task hub:
+Here is the configuration inside an existing Generic Host setup. `builder` is the host builder, and `connectionString` identifies the same task hub. `countRecordsV1` and `countRecordsV2` are the application's existing `TaskActivity<string, long>` instances, with their real dependencies supplied by the application:
 
 ```csharp
 using Microsoft.DurableTask;
@@ -327,6 +366,10 @@ builder.Services.AddDurableTaskWorker(worker =>
             () => new BatchLoopV1());
         registry.AddOrchestrator("BatchLoop", new TaskVersion("2"),
             () => new BatchLoopV2());
+        registry.AddActivity("CountRecordsV1", new TaskVersion("1"),
+            () => countRecordsV1);
+        registry.AddActivity("CountRecordsV2", new TaskVersion("2"),
+            () => countRecordsV2);
     });
     worker.UseVersioning(new DurableTaskWorkerOptions.VersioningOptions
     {
@@ -346,6 +389,8 @@ builder.Services.AddDurableTaskClient(
 
 Both classes use the same logical name, `BatchLoop`, with [separate version registrations][orchestrator-registry]. This worker's explicit `CurrentOrOlder` policy permits version 1 work alongside version 2, and the registry supplies both implementations. Those are two separate requirements.
 
+In this SDK path, an activity call without an explicit `TaskOptions.Version` inherits the orchestration execution's version. The two count activities are therefore registered at versions `"1"` and `"2"` to match their callers.
+
 [`Reject`][worker-options] sends mismatched work back for another attempt. It does not upgrade the work or guarantee that an eligible worker exists. Keep support for version 1 while executions still need it.
 
 After starting the host, an already resolved `DurableTaskClient client` can schedule the illustrative version 1 instance:
@@ -353,30 +398,34 @@ After starting the host, an already resolved `DurableTaskClient client` can sche
 ```csharp
 string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
     "BatchLoop",
-    input: new BatchCheckpoint(42),
+    input: new BatchInputV1("snapshot-42"),
     options: new StartOrchestrationOptions
     {
         Version = new TaskVersion("1"),
     });
 ```
 
-The starter's `await` returns the instance ID after scheduling, not after the workflow finishes. `42` is our illustrative checkpoint value. The next execution receives that count and `MigrationRequested = true`, but a new execution ID and version 2.
+The starter's `await` returns the instance ID after scheduling, not after the workflow finishes. `"snapshot-42"` is an illustrative reference to immutable data, not a claimed count. The continuation keeps that instance ID and creates a new execution at version 2, using the `BatchInputV2` payload v1 constructed.
 
-Follow the next sequence from top to bottom. The instance ID stays the same across the boundary. The two worker activations represent different executions, not a suspended v1 method being resumed as v2. The same eligible process can handle both, or different compatible workers can do so. Click to enlarge.
+A separate instance can start directly at version `"2"` with `input: new BatchInputV2("snapshot-42")` and `Version = new TaskVersion("2")` in its start options. With no carried count or contract, it calls `CountRecordsV2`. That is a direct start, not the migration of the instance above.
 
-[![Sequence showing one BatchLoop instance scheduled at version 1, whose first execution returns a ContinueAsNew action carrying its checkpoint and requesting version 2. DTS creates a new execution of the same instance with fresh history, and an eligible worker invokes the registered version 2 implementation. Old CLR state and completed execution history do not cross the boundary.](/assets/durable-task-hidden-capabilities/continue-as-new-version.svg)](/assets/durable-task-hidden-capabilities/continue-as-new-version.svg)
+Read the next diagram as data flow between two executions of one instance. Follow the count from the awaited v1 activity into `NewInput`, then follow v2's reuse check. The fork is application logic: use a compatible carried value, including zero, or run `CountRecordsV2`. No completed v1 history or live CLR objects move along the arrows. Click to enlarge.
 
-*Figure 2. The supported migration path: same instance, new execution, explicit checkpoint. The worker shown has both versions registered. Keep compatible old and new implementations available while existing work still needs them. Arrows show logical order, not measured delivery timing.*
+[![Data flow for one BatchLoop instance across two executions. Version 1 awaits CountRecordsV1, then passes a BatchInputV2 object through NewInput at its existing ContinueAsNew boundary. Version 2 reuses CarriedRecordCount only when present, nonnegative and paired with the accepted CountContract; otherwise it calls CountRecordsV2 and validates the returned count. The next execution has fresh history, not v1's completed history or CLR state.](/assets/durable-task-hidden-capabilities/continue-as-new-version.svg)](/assets/durable-task-hidden-capabilities/continue-as-new-version.svg)
+
+*Figure 2. Same instance, new execution, explicit input data. Optional input fields are our handoff contract, not inherited activity results. Unprocessed external events may also be preserved separately. A compatible backend and an eligible registered v2 implementation are required; arrows show logical data flow, not measured execution.*
 
 ### Put the boundary where the workflow already has one
 
-The tiny v1 above does nothing before continuing. For an existing eternal workflow, the useful migration technique is to update its **existing final continuation call** to request the new version, while keeping the earlier durable calls and data contracts compatible with its history. It is not a license to insert a new activity wherever the old execution happens to be waiting.
+V1 already counts the snapshot before reaching its **existing final continuation call**. The migration changes the input it carries across that boundary and the requested next version. Preserve the earlier durable calls, their ordering, names, versions, inputs and compatible serialization behavior. Do not insert new work into an earlier replay just because v2 will use a different flow.
 
 Finish and await work whose results matter before continuing. Outstanding operation results can be discarded at the boundary. That does not mean an activity already affecting an external system has been cancelled or rolled back.
 
-`PreserveUnprocessedEvents = true` is explicit here and is also the default for this .NET option. It preserves unprocessed external events for the next execution; `false` discards them. The new code must understand both the carried input and any preserved event payloads. Fresh history does not mean an empty workflow with no starting records, and it does not promise that the service purges every diagnostic record.
+`PreserveUnprocessedEvents = true` is explicit here and is also the default for this .NET option. It preserves unprocessed external events for the next execution; `false` discards them. The new code must understand both the carried input and any preserved event payloads. Mapping `NewInput` does not convert those event payloads. Fresh history does not mean an empty workflow with no starting records, and it does not promise that the service purges every diagnostic record.
 
-Finally, return immediately after requesting `ContinueAsNew`. This is an action from a running orchestration, not an operator command for reviving a failed one. Putting it in `finally` is not a reliable plan for recovering an uncaught failure.
+Finally, `return recordCount` immediately after `ContinueAsNew` exits v1's method. On the supported continuation path, the continuation action and `NewInput`, not this return value, define the next execution. V1 does not call v2 directly or wait for it to finish. V2's later return completes this finite example.
+
+This is an action from a running orchestration, not an operator command for reviving a failed one. Putting it in `finally` is not a reliable plan for recovering an uncaught failure.
 
 Which brings us to the third capability.
 
@@ -387,6 +436,8 @@ Consider an import workflow: extract a batch, transform it, then load it into a 
 You fix the configuration. Do you have to request the whole import again?
 
 For an eligible failed instance, [rewind][management-doc] provides a more targeted recovery path. It is an explicit operator request after a failure, not ordinary replay, not a retry policy, and not a version migration.
+
+Rewind is more than setting `Failed` back to `Running`. The [.NET client contract][client-api] describes a new execution ID for the same instance, with recovery history that lets failed work run again. Compatible orchestration code runs against that history; its old stack is not resumed.
 
 Here is the workflow we'll follow. The activity results are references to the extracted and transformed data, not large datasets carried through the example:
 
@@ -415,7 +466,17 @@ Register `ImportBatch` and the named activity implementations on compatible work
 
 Suppose the loading failure makes this instance `Failed`. Before requesting recovery, fix the cause **and reconcile any partial writes**. The loader may have changed the destination before reporting failure. The destination has not agreed to forget that just because we found a useful SDK method.
 
-The operator can then use this helper:
+For this import, recovery looks like this:
+
+1. `ExtractBatch`'s successful recorded data reference is reused by replay, without another extraction.
+2. `TransformBatch`'s successful recorded manifest reference is reused, without another transformation.
+3. The failed `LoadBatch` work can be attempted again. Partial destination writes are still there unless the application has reconciled or compensated for them.
+
+The SDK describes replacement history excluding failed activities and sub orchestrations, not clearing every successful result. Relevant failed sub orchestrations can be rewound recursively, and new records are appended as work runs again. This describes the recovery history contract, not physical database deletion or audit retention.
+
+The caller chooses which eligible failed instance to recover, when to request it, and a diagnostic reason. `RewindInstanceAsync` has no parameter for selecting activities, an event range, an arbitrary checkpoint, replacement input or output, or individual successful results to discard. It is not a history editing API.
+
+An administrative application or recovery automation can use this helper:
 
 ```csharp
 using System;
@@ -448,8 +509,6 @@ public static class ImportRecovery
 ```
 
 `reason` should describe the repair or reconciliation that actually happened. The state check is a useful preflight, not an atomic lock: another operator can act between the read and the request. The backend still validates eligibility. Rewind is for `Failed` instances, not `Running`, `Pending`, `Terminated`, or `Completed` ones.
-
-The [.NET client contract][client-api] describes a new execution ID for the same instance, with usable history that excludes the failed work so it can be attempted again. The orchestration code can reconstruct the recorded extraction and transformation results without executing those successful activity bodies again. It can then request another load attempt.
 
 That does not restore a saved instruction pointer, and it does not automatically change the workflow's version. Keep the earlier action sequence replay compatible, and keep the referenced data and serialization contracts available.
 
@@ -496,3 +555,4 @@ Next, I'll look at AI agents calling models and tools, and why durability matter
 [filter-request]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Worker/Grpc/GrpcDurableTaskWorker.Processor.cs
 [filter-protocol]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Grpc/orchestrator_service.proto
 [filter-factory]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Worker/Core/DurableTaskFactory.cs
+[version-input-adapter]: https://github.com/microsoft/durabletask-dotnet/blob/92474e9e35c66d64de36cabd0a17652376d37873/src/Worker/Core/Shims/TaskOrchestrationShim.cs
