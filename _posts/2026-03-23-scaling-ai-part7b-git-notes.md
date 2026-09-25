@@ -298,6 +298,8 @@ I shared the rough shape of this on LinkedIn earlier today before writing the fu
 
 The full implementation and retrospective are coming. But Part 7 left things open and this felt like the right moment to close the loop — even partially.
 
+If you want to run the scenarios yourself: **[squad-git-notes-demo](https://github.com/tamirdresher_microsoft/squad-git-notes-demo)** — four runnable PowerShell scenarios that prove the architecture works, with live assertions. `git clone` + `pwsh ./demo.ps1` and you get all three failure modes demonstrated end to end.
+
 The Borg have a saying about distributed knowledge: every unit of information should be accessible to the collective, attached to where it originated, and invisible to those who don't need it.
 
 Okay, they don't actually have that saying. But they should.
