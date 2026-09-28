@@ -1,5 +1,6 @@
 ---
 layout: post
+date: 2026-09-28
 title: "Durable Task in the Real World: What Problems Does It Actually Solve?"
 tags: [dotnet, durable-task-sdk, durable-task-scheduler, orchestration, workflows, ai-agents]
 ---
