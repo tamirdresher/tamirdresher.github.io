@@ -324,6 +324,7 @@ If the grace or check budget expires with an unresolved payment, the application
 I like being able to read the payment recovery policy as one flow, with its due date, callbacks, reminders, and transition to the next cycle. But the billing ledger still decides whether a payment actually happened. The workflow does not get to guess, charge again, or replace the existing payment safeguards. And if one scheduled job already handles this without much ceremony, I would keep that instead.
 
 ## 4. Webhook bursts: an example where durable state may not be enough
+This example is a little different from the previous ones because it is also a good example of where Durable Task does not solve the whole problem.
 
 Imagine a breaking-news publisher. Editors keep updating a developing story as new information arrives, and readers expect the publisher's search results to show the latest published version. Every time an editor publishes a change, the content-management system (CMS) emits a webhook. Our service receives it and updates a separate search index.
 
@@ -569,11 +570,4 @@ The common thread across these examples is simple. Durable Task can remember wha
 
 I would use Durable Task when the code for remembering and resuming a business process starts becoming a system of its own. Not just because I have a few `await` calls.
 
-## Further reading
 
-These are established patterns, and there is useful prior work if you want to dig deeper.
-
-* [Microsoft Learn: Human interaction pattern](https://learn.microsoft.com/en-us/azure/durable-task/common/durable-task-human-interaction)
-* [Microsoft: Building durable and deterministic multi agent orchestrations](https://techcommunity.microsoft.com/blog/appsonazureblog/building-durable-and-deterministic-multi-agent-orchestrations-with-durable-execu/4408842)
-* [Microsoft: Durable Task extension for Microsoft Agent Framework](https://techcommunity.microsoft.com/blog/appsonazureblog/bulletproof-agents-with-the-durable-task-extension-for-microsoft-agent-framework/4467122)
-* [Elastic: Human approval in incident response automation](https://www.elastic.co/observability-labs/blog/incident-response-automation-human-approval-gate)
