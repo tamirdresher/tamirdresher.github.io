@@ -241,7 +241,9 @@ If we cannot establish what is still running or what we safely own, retain the r
 >
 > For background, see [Martin Kleppmann's explanation of fencing tokens](https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html) and [Microsoft's ARM deployment cancellation API](https://learn.microsoft.com/en-us/rest/api/resources/deployments/cancel?view=rest-resources-2025-04-01). Even cancellation may leave resources partially deployed. If we cannot establish that earlier requests can no longer create resources, we retain the environment for reconciliation rather than declaring cleanup complete.
 
-One subtle C# contract matters here. `Task.WhenAll` observes all tasks in a provisioning wave, but if an activity exception escapes instead of becoming a `StepResult`, the subsequent branch that inspects failure codes won't execute. A production helper must specify which failures it converts into outcomes and how unexpected exceptions reach operator recovery. **Waiting for every task is not the same as guaranteeing compensation.**
+There is one thing to keep in mind here. `Task.WhenAll` waits for the whole provisioning wave, but if one of those activities throws, execution will not continue to the code that checks the results. In this example I treat expected failures as results and let unexpected failures fail the orchestration normally.
+
+This also matters for cleanup. Waiting for all the provisioning tasks to finish tells me what succeeded and what failed, so I know what needs to be cleaned up. It does not automatically perform that cleanup. I still need to explicitly run the compensation steps for the resources that were already created.
 
 Here, Durable Task is useful for connecting resource provisioning, the long waits, and tenant activation without writing my own continuation state machine. ARM still provisions the resources. My application still needs an outbox, operation identities, safe cleanup, and a way to repair uncertain outcomes. I would not add Durable Task just to rebuild the dependency graph ARM already gives me.
 
