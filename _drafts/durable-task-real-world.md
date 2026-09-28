@@ -6,7 +6,13 @@ tags: [dotnet, durable-task-sdk, durable-task-scheduler, orchestration, workflow
 
 *Five practical examples of when durable execution makes sense, when it doesn't, and what it means for AI agents.*
 
-Lately, people have been asking me about Durable Task and Azure Durable Task Scheduler (DTS). It looks cool, but the questions are usually the same: what would I actually use it for? What problems does it solve that I cannot already handle with regular C#, a queue, or a database? And when is it worth introducing another piece of infrastructure?
+After my last couple of posts about Durable Task, I got a comment that made me realize I had skipped an important question:
+
+*This all looks interesting, but what are the actual use cases?*
+
+Not how Durable Task works. Not what happens during replay or how the scheduler persists state. But the more practical question: what problems does it actually solve?
+
+When should I reach for durable execution instead of regular C#, a queue, a database, or a background worker? And when would adding it just make things more complicated?
 
 Those are fair questions. Rather than walk through another hello world orchestration, I want to look at real situations where things get messy, especially when work takes a long time, depends on external systems, or gets interrupted halfway through. I also want to be clear about what Durable Task does not solve for you.
 
