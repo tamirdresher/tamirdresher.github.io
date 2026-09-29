@@ -47,7 +47,7 @@ This is the feature that makes Aspire a polyglot platform instead of a .NET tool
 You can now write your entire AppHost — the orchestration layer that defines your distributed application — in TypeScript. Not a preview. Not an experiment. Production-ready, with full VS Code debugging, CodeLens gutter decorations showing live resource state, and automatic SDK code generation that keeps TypeScript bindings in sync with every .NET integration.
 
 ```typescript
-import { createBuilder } from "@aspect/apphost";
+import { createBuilder } from "./.modules/aspire.js";
 
 const builder = createBuilder();
 
