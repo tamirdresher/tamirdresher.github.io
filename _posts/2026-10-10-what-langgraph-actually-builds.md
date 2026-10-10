@@ -5,7 +5,9 @@ title: "What LangGraph Actually Builds: Runnables, Channels, Bubble-Up, Agents a
 tags: [langgraph, langchain, deep-agents, ai-agents, python, internals]
 ---
 
-I spent a while reading LangGraph's source, and the thing that surprised me most is how *small* the core idea is. A graph, a ReAct agent and a Deep Agent are not three different machines. They are one machine (Pregel) fed three different amounts of configuration.
+I spent the weekend digging through LangGraph's source code, trying to understand what actually happens beneath the abstractions. These are my notes, the experiments I ran, and the mental model I ended up with.
+
+The thing that surprised me most is how *small* the core idea is. A graph, a ReAct agent and a Deep Agent are not three different machines. They are one machine (Pregel) fed three different amounts of configuration.
 
 Everything below was run offline: no network, no live model, a scripted fake chat model. Versions are pinned to **langgraph 1.2.12, langchain-core 1.6.6, langchain 1.4.3, deepagents 0.7.20**; internals move between releases, so treat the class names as a snapshot. The code is in the [samples repo](https://github.com/tamirdresher/langgraph-internals-samples): [`langgraph_primitives_demo.py`](https://github.com/tamirdresher/langgraph-internals-samples/blob/main/langgraph_primitives_demo.py) produced every printed output in sections 1–6, and [`structured_cases.py`](https://github.com/tamirdresher/langgraph-internals-samples/blob/main/structured_cases.py) covers section 5c.
 
