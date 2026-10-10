@@ -145,9 +145,9 @@ Here is the same transformation as a picture. The first diagram is what you drew
 **What `compile()` built (runtime):**
 
 <pre class="mermaid">flowchart TD
-   I["__start__ channel<br/>(your input)"] -->|wakes| CA["channel branch:to:a"]
-   CA -->|wakes| NA["node a<br/>reads: total, visited<br/>bound = a(s)<br/>writer1 → total, visited<br/>writer2 → channel branch:to:b"]
-   NA -->|wakes| NB["node b<br/>reads: total, visited<br/>bound = b(s)<br/>writer1 → total, visited<br/>(no writer2: its edge goes to END)"]</pre>
+   I["__start__ channel&lt;br/&gt;(your input)"] -->|wakes| CA["channel branch:to:a"]
+   CA -->|wakes| NA["node a&lt;br/&gt;reads: total, visited&lt;br/&gt;bound = a(s)&lt;br/&gt;writer1 → total, visited&lt;br/&gt;writer2 → channel branch:to:b"]
+   NA -->|wakes| NB["node b&lt;br/&gt;reads: total, visited&lt;br/&gt;bound = b(s)&lt;br/&gt;writer1 → total, visited&lt;br/&gt;(no writer2: its edge goes to END)"]</pre>
 
 The arrows between nodes are gone in the second diagram. What remains are boxes (nodes) and named mailboxes (channels): "a" does not know "b" exists, it just drops a message in `branch:to:b`.
 
@@ -201,7 +201,7 @@ node c: triggers=['branch:to:c']  writers=[state write]
 **What `compile()` built:**
 
 <pre class="mermaid">flowchart TD
-   NA["node a<br/>writer1: state write → total, visited<br/>writer2: _route(s) ← your router function"]
+   NA["node a&lt;br/&gt;writer1: state write → total, visited&lt;br/&gt;writer2: _route(s) ← your router function"]
    NA -->|"router returns 'b'"| CB["writes branch:to:b"] -->|wakes| NB[node b]
    NA -->|"router returns 'c'"| CC["writes branch:to:c"] -->|wakes| NC[node c]</pre>
 
