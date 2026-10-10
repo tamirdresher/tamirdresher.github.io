@@ -139,19 +139,15 @@ Here is the same transformation as a picture. The first diagram is what you drew
 
 **What you wrote (builder):**
 
-```mermaid
-flowchart LR
-   S([START]) --> a --> b --> E([END])
-```
+<pre class="mermaid">flowchart LR
+   S([START]) --> a --> b --> E([END])</pre>
 
 **What `compile()` built (runtime):**
 
-```mermaid
-flowchart TD
+<pre class="mermaid">flowchart TD
    I["__start__ channel<br/>(your input)"] -->|wakes| CA["channel branch:to:a"]
    CA -->|wakes| NA["node a<br/>reads: total, visited<br/>bound = a(s)<br/>writer1 → total, visited<br/>writer2 → channel branch:to:b"]
-   NA -->|wakes| NB["node b<br/>reads: total, visited<br/>bound = b(s)<br/>writer1 → total, visited<br/>(no writer2: its edge goes to END)"]
-```
+   NA -->|wakes| NB["node b<br/>reads: total, visited<br/>bound = b(s)<br/>writer1 → total, visited<br/>(no writer2: its edge goes to END)"]</pre>
 
 The arrows between nodes are gone in the second diagram. What remains are boxes (nodes) and named mailboxes (channels): "a" does not know "b" exists, it just drops a message in `branch:to:b`.
 
@@ -197,21 +193,17 @@ node c: triggers=['branch:to:c']  writers=[state write]
 
 **What you wrote:**
 
-```mermaid
-flowchart LR
+<pre class="mermaid">flowchart LR
    S([START]) --> a
    a --> b --> E1([END])
-   a --> c --> E2([END])
-```
+   a --> c --> E2([END])</pre>
 
 **What `compile()` built:**
 
-```mermaid
-flowchart TD
+<pre class="mermaid">flowchart TD
    NA["node a<br/>writer1: state write → total, visited<br/>writer2: _route(s) ← your router function"]
    NA -->|"router returns 'b'"| CB["writes branch:to:b"] -->|wakes| NB[node b]
-   NA -->|"router returns 'c'"| CC["writes branch:to:c"] -->|wakes| NC[node c]
-```
+   NA -->|"router returns 'c'"| CC["writes branch:to:c"] -->|wakes| NC[node c]</pre>
 
 The difference from the linear case is only the second writer of `a`. Instead of a fixed write to `branch:to:b`, it is `_route`, which calls your function and writes to whichever channel the answer names. The other channel is never written, so that node simply doesn't run. With `total` starting at 10, `a` makes it 20, the router picks `b`, and `invoke` returns `{'total': 21, 'visited': ['a', 'b']}`; `c` never fires. Start at 1 and the router picks `c` instead. (`_route` is the internal writer's name as I saw it in this version; treat it as an implementation detail.)
 
@@ -382,13 +374,11 @@ messages: HumanMessage 'double 21' → AIMessage[tool_call double] → ToolMessa
 
 The graph that `create_agent` built is small. Asking the compiled object to draw itself (`agent.get_graph().draw_mermaid()`) gives this, where dashed arrows are conditional edges:
 
-```mermaid
-graph TD;
+<pre class="mermaid">graph TD;
     __start__([__start__]) --> model(model)
     model -.->|tool calls present| tools(tools)
     model -.->|no tool calls| __end__([__end__])
-    tools -.-> model
-```
+    tools -.-> model</pre>
 
 This is what `get_graph().draw_mermaid()` produced (I ran it), with the two edge labels added by me to explain the routing. Walking it with our run: `__start__` puts the `HumanMessage` into `messages` and wakes `model`. The scripted model replies with a tool call, so the router sends the run to `tools`. `tools` executes `double(21)` and appends a `ToolMessage('42')`, which wakes `model` again. This time the reply has no tool calls, so the router goes to `__end__`. That is the `messages:` line above: two trips through `model`, one through `tools`.
 
