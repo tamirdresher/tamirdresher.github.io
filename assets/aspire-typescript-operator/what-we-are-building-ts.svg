@@ -1,0 +1,90 @@
+<svg width="100%" height="430" viewBox="0 0 780 430" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="0" width="100%" height="100%" fill="#ffffff"/>
+
+  <!-- ================= LEFT: your laptop ================= -->
+  <rect x="20" y="50" width="330" height="330" fill="#ffffff" stroke="#dedede" stroke-width="1.5" rx="8"/>
+  <text x="40" y="76" font-size="13" font-weight="600" fill="#5c5c5c">Your laptop</text>
+  <text x="40" y="94" font-size="10" fill="#9a9a9a">ordinary processes, full debugger</text>
+
+  <!-- VS Code -->
+  <rect x="42" y="110" width="286" height="58" fill="#0078d4" rx="4" opacity="0.10"/>
+  <rect x="42" y="110" width="4" height="58" fill="#0078d4" rx="2"/>
+  <text x="58" y="132" font-size="12" font-weight="600" fill="#0078d4">VS Code</text>
+  <text x="58" y="150" font-size="10" fill="#5c5c5c">F5 — one launch config</text>
+  <text x="58" y="163" font-size="10" fill="#5c5c5c">debugger attached to both sessions</text>
+
+  <!-- AppHost -->
+  <rect x="42" y="182" width="286" height="56" fill="#0078d4" rx="4" opacity="0.10"/>
+  <rect x="42" y="182" width="4" height="56" fill="#0078d4" rx="2"/>
+  <text x="58" y="204" font-size="12" font-weight="600" fill="#0078d4">Aspire AppHost  (TypeScript)</text>
+  <text x="58" y="222" font-size="10" fill="#5c5c5c">addKindCluster · withCommand · addGoApp</text>
+  <text x="58" y="234" font-size="10" fill="#5c5c5c">waitFor(cluster) — ordering in code</text>
+
+  <!-- Go operator: the star -->
+  <rect x="42" y="252" width="286" height="70" fill="#b11f4b" rx="4" opacity="0.12"/>
+  <rect x="42" y="252" width="4" height="70" fill="#b11f4b" rx="2"/>
+  <text x="58" y="274" font-size="12" font-weight="600" fill="#b11f4b">greeter-operator  (Go)</text>
+  <text x="58" y="291" font-size="10" fill="#5c5c5c">a normal host process — not a Pod</text>
+  <text x="58" y="304" font-size="10" fill="#5c5c5c">Reconcile() — breakpoint lands here</text>
+  <text x="58" y="317" font-size="10" fill="#5c5c5c">controller-runtime · dlv</text>
+
+  <!-- Dashboard note -->
+  <text x="42" y="348" font-size="10" fill="#9a9a9a">Aspire dashboard — resource state, logs,</text>
+  <text x="42" y="362" font-size="10" fill="#9a9a9a">and custom commands such as “Apply Greeter”</text>
+
+  <!-- ================= RIGHT: Kind cluster ================= -->
+  <rect x="430" y="50" width="330" height="330" fill="#ffffff" stroke="#dedede" stroke-width="1.5" rx="8"/>
+  <text x="450" y="76" font-size="13" font-weight="600" fill="#5c5c5c">Kind cluster</text>
+  <text x="450" y="94" font-size="10" fill="#9a9a9a">real Kubernetes, running in Docker</text>
+
+  <!-- API server -->
+  <rect x="452" y="110" width="286" height="58" fill="#0078d4" rx="4" opacity="0.10"/>
+  <rect x="452" y="110" width="4" height="58" fill="#0078d4" rx="2"/>
+  <text x="468" y="132" font-size="12" font-weight="600" fill="#0078d4">API server</text>
+  <text x="468" y="150" font-size="10" fill="#5c5c5c">https://127.0.0.1:&lt;port&gt;</text>
+  <text x="468" y="163" font-size="10" fill="#5c5c5c">validates, persists, streams events</text>
+
+  <!-- CRD -->
+  <rect x="452" y="182" width="286" height="56" fill="#f59e0b" rx="4" opacity="0.14"/>
+  <rect x="452" y="182" width="4" height="56" fill="#f59e0b" rx="2"/>
+  <text x="468" y="204" font-size="12" font-weight="600" fill="#b8730a">CustomResourceDefinition</text>
+  <text x="468" y="222" font-size="10" fill="#5c5c5c">teaches the API server the word “Greeter”</text>
+  <text x="468" y="234" font-size="10" fill="#5c5c5c">applied by the greeter-crd helper at startup</text>
+
+  <!-- Objects -->
+  <rect x="452" y="252" width="286" height="70" fill="#0078d4" rx="4" opacity="0.10"/>
+  <rect x="452" y="252" width="4" height="70" fill="#0078d4" rx="2"/>
+  <text x="468" y="274" font-size="12" font-weight="600" fill="#0078d4">Cluster state</text>
+  <text x="468" y="291" font-size="10" fill="#5c5c5c">Greeter objects — the desired state</text>
+  <text x="468" y="304" font-size="10" fill="#5c5c5c">ConfigMaps — what the operator creates</text>
+  <text x="468" y="317" font-size="10" fill="#5c5c5c">no operator Deployment, no image build</text>
+
+  <text x="452" y="348" font-size="10" fill="#9a9a9a">The cluster holds state. It does not hold</text>
+  <text x="452" y="362" font-size="10" fill="#9a9a9a">the code you are editing.</text>
+
+  <!-- ================= BRIDGE ================= -->
+  <defs>
+    <marker id="arrowAmber" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#f59e0b"/>
+    </marker>
+    <marker id="arrowCrimson" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#b11f4b"/>
+    </marker>
+  </defs>
+
+  <!-- KUBECONFIG: laptop -> cluster -->
+  <line x1="352" y1="176" x2="424" y2="176" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowAmber)"/>
+  <text x="388" y="166" text-anchor="middle" font-size="10" font-weight="600" fill="#b8730a">KUBECONFIG</text>
+  <text x="388" y="194" text-anchor="middle" font-size="9" fill="#9a9a9a">one env var —</text>
+  <text x="388" y="205" text-anchor="middle" font-size="9" fill="#9a9a9a">the whole bridge</text>
+
+  <!-- watch: cluster -> laptop -->
+  <line x1="424" y1="270" x2="352" y2="270" stroke="#b11f4b" stroke-width="2" marker-end="url(#arrowCrimson)"/>
+  <text x="388" y="260" text-anchor="middle" font-size="10" font-weight="600" fill="#b11f4b">watch</text>
+  <text x="388" y="288" text-anchor="middle" font-size="9" fill="#9a9a9a">long-lived stream</text>
+  <text x="388" y="299" text-anchor="middle" font-size="9" fill="#9a9a9a">of change events</text>
+
+  <!-- ================= FOOTER ================= -->
+  <line x1="20" y1="398" x2="760" y2="398" stroke="#dedede" stroke-width="1"/>
+  <text x="390" y="418" text-anchor="middle" font-size="11" fill="#5c5c5c">State lives in the cluster, where it has to. Code runs on the laptop, where you can stop it.</text>
+</svg>
