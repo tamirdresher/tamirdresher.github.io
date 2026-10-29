@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="980" viewBox="0 0 760 980" role="img" aria-labelledby="growing-history-title growing-history-desc">
+  <title id="growing-history-title">The same recurring loop appends more durable history every cycle</title>
+  <desc id="growing-history-desc">An illustrative logical history table contains three color-coded cycle groups. Each group shows selected representative durable events: activity scheduled, activity completed, timer created, and timer fired. Cycle one remains when cycle two is appended, and both remain when cycle three is appended. A callout says the loop stays short while recorded history keeps growing. This is not an actual backend schema, dashboard screenshot, complete event sequence, or measured production count. Long idle time alone does not append rows.</desc>
+  <defs>
+    <style>
+      text { font-family: "Segoe UI", Arial, sans-serif; fill: #172b4d; }
+      .title { font-size: 28px; font-weight: 700; fill: #102a43; }
+      .subtitle { font-size: 16px; fill: #475569; }
+      .heading { font-size: 17px; font-weight: 700; fill: #102a43; }
+      .body { font-size: 16px; }
+      .small { font-size: 14px; fill: #475569; }
+      .cycle { font-size: 16px; font-weight: 700; }
+      .panel { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; }
+      .header { fill: #e2e8f0; stroke: #94a3b8; stroke-width: 1.5; }
+      .cycle1 { fill: #eff6ff; stroke: #93c5fd; stroke-width: 1.2; }
+      .cycle2 { fill: #f0fdf4; stroke: #86efac; stroke-width: 1.2; }
+      .cycle3 { fill: #fff7ed; stroke: #fdba74; stroke-width: 1.2; }
+      .divider { stroke: #cbd5e1; stroke-width: 1; }
+      .arrow { fill: none; stroke: #475569; stroke-width: 2.5; }
+    </style>
+    <marker id="append-arrow" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 8 4 L 0 8 Z" fill="#475569"/>
+    </marker>
+  </defs>
+
+  <rect width="760" height="980" fill="#f8fafc"/>
+  <text x="32" y="50" class="title">Same short loop, growing recorded history</text>
+  <text x="32" y="80" class="subtitle">Illustrative logical view with selected representative durable events</text>
+
+  <g aria-label="Recurring loop">
+    <rect x="32" y="108" width="696" height="82" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5"/>
+    <text x="52" y="140" class="heading">Recurring code shape</text>
+    <text x="52" y="170" class="body">Run activity  |  wait on durable timer  |  repeat</text>
+  </g>
+
+  <path d="M 380 198 V 228" class="arrow" marker-end="url(#append-arrow)"/>
+  <text x="400" y="220" class="small">durable actions append history</text>
+
+  <g aria-label="Illustrative logical history table">
+    <rect x="32" y="240" width="696" height="588" rx="12" class="panel"/>
+    <rect x="32" y="240" width="696" height="48" rx="12" class="header"/>
+    <rect x="32" y="276" width="696" height="12" fill="#e2e8f0"/>
+    <text x="52" y="271" class="heading">Cycle</text>
+    <text x="170" y="271" class="heading">Representative event appended to logical history</text>
+
+    <g aria-label="Cycle one rows remain in history">
+      <rect x="44" y="302" width="672" height="152" rx="8" class="cycle1"/>
+      <text x="58" y="330" class="cycle">Cycle 1</text>
+      <text x="170" y="330" class="body">Activity scheduled</text>
+      <line x1="158" y1="342" x2="704" y2="342" class="divider"/>
+      <text x="170" y="368" class="body">Activity completed</text>
+      <line x1="158" y1="380" x2="704" y2="380" class="divider"/>
+      <text x="170" y="406" class="body">Timer created</text>
+      <line x1="158" y1="418" x2="704" y2="418" class="divider"/>
+      <text x="170" y="444" class="body">Timer fired</text>
+    </g>
+
+    <path d="M 380 460 V 482" class="arrow" marker-end="url(#append-arrow)"/>
+    <text x="400" y="477" class="small">next cycle appends; cycle 1 stays</text>
+
+    <g aria-label="Cycle two rows are appended after cycle one">
+      <rect x="44" y="494" width="672" height="152" rx="8" class="cycle2"/>
+      <text x="58" y="522" class="cycle">Cycle 2</text>
+      <text x="170" y="522" class="body">Activity scheduled</text>
+      <line x1="158" y1="534" x2="704" y2="534" class="divider"/>
+      <text x="170" y="560" class="body">Activity completed</text>
+      <line x1="158" y1="572" x2="704" y2="572" class="divider"/>
+      <text x="170" y="598" class="body">Timer created</text>
+      <line x1="158" y1="610" x2="704" y2="610" class="divider"/>
+      <text x="170" y="636" class="body">Timer fired</text>
+    </g>
+
+    <path d="M 380 652 V 674" class="arrow" marker-end="url(#append-arrow)"/>
+    <text x="400" y="669" class="small">another cycle appends; earlier rows stay</text>
+
+    <g aria-label="Cycle three rows are appended after cycles one and two">
+      <rect x="44" y="686" width="672" height="128" rx="8" class="cycle3"/>
+      <text x="58" y="714" class="cycle">Cycle 3</text>
+      <text x="170" y="714" class="body">Activity scheduled</text>
+      <line x1="158" y1="726" x2="704" y2="726" class="divider"/>
+      <text x="170" y="752" class="body">Activity completed</text>
+      <line x1="158" y1="764" x2="704" y2="764" class="divider"/>
+      <text x="170" y="790" class="body">Timer created, then fired</text>
+    </g>
+  </g>
+
+  <g aria-label="Main takeaway">
+    <rect x="32" y="850" width="696" height="92" rx="12" fill="#fff7ed" stroke="#f97316" stroke-width="2"/>
+    <text x="52" y="885" class="heading">The loop body did not get longer.</text>
+    <text x="52" y="916" class="body">The recorded durable history did, because each cycle added more actions.</text>
+  </g>
+
+  <text x="32" y="966" class="small">Illustrative only: selected events, not an exact sequence or backend table. Idle time alone adds no row.</text>
+</svg>

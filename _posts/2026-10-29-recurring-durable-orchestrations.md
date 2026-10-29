@@ -135,6 +135,10 @@ Here, the question isn't *how* that reconstruction works. It's **how much past w
 
 Each recurring cycle can add activity scheduling and completion events, timer events, and other durable actions. The [eternal orchestration documentation](https://learn.microsoft.com/en-us/azure/durable-task/common/durable-task-eternal-orchestrations) warns that an endlessly looping orchestration without continue-as-new accumulates history, eventually causing performance problems and excessive memory use.
 
+[![Illustrative logical history table showing representative activity and timer events accumulating across three recurring cycles while earlier cycles remain recorded.](/assets/recurring-durable-orchestrations/growing-history.svg)](/assets/recurring-durable-orchestrations/growing-history.svg)
+
+*Illustrative logical history, not an actual backend table, dashboard screenshot, complete event sequence, or measured event count. Long idle time by itself does not append rows.*
+
 In the production case that prompted this post, the concrete facts were a performance drop and millions of history records accumulated over months. I don't have a controlled before-and-after measurement that isolates one CPU, latency, or memory number, so I won't invent one. The practical concern is still clear: every recovery or activation may have much more recorded work to reconstruct before the orchestration can make forward progress.
 
 Notice what doesn't fix that: assigning the latest result back to the same local variable. You've replaced the value in your code. You haven't reset the orchestration history.
