@@ -2,7 +2,7 @@
 layout: post
 date: 2026-10-29
 title: "Run Forever, Keep History Bounded: Recurring Durable Orchestrations"
-tags: [azure, durable-functions, durable-task-sdk, orchestration, workflows, performance, dotnet]
+tags: [azure, DTS, durable-task-scheduler, durable-functions, durable-task-sdk, orchestration, workflows, performance, dotnet, python]
 ---
 
 A team approached me because the performance of one of their orchestrations had dropped. When I looked into it, I found a simple loop that had been running for months and had accumulated millions of history records.
