@@ -16,6 +16,8 @@ But it is prevention, not an external compaction command. It only helps when the
 1. How should a recurring orchestration be written so its history stays bounded?
 2. What can you do when production instances already have giant histories?
 
+Before we worked out the long-term repair, we suspended an explicit reviewed list of affected orchestrations and resumed selected groups gradually. This was temporary load containment, not a history fix: suspension did not truncate their histories, and resuming could bring the same replay cost and accumulated work back. New starts needed separate gating because suspending existing instances did not stop another starter from creating more.
+
 My earlier [replay walkthrough](https://www.tamirdresher.com/blog/2026/09/21/durable-await-replay) explains why recorded history lets durable code recover, and the follow-up on [less obvious Durable Task capabilities](https://www.tamirdresher.com/blog/2026/09/25/durable-task-hidden-capabilities) covers related execution boundaries. Here, the focus is what happens when useful history becomes too much history.
 
 This is the [eternal orchestration pattern](https://learn.microsoft.com/en-us/azure/durable-task/common/durable-task-eternal-orchestrations): let the process continue, but give each generation a bounded past. Eternal process. Not an eternal scrapbook.
@@ -374,10 +376,6 @@ The bounded design prevents the next instance or generation from repeating the s
 
 ### First, contain the load
 
-Before we worked out the long-term repair, we suspended an explicit reviewed list of affected orchestrations and resumed selected groups gradually.
-
-This was temporary containment, not a history fix. Suspension can reduce how many of these orchestrations are actively processing, but it doesn't truncate their histories. Resuming them can bring the same replay cost and any accumulated work back. New starts may need separate gating; suspending existing instances doesn't stop another starter from creating more.
-
 #### Start with the dashboard for a small reviewed set
 
 For a few known instances, the simplest option is the [Durable Task Scheduler dashboard](https://learn.microsoft.com/en-us/azure/durable-task/scheduler/durable-task-scheduler-dashboard). Open the Orchestrations pane, find the instance, select its instance ID, and choose Suspend. After checking containment and business progress, return to each explicitly approved instance and choose Resume.
@@ -398,7 +396,7 @@ if (action === "suspend") {
 }
 ```
 
-The complete companion [`admin-instance.mjs`](https://github.com/tamirdresher/tamirdresher.github.io/blob/tamirdresher-microsoft-recurring-orchestration-draft/assets/recurring-durable-orchestrations/admin-instance.mjs) validates one explicit instance ID and one `suspend` or `resume` action per invocation, checks the current state without fetching payloads, and closes the client. It reads connection configuration from `DURABLE_TASK_SCHEDULER_CONNECTION_STRING`; do not commit or print that value. A control request still needs a separate status readback before the next operational step.
+The complete companion [`admin-instance.mjs`](https://github.com/tamirdresher/tamirdresher.github.io/blob/cd4146a2e167a891ea930aaaad2c1e349d8894a4/assets/recurring-durable-orchestrations/admin-instance.mjs) validates one explicit instance ID and one `suspend` or `resume` action per invocation, checks the current state without fetching payloads, and closes the client. It reads connection configuration from `DURABLE_TASK_SCHEDULER_CONNECTION_STRING`; do not commit or print that value. A control request still needs a separate status readback before the next operational step.
 
 One provenance note for this recovery section: the incident record establishes that supported client operations were applied programmatically to an approved instance list, but it does not preserve the original wrapper or language. The companion scripts are public teaching examples, not reconstructed incident code. They follow the pinned [Azure-managed client creation](https://github.com/microsoft/durabletask-js/blob/84c8df1b0f8b5e45fa2c54624a818f085ce8df2a/packages/durabletask-js-azuremanaged/src/client-builder.ts), [client methods](https://github.com/microsoft/durabletask-js/blob/84c8df1b0f8b5e45fa2c54624a818f085ce8df2a/packages/durabletask-js/src/client/client.ts), and [plain ESM sample](https://github.com/Azure-Samples/Durable-Task-Scheduler/blob/7152d82c656576b9cda47d33ac2de4f61aacff66/samples/durable-task-sdks/javascript/function-chaining/client.mjs).
 
@@ -424,7 +422,7 @@ console.log({
 });
 ```
 
-The complete [`history-report.mjs`](https://github.com/tamirdresher/tamirdresher.github.io/blob/tamirdresher-microsoft-recurring-orchestration-draft/assets/recurring-durable-orchestrations/history-report.mjs) handles missing instances and per-ID errors, sorts successful counts, and closes the client. [`getOrchestrationHistory`](https://github.com/microsoft/durabletask-js/blob/84c8df1b0f8b5e45fa2c54624a818f085ce8df2a/packages/durabletask-js/src/client/client.ts#L1069-L1163) returns history event objects and returns an empty array when an instance isn't found, which is why the companion checks state first. `ReturnedHistoryEntries` is the number of entries in that returned snapshot, not stored bytes, provider storage size, or a direct replay-work measurement. History may contain sensitive input or output payloads, so keep the list small and reviewed. The dashboard History tab, [.NET `GetOrchestrationHistoryAsync`](https://github.com/microsoft/durabletask-dotnet/blob/2a409da4ac7dcf03c4f25985337eb4623ea6394e/src/Client/Core/DurableTaskClient.cs#L500-L517), and [Python `get_orchestration_history`](https://github.com/microsoft/durabletask-python/blob/6a56be2f406e7f787f5925f48ea7d3715928e6ff/durabletask/client.py#L675-L686) are alternatives for the same bounded inspection.
+The complete [`history-report.mjs`](https://github.com/tamirdresher/tamirdresher.github.io/blob/cd4146a2e167a891ea930aaaad2c1e349d8894a4/assets/recurring-durable-orchestrations/history-report.mjs) handles missing instances and per-ID errors, sorts successful counts, and closes the client. [`getOrchestrationHistory`](https://github.com/microsoft/durabletask-js/blob/84c8df1b0f8b5e45fa2c54624a818f085ce8df2a/packages/durabletask-js/src/client/client.ts#L1069-L1163) returns the full list of history event objects and returns an empty array when an instance isn't found, which is why the companion checks state first. For histories with millions of events, downloading that list just to count it can itself consume substantial memory, network bandwidth, and service capacity. Prefer suitable backend diagnostics or bounded inspection where available; this SDK call retrieves the full history. `ReturnedHistoryEntries` is the number of entries in that returned snapshot, not stored bytes, provider storage size, or a direct replay-work measurement. History may contain sensitive input or output payloads, so keep the list small and reviewed. The dashboard History tab, [.NET `GetOrchestrationHistoryAsync`](https://github.com/microsoft/durabletask-dotnet/blob/2a409da4ac7dcf03c4f25985337eb4623ea6394e/src/Client/Core/DurableTaskClient.cs#L500-L517), and [Python `get_orchestration_history`](https://github.com/microsoft/durabletask-python/blob/6a56be2f406e7f787f5925f48ea7d3715928e6ff/durabletask/client.py#L675-L686) are alternatives for the same reviewed inspection, with the same need to understand each backend and client's retrieval behavior.
 
 Whatever client you use, recheck status immediately before an action and read it back afterward. Stop on missing or unexpected results. Resume only separately approved subsets, with workload health and business progress checks between them.
 
@@ -444,81 +442,38 @@ So the practical split is:
 
 #### The actual source change for new executions
 
-The change is small, but it changes the lifecycle. These focused methods reuse the imports, `ReconciliationState`, `ReconciliationResult`, and `ReconcileScan` activity contract from the first half of the post.
+The complete bounded C# and Python implementations in the first half are the target designs for new executions. The excerpts below are deliberately not standalone methods; they isolate the lifecycle change while omitting the unchanged awaited scan, committed-state update, stop guard, and durable timer.
 
-In C#, remove the unbounded `while` and make one scan plus one durable wait the complete generation:
+In C#, replace the outer loop with one pass through that completed-work block, then continue as new:
 
 ```csharp
-public override async Task<ReconciliationState> RunAsync(
-    TaskOrchestrationContext context,
-    ReconciliationState state)
+// Before: the full scan-and-wait block repeats in one generation.
+while (!state.Stopped)
 {
-    if (state.Stopped)
-    {
-        return state;
-    }
-
-    ReconciliationResult scan =
-        await context.CallActivityAsync<ReconciliationResult>(
-            "ReconcileScan",
-            state.Checkpoint);
-
-    ReconciliationState nextState = state with
-    {
-        Checkpoint = scan.NextCheckpoint,
-        Stopped = scan.Stopped,
-    };
-
-    if (nextState.Stopped)
-    {
-        return nextState;
-    }
-
-    DateTime nextCheck =
-        context.CurrentUtcDateTime.Add(nextState.Interval);
-    await context.CreateTimer(nextCheck, CancellationToken.None);
-
-    // Start a fresh generation with compact, committed state.
-    context.ContinueAsNew(nextState);
-    return nextState;
+    // Existing awaited scan, committed-state update, stop guard, and durable timer.
 }
+
+// After: run that same block once to produce nextState.
+if (!nextState.Stopped)
+    context.ContinueAsNew(nextState);
+return nextState;
 ```
 
-The Python change is the same shape: remove the unbounded `while`, yield one scan and one durable timer, then continue as new and return immediately.
+The Python lifecycle change is the same:
 
 ```python
-def bounded_reconciliation(
-    ctx: task.OrchestrationContext,
-    state: dict[str, Any],
-) -> Generator[task.Task[Any], Any, dict[str, Any]]:
-    if state["stopped"]:
-        return state
+# Before: the full scan-and-wait block repeats in one generation.
+while not state["stopped"]:
+    # Existing yielded scan, committed-state update, stop guard, and durable timer.
+    ...
 
-    scan = yield ctx.call_activity(
-        "ReconcileScan",
-        input=state.get("checkpoint"),
-    )
-
-    next_state = {
-        "checkpoint": scan["next_checkpoint"],
-        "interval_seconds": state["interval_seconds"],
-        "stopped": scan["stopped"],
-    }
-
-    if next_state["stopped"]:
-        return next_state
-
-    next_check = ctx.current_utc_datetime + timedelta(
-        seconds=next_state["interval_seconds"]
-    )
-    yield ctx.create_timer(next_check)
-
-    # Start a fresh generation with compact, committed state.
+# After: run that same block once to produce next_state.
+if not next_state["stopped"]:
     ctx.continue_as_new(next_state)
-    return next_state
+return next_state
 ```
 
-Those are the implementations to register for new executions. They do not make an arbitrary old history replay-compatible.
+Register the complete earlier implementations for new executions. The excerpts only highlight the lifecycle edit, and neither form makes an arbitrary old history replay-compatible.
 
 #### Moving versions requires an already safe boundary
 
