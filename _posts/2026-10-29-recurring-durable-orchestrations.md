@@ -384,9 +384,9 @@ The standalone Durable Task JavaScript/TypeScript SDK is currently in preview. A
 const state = await client.getOrchestrationState(instanceId, false);
 
 if (action === "suspend") {
-    await client.suspendOrchestration(instanceId, reason);
+    await client.suspendOrchestration(instanceId, "Temporary containment");
 } else {
-    await client.resumeOrchestration(instanceId, reason);
+    await client.resumeOrchestration(instanceId, "Approved staged resume");
 }
 ```
 
