@@ -302,6 +302,8 @@ Now imagine that after every scan, the orchestration also appends every processe
 
 A better split is to have the activity save detailed results in the application's database or object store, then return only the durable checkpoint and genuinely small state needed for the next cycle. If the orchestration needs to refer to saved details later, it can carry a stable reference rather than the details themselves.
 
+One important distinction: not every activity that looks like logging is merely diagnostic; if it records committed business progress that the application depends on, keep it [durable and idempotent](https://learn.microsoft.com/en-us/azure/durable-task/common/programming-model-overview#activities). [Replay-safe logging](https://learn.microsoft.com/en-us/azure/durable-task/durable-functions/durable-functions-diagnostics#replay-safe-logging-in-orchestrator-functions) is useful for telemetry, but it isn't a substitute for business persistence.
+
 The end of source pagination means "this scan is complete." The recurring monitor can wait and begin another scan according to its application policy. It should not silently treat a null token as both "start over immediately" and "stop forever." Those are different decisions. Likewise, the examples' `Stopped` value is a business stop condition, not a synonym for reaching the last page.
 
 That external data still needs a lifecycle. A referenced object must remain available for as long as the workflow may need it, and the activity writing it still needs the application's usual idempotency and retry design.
@@ -351,22 +353,6 @@ So I wouldn't reduce this decision to "CRON overlaps; durable loops don't." The 
 Choose a completion-relative durable loop when that cadence and continuity are what you need. Choose separately scheduled finite workflows when those better match the business schedule. Neither choice excuses unexamined history growth inside the workflow.
 
 For a business-cycle example, the [subscription-payment section of my real-world Durable Task post](https://www.tamirdresher.com/blog/2026/09/28/durable-task-real-world#3-a-payment-timeout-is-not-a-decline) advances only after the current cycle is resolved. The useful boundary is a business decision, not just another tick of the clock.
-
----
-
-## Not Every Record Is "Just Logging"
-
-It's tempting to look at a busy orchestration and say, "Why are we calling an activity just to write a log? Let's remove it." Sometimes that's exactly the right question. But first, what is that activity actually recording?
-
-Take a reconciliation workflow that processes records a page at a time. A message saying "finished processing this page" helps someone diagnose a problem later. Recording that the page was accepted or committed, so the application knows which records still need reconciliation, is doing something else. If business behavior depends on that write, it remains real activity work, even if the activity happens to be named "LogProgress."
-
-Give that write a stable operation or business key, and make the destination idempotent or able to deduplicate writes using that key. The [programming model documentation](https://learn.microsoft.com/en-us/azure/durable-task/common/programming-model-overview#activities) explains why this matters: activity execution is at least once. An external write may succeed before the activity's completion is recorded. If the outcome is uncertain, reconcile it against the destination before retrying the write. For example, check whether that page's acceptance record already exists under the same key rather than assuming a missing completion means nothing was written.
-
-If the output is only diagnostic, an extra durable activity per iteration may be unnecessary. Use documented replay-safe logging where supported instead. The [Durable Functions diagnostics guide](https://learn.microsoft.com/en-us/azure/durable-task/durable-functions/durable-functions-diagnostics#replay-safe-logging-in-orchestrator-functions) covers this, including `CreateReplaySafeLogger` specifically for .NET isolated Durable Functions orchestrators, not standalone SDKs generally.
-
-That replay-safe filtering prevents replay-generated duplicate log messages. It doesn't guarantee delivery or make logs exactly-once business records. Application Insights sampling can lose tracking information too, as the same diagnostics guide warns. That's fine to account for when choosing diagnostic telemetry, but not a reason to replace a required acceptance record with a log message.
-
-Remove unnecessary work, not records your application depends on.
 
 ---
 
