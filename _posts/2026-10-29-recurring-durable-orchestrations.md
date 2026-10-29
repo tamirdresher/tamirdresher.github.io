@@ -426,71 +426,144 @@ So the practical split is:
 * **Running instances with a verified compatible handoff:** let the old implementation reach that handoff and roll over under the versioning contract you tested.
 * **Running instances without one:** keep their compatible old code available while you contain, drain, retire, or replace them deliberately.
 
-#### The actual source change for new executions
-
-The complete bounded C# and Python implementations in the first half are the target designs for new executions. The excerpts below are deliberately not standalone methods; they isolate the lifecycle change while omitting the unchanged awaited scan, committed-state update, stop guard, and durable timer.
-
-In C#, replace the outer loop with one pass through that completed-work block, then continue as new:
-
-```csharp
-// Before: the full scan-and-wait block repeats in one generation.
-while (!state.Stopped)
-{
-    // Existing awaited scan, committed-state update, stop guard, and durable timer.
-}
-
-// After: run that same block once to produce nextState.
-if (!nextState.Stopped)
-    context.ContinueAsNew(nextState);
-return nextState;
-```
-
-The Python lifecycle change is the same:
-
-```python
-# Before: the full scan-and-wait block repeats in one generation.
-while not state["stopped"]:
-    # Existing yielded scan, committed-state update, stop guard, and durable timer.
-    ...
-
-# After: run that same block once to produce next_state.
-if not next_state["stopped"]:
-    ctx.continue_as_new(next_state)
-return next_state
-```
-
-Register the complete earlier implementations for new executions. The excerpts only highlight the lifecycle edit, and neither form makes an arbitrary old history replay-compatible.
-
 #### Moving versions requires an already safe boundary
 
-If an existing version can already replay to a verified compatible boundary, and the SDK plus backend are configured for version routing, that boundary can request the next version while continuing as new. The standalone .NET API uses [`ContinueAsNewOptions.NewVersion`](https://github.com/microsoft/durabletask-dotnet/blob/2a409da4ac7dcf03c4f25985337eb4623ea6394e/src/Abstractions/ContinueAsNewOptions.cs#L28-L36):
+Here is one conditional bridge for this specific reconciliation loop. It uses the recorded result of the **existing** `ReconcileScan` activity at one fixed point: after the original stop decision and before the next timer that has not yet been recorded. The application adds an optional migration request to the result contract. Historical payloads must deserialize that missing field as `null` or absent, which you need to verify with the application's configured serializer and saved payload fixtures.
 
 ```csharp
-private static ReconciliationState ContinueWithVersion(
-    TaskOrchestrationContext context,
-    ReconciliationState nextState)
+public sealed record MigrationAwareReconciliationResult(
+    string? NextCheckpoint,
+    bool Stopped)
 {
+    public string? ContinueAsNewVersion { get; init; }
+}
+
+// Inside the existing legacy while loop, keep this call in the same position.
+MigrationAwareReconciliationResult scan =
+    await context.CallActivityAsync<MigrationAwareReconciliationResult>(
+        "ReconcileScan",
+        state.Checkpoint);
+
+ReconciliationState nextState = state with
+{
+    Checkpoint = scan.NextCheckpoint,
+    Stopped = scan.Stopped,
+};
+
+if (nextState.Stopped)
+{
+    return nextState;
+}
+
+if (scan.ContinueAsNewVersion is string targetVersion)
+{
+    if (nextState.Checkpoint is null)
+    {
+        throw new InvalidOperationException(
+            "Migration requires a committed checkpoint.");
+    }
+
+    // Only a newly recorded result with no later legacy action may take this branch.
     context.ContinueAsNew(new ContinueAsNewOptions
     {
         NewInput = nextState,
-        NewVersion = "2.0",
+        NewVersion = targetVersion,
     });
     return nextState;
 }
+
+// Marker absent: preserve the original timer and loop-state ordering.
+DateTime nextCheck =
+    context.CurrentUtcDateTime.Add(nextState.Interval);
+await context.CreateTimer(nextCheck, CancellationToken.None);
+state = nextState;
 ```
 
-The standalone Python API exposes the equivalent [`new_version` argument](https://github.com/microsoft/durabletask-python/blob/6a56be2f406e7f787f5925f48ea7d3715928e6ff/durabletask/task.py#L391-L411):
+The Python legacy bridge follows the same rule. Existing dictionaries return `None` from `get`, so old results retain the original timer path:
 
 ```python
-def continue_with_version(
-    ctx: task.OrchestrationContext,
-    next_state: dict[str, Any],
-) -> dict[str, Any]:
-    ctx.continue_as_new(next_state, new_version="2.0")
+scan = yield ctx.call_activity(
+    "ReconcileScan",
+    input=state.get("checkpoint"),
+)
+
+next_state = {
+    "checkpoint": scan["next_checkpoint"],
+    "interval_seconds": state["interval_seconds"],
+    "stopped": scan["stopped"],
+}
+
+if next_state["stopped"]:
     return next_state
+
+target_version = scan.get("continue_as_new_version")
+if target_version is not None:
+    if next_state["checkpoint"] is None:
+        raise ValueError("Migration requires a committed checkpoint")
+
+    # Only a newly recorded result with no later legacy action may take this branch.
+    ctx.continue_as_new(next_state, new_version=target_version)
+    return next_state
+
+# Marker absent: preserve the original timer and loop-state ordering.
+next_check = ctx.current_utc_datetime + timedelta(
+    seconds=next_state["interval_seconds"]
+)
+yield ctx.create_timer(next_check)
+state = next_state
 ```
 
-That is a transition made **at** a safe boundary, not a way to create one retroactively. Inserting either call into an arbitrary point that old instances must replay is not a universal in-place migration.
+This needs a two-phase rollout. First deploy the compatible decoder and bridge to **every** worker eligible for the old instances, and deploy the routable bounded target, while `ReconcileScan` never returns a migration version. Drain in-flight turns and worker caches, not just old replicas, and prove that no pre-bridge worker can consume another completion. Only then may the activity code return `"2.0"` as part of a newly recorded result after it has committed a stable, non-null checkpoint and reconciled uncertain effects. The marker is an activity result, not an environment or clock read inside the orchestrator. It does not make external writes atomic, so `ReconcileScan` still needs stable operation keys, idempotent effects, and retry-safe reconciliation.
+
+The hard invariant is that no result containing a migration marker has ever been consumed by a non-bridge worker that recorded a timer or any later legacy action. A newly completed activity is not automatically the history frontier. If an old worker records the original timer after receiving the marker, replaying the bridge would diverge at that result.
+
+The logical orchestration **name stays the same**. `NewVersion` or `new_version` changes the version assigned to the next generation; it does not start a different instance ID. In .NET, the pinned SDK's [eternal migration sample](https://github.com/microsoft/durabletask-dotnet/tree/2a409da4ac7dcf03c4f25985337eb4623ea6394e/samples/EternalOrchestrationVersionMigrationSample) registers old and new classes under one name:
+
+```csharp
+[DurableTask("Reconciliation")] // Existing unversioned registration stays unversioned.
+public sealed class ReconciliationLegacyBridge : TaskOrchestrator<ReconciliationState, ReconciliationState>
+{
+    // RunAsync contains the bridge shown above.
+}
+
+[DurableTask("Reconciliation", Version = "2.0")]
+public sealed class ReconciliationV2 : TaskOrchestrator<ReconciliationState, ReconciliationState>
+{
+    // RunAsync is the complete bounded implementation from the first half.
+}
+```
+
+If the old instances already carry `"1.0"` rather than no version, mark the bridge class `Version = "1.0"` instead. The .NET [`DurableTask` attribute](https://github.com/microsoft/durabletask-dotnet/blob/2a409da4ac7dcf03c4f25985337eb4623ea6394e/src/Abstractions/DurableTaskAttribute.cs#L31-L47) permits the same name with distinct versions, and [`ContinueAsNewOptions.NewVersion`](https://github.com/microsoft/durabletask-dotnet/blob/2a409da4ac7dcf03c4f25985337eb4623ea6394e/src/Abstractions/ContinueAsNewOptions.cs#L28-L36) selects the restarted generation's version. The pinned sample exercises `"1"` to `"2"` routing; verify the exact unversioned-to-`"2.0"` registration against your package and backend rather than assuming the null-version case behaves identically.
+
+The Python registry accepts only one function for a name in one worker, so run separately routed bridge and target workers, each registering the same stable name:
+
+```python
+from durabletask import worker
+
+# Bridge worker: route the exact persisted legacy version to this function.
+bridge_worker.add_named_orchestrator(
+    "Reconciliation",
+    reconciliation_legacy_bridge,
+)
+
+# Target worker: route version "2.0" to the bounded function.
+target_worker.add_named_orchestrator(
+    "Reconciliation",
+    bounded_reconciliation,
+)
+target_worker.use_versioning(worker.VersioningOptions(
+    version="2.0",
+    default_version="2.0",
+    match_strategy=worker.VersionMatchStrategy.STRICT,
+    failure_strategy=worker.VersionFailureStrategy.REJECT,
+))
+```
+
+Configure the bridge worker with the SDK's [`use_versioning`](https://github.com/microsoft/durabletask-python/blob/6a56be2f406e7f787f5925f48ea7d3715928e6ff/durabletask/worker.py#L715-L719) and reject-on-mismatch policy for the version the instances **already have**. The pinned [`continue_as_new` contract](https://github.com/microsoft/durabletask-python/blob/6a56be2f406e7f787f5925f48ea7d3715928e6ff/durabletask/task.py#L391-L411) carries `new_version`; [`add_named_orchestrator`](https://github.com/microsoft/durabletask-python/blob/6a56be2f406e7f787f5925f48ea7d3715928e6ff/durabletask/worker.py#L372-L378) supplies the stable name. Pre-versioning instances can report a null version. Do not relabel those persisted instances as `"1.0"` in the explanation or configuration; prove the bridge worker's null-version routing against your backend before enabling migration.
+
+Both target implementations must accept the exact compact state shape emitted by the bridge: the C# `ReconciliationState` fields and types, or the Python `checkpoint`, numeric `interval_seconds`, and `stopped` keys. The target workers must also register a compatible `ReconcileScan` activity for their routed version. Verify those contracts with the real serializer and worker configuration before rollout.
+
+This is a conditional technique, not a production-ready universal recipe or a claim about the incident that introduced this post. It still requires replay tests with the real runtime and representative saved histories, including cold replay, a pending activity, a newly completed result with and without the marker, stop-state ordering, and buffered external events. A separate decision-sequence model can help expose the invalid "marker already followed by timer" case, but it is not an SDK replay test. If you cannot prove the recorded prefix, routing, serializer, and state-shape requirements, this is not a safe handoff for those instances.
 
 ### Replacement is a new instance, not a move
 
