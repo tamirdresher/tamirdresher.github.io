@@ -438,6 +438,115 @@ So the practical split is:
 * **Running instances with a verified compatible handoff:** let the old implementation reach that handoff and roll over under the versioning contract you tested.
 * **Running instances without one:** keep their compatible old code available while you contain, drain, retire, or replace them deliberately.
 
+#### The actual source change for new executions
+
+The change is small, but it changes the lifecycle. These focused methods reuse the imports, `ReconciliationState`, `ReconciliationResult`, and `ReconcileScan` activity contract from the first half of the post.
+
+In C#, remove the unbounded `while` and make one scan plus one durable wait the complete generation:
+
+```csharp
+public override async Task<ReconciliationState> RunAsync(
+    TaskOrchestrationContext context,
+    ReconciliationState state)
+{
+    if (state.Stopped)
+    {
+        return state;
+    }
+
+    ReconciliationResult scan =
+        await context.CallActivityAsync<ReconciliationResult>(
+            "ReconcileScan",
+            state.Checkpoint);
+
+    ReconciliationState nextState = state with
+    {
+        Checkpoint = scan.NextCheckpoint,
+        Stopped = scan.Stopped,
+    };
+
+    if (nextState.Stopped)
+    {
+        return nextState;
+    }
+
+    DateTime nextCheck =
+        context.CurrentUtcDateTime.Add(nextState.Interval);
+    await context.CreateTimer(nextCheck, CancellationToken.None);
+
+    // Start a fresh generation with compact, committed state.
+    context.ContinueAsNew(nextState);
+    return nextState;
+}
+```
+
+The Python change is the same shape: remove the unbounded `while`, yield one scan and one durable timer, then continue as new and return immediately.
+
+```python
+def bounded_reconciliation(
+    ctx: task.OrchestrationContext,
+    state: dict[str, Any],
+) -> Generator[task.Task[Any], Any, dict[str, Any]]:
+    if state["stopped"]:
+        return state
+
+    scan = yield ctx.call_activity(
+        "ReconcileScan",
+        input=state.get("checkpoint"),
+    )
+
+    next_state = {
+        "checkpoint": scan["next_checkpoint"],
+        "interval_seconds": state["interval_seconds"],
+        "stopped": scan["stopped"],
+    }
+
+    if next_state["stopped"]:
+        return next_state
+
+    next_check = ctx.current_utc_datetime + timedelta(
+        seconds=next_state["interval_seconds"]
+    )
+    yield ctx.create_timer(next_check)
+
+    # Start a fresh generation with compact, committed state.
+    ctx.continue_as_new(next_state)
+    return next_state
+```
+
+Those are the implementations to register for new executions. They do not make an arbitrary old history replay-compatible.
+
+#### Moving versions requires an already safe boundary
+
+If an existing version can already replay to a verified compatible boundary, and the SDK plus backend are configured for version routing, that boundary can request the next version while continuing as new. The standalone .NET API uses [`ContinueAsNewOptions.NewVersion`](https://github.com/microsoft/durabletask-dotnet/blob/2a409da4ac7dcf03c4f25985337eb4623ea6394e/src/Abstractions/ContinueAsNewOptions.cs#L28-L36):
+
+```csharp
+private static ReconciliationState ContinueWithVersion(
+    TaskOrchestrationContext context,
+    ReconciliationState nextState)
+{
+    context.ContinueAsNew(new ContinueAsNewOptions
+    {
+        NewInput = nextState,
+        NewVersion = "2.0",
+    });
+    return nextState;
+}
+```
+
+The standalone Python API exposes the equivalent [`new_version` argument](https://github.com/microsoft/durabletask-python/blob/6a56be2f406e7f787f5925f48ea7d3715928e6ff/durabletask/task.py#L391-L411):
+
+```python
+def continue_with_version(
+    ctx: task.OrchestrationContext,
+    next_state: dict[str, Any],
+) -> dict[str, Any]:
+    ctx.continue_as_new(next_state, new_version="2.0")
+    return next_state
+```
+
+That is a transition made **at** a safe boundary, not a way to create one retroactively. Inserting either call into an arbitrary point that old instances must replay is not a universal in-place migration.
+
 ### Replacement is a new instance, not a move
 
 If an old instance can't safely reach the bounded implementation, a replacement means scheduling a **different** bounded orchestration from authoritative application progress. It doesn't transfer the old execution, trim its history, or upgrade it in place.
