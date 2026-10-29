@@ -157,6 +157,10 @@ For the .NET `Microsoft.DurableTask` API, [`TaskOrchestrationContext.ContinueAsN
 
 Think of this as a **logical generation boundary**, not "start a random unrelated workflow" and not "reboot the worker."
 
+[![Conceptual comparison showing four cycles accumulating in one execution history without ContinueAsNew and four bounded generations passing compact checkpoints forward with ContinueAsNew.](/assets/recurring-durable-orchestrations/continue-as-new-generations.svg)](/assets/recurring-durable-orchestrations/continue-as-new-generations.svg)
+
+*Illustrative logical generation boundaries. The logical instance ID remains the same; physical storage lifecycle and buffered external-event behavior are separate concerns.*
+
 It's also not a promise about physical deletion, backup retention, or when storage space is reclaimed. A reset of orchestration history is an execution semantic. Storage lifecycle and retention need their own provider-specific documentation and policies.
 
 Here is the same scenario with one completed scan and one completion-relative wait per generation. The activity may use several short-lived source pagination tokens while that scan is active, but the orchestration carries only the committed application checkpoint into the next generation.
