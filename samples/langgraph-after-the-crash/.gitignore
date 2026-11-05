@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+outputs/
+vacation-data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
