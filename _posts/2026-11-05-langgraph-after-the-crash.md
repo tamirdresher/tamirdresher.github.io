@@ -21,7 +21,7 @@ Suppose you're building an agent to book a vacation. It needs three tools: one t
 
 You want the replacement worker process to leave the flight and hotel alone and finish booking the car. With the normal agent factory, LangGraph can already do that, provided those completed tool results reached its persistent storage before the crash. The interesting questions are what it saved, how it matches those results to the work, and who actually starts the continuation.
 
-Here's the factory-built agent I used. The complete [offline companion](https://github.com/tamirdresher/tamirdresher.github.io/blob/1ca37f89ad6e91745ec4cbe49341711aefc6758b/samples/langgraph-after-the-crash/vacation.py) supplies `OfflineVacationModel`, `make_tools`, and the two database paths. This is the setup excerpt, not a standalone script:
+Here's the factory-built agent I used. The complete [offline companion](https://github.com/tamirdresher/langgraph-internals-samples/blob/45d28f66ae1a91ad00011fd725537d7e41e67fc7/crash-recovery/vacation.py) supplies `OfflineVacationModel`, `make_tools`, and the two database paths. This is the setup excerpt, not a standalone script:
 
 ```python
 from langchain.agents import create_agent
@@ -67,7 +67,7 @@ def make_tools(booking_db):
 
 The companion's `record_booking` commits a row to a separate `bookings.sqlite` and returns a confirmation such as `flight-confirmed`. It deliberately doesn't deduplicate requests. Calling it twice makes two booking records, so a repeated external effect can't hide behind a friendly mock.
 
-With the [pinned dependencies](https://github.com/tamirdresher/tamirdresher.github.io/blob/1ca37f89ad6e91745ec4cbe49341711aefc6758b/samples/langgraph-after-the-crash/requirements.txt) installed, run these from the companion's directory:
+With the [pinned dependencies](https://github.com/tamirdresher/langgraph-internals-samples/blob/45d28f66ae1a91ad00011fd725537d7e41e67fc7/crash-recovery/requirements.txt) installed, run these from the companion's directory:
 
 ```powershell
 python .\vacation.py start --data-dir .\vacation-data
@@ -212,11 +212,11 @@ With the default factory, flight and hotel each ran once. Car was entered twice,
 
 In the serialized factory, all three bodies ran again after the kill because none of their booking results had been saved in that selected window. This wasn't serialization combining them into an aggregate task; their Send task identities remained distinct.
 
-There are two kinds of evidence behind that explanation. [Source inspection](https://github.com/tamirdresher/tamirdresher.github.io/blob/1ca37f89ad6e91745ec4cbe49341711aefc6758b/samples/langgraph-after-the-crash/SOURCE_MAP.md) shows that the synchronous loop passes its background submitter to the task runner and also uses it for saver writes. The [targeted probe](https://github.com/tamirdresher/tamirdresher.github.io/blob/1ca37f89ad6e91745ec4cbe49341711aefc6758b/samples/langgraph-after-the-crash/lab.py) then records what actually happened: flight and hotel task executions finished; their saver futures were submitted to that same executor, queued and not running; car was running; and neither matching saver call had started before the kill. The unfiltered SQLite writes and reconstructed task state both lacked those results.
+There are two kinds of evidence behind that explanation. [Source inspection](https://github.com/tamirdresher/langgraph-internals-samples/blob/45d28f66ae1a91ad00011fd725537d7e41e67fc7/crash-recovery/SOURCE_MAP.md) shows that the synchronous loop passes its background submitter to the task runner and also uses it for saver writes. The [targeted probe](https://github.com/tamirdresher/langgraph-internals-samples/blob/45d28f66ae1a91ad00011fd725537d7e41e67fc7/crash-recovery/lab.py) then records what actually happened: flight and hotel task executions finished; their saver futures were submitted to that same executor, queued and not running; car was running; and neither matching saver call had started before the kill. The unfiltered SQLite writes and reconstructed task state both lacked those results.
 
 The release control matters too. Instead of killing the serialized worker, I let car finish. The queued saver calls then started, completed, and their results appeared in SQLite. In the default-concurrency controls, flight and hotel saver calls completed while car was still held. That checks the queue explanation against actual draining, rather than treating an absent query result as proof by itself.
 
-The [observational wrappers](https://github.com/tamirdresher/tamirdresher.github.io/blob/1ca37f89ad6e91745ec4cbe49341711aefc6758b/samples/langgraph-after-the-crash/executor_trace.py) leave the original calls, futures and write policy intact, but logging does add overhead. These are bounded mechanism checks of the pinned synchronous `invoke` path, default `async` durability, SQLite saver and `max_concurrency=1`—not a claim that every serialized agent loses completed results, or a measurement of arbitrary-crash failure rates.
+The [observational wrappers](https://github.com/tamirdresher/langgraph-internals-samples/blob/45d28f66ae1a91ad00011fd725537d7e41e67fc7/crash-recovery/executor_trace.py) leave the original calls, futures and write policy intact, but logging does add overhead. These are bounded mechanism checks of the pinned synchronous `invoke` path, default `async` durability, SQLite saver and `max_concurrency=1`—not a claim that every serialized agent loses completed results, or a measurement of arbitrary-crash failure rates.
 
 The manual aggregate ToolNode reaches the same numbers for a different reason. That control feeds all three calls into one ordinary `tools` graph task. Its ToolNode gathers the tool outputs before returning its combined result. Killing it inside car leaves no independently completed graph task for flight or hotel. That's a graph you can build manually, but it isn't the default factory topology.
 
@@ -286,7 +286,7 @@ Those observations are about the fake service used here. A real provider's dedup
 
 ## Reproduce the selected crash windows
 
-The [reproduction package](https://github.com/tamirdresher/tamirdresher.github.io/blob/1ca37f89ad6e91745ec4cbe49341711aefc6758b/samples/langgraph-after-the-crash/README.md) contains the offline agent, all six graph configurations, the A–M crash matrix and the executor probe with its no-kill release control. It needs no model key or real booking service. From that directory, after following its CFS-based setup:
+The [reproduction package](https://github.com/tamirdresher/langgraph-internals-samples/blob/45d28f66ae1a91ad00011fd725537d7e41e67fc7/crash-recovery/README.md) contains the offline agent, all six graph configurations, the A–M crash matrix and the executor probe with its no-kill release control. It needs no model key or real booking service. From that directory, after following its CFS-based setup:
 
 ```powershell
 python .\smoke.py --output .\outputs\smoke-01
