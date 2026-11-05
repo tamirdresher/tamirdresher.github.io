@@ -1,0 +1,9 @@
+flowchart TD
+    C["Saved checkpoint state and versions"] --> T["Reconstruct runtime tasks<br/>including per-call Send identities"]
+    S["Saved Send packets"] --> T
+    W["Persisted messages writes<br/>keyed by completed task IDs"] --> A["Reattach successful task writes"]
+    T --> A
+    A --> V["Inspection can show completed results<br/>and unfinished car without executing either"]
+    V --> I["Caller explicitly invokes None"]
+    I --> R["Pregel runs tasks still lacking writes"]
+    R --> N["Apply outputs and save next full checkpoint"]

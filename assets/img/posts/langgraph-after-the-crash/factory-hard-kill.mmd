@@ -1,0 +1,28 @@
+flowchart TD
+    S(["START"]) --> M["Model requests flight, hotel and car"]
+    subgraph Worker["Original Python process: killed during car"]
+        M
+        subgraph Executions["Three Send task executions of ONE registered tools node"]
+            F["tools task: flight call<br/>Returned; messages write persisted"]
+            H["tools task: hotel call<br/>Returned; messages write persisted"]
+            C["tools task: car call<br/>Blocked before effect; no result write"]
+        end
+        M -->|"Send: flight call"| F
+        M -->|"Send: hotel call"| H
+        M -->|"Send: car call"| C
+        C -.-> K["HARD KILL"]
+    end
+    P[("Persistent graph storage outside worker<br/>Full checkpoint: loop / 1<br/>Flight and hotel task writes saved")]
+    B[("Separate booking store outside worker<br/>Flight and hotel committed; no car")]
+    M -.->|"checkpoint before tool superstep"| P
+    F -.->|"messages: flight ToolMessage"| P
+    H -.->|"messages: hotel ToolMessage"| P
+    F -.->|"flight booking"| B
+    H -.->|"hotel booking"| B
+    P --> O["Replacement worker process opens same saved thread<br/>Inspection alone does not run work"]
+    O --> I["Caller explicitly invokes None"]
+    I --> R["Reuse flight and hotel writes<br/>Execute unfinished car task"]
+    classDef saved fill:#d8f3dc,stroke:#327546,color:#163d23
+    classDef stopped fill:#ffe4cc,stroke:#a64b00,color:#4d2300
+    class F,H saved
+    class C,K stopped
