@@ -88,9 +88,9 @@ That distinction changes the crash story. In the default-factory tests, I held c
 
 Here's that selected window:
 
-[![Three separately scheduled tool tasks share one tools node. Flight and hotel results are saved before the worker process is killed during car. A caller explicitly resumes the saved run in a replacement worker process.]({{ site.baseurl }}/assets/img/posts/langgraph-after-the-crash/factory-hard-kill.png)]({{ site.baseurl }}/assets/img/posts/langgraph-after-the-crash/factory-hard-kill.svg)
+[![Three separately scheduled tool tasks share one tools node. Flight and hotel results are saved before the worker process is killed during car. A caller explicitly resumes the saved run in a replacement worker process.](https://raw.githubusercontent.com/tamirdresher/tamirdresher.github.io/654e2762db9c6d32ace35e99d9beb879d30e12ca/assets/img/posts/langgraph-after-the-crash/factory-hard-kill.png)](https://raw.githubusercontent.com/tamirdresher/tamirdresher.github.io/654e2762db9c6d32ace35e99d9beb879d30e12ca/assets/img/posts/langgraph-after-the-crash/factory-hard-kill.svg)
 
-[Open the full-size diagram]({{ site.baseurl }}/assets/img/posts/langgraph-after-the-crash/factory-hard-kill.svg) | [Mermaid source]({{ site.baseurl }}/assets/img/posts/langgraph-after-the-crash/factory-hard-kill.mmd)
+[Open the full-size diagram](https://raw.githubusercontent.com/tamirdresher/tamirdresher.github.io/654e2762db9c6d32ace35e99d9beb879d30e12ca/assets/img/posts/langgraph-after-the-crash/factory-hard-kill.svg) | [Mermaid source](https://raw.githubusercontent.com/tamirdresher/tamirdresher.github.io/654e2762db9c6d32ace35e99d9beb879d30e12ca/assets/img/posts/langgraph-after-the-crash/factory-hard-kill.mmd)
 
 *The three boxes are runtime task instances, not three static graph nodes. Flight and hotel are green because their results were persisted before this kill, not merely because the booking functions returned. Both databases survive outside the worker. A replacement worker process still needs an explicit continuation invocation.*
 
@@ -172,9 +172,9 @@ The channel versions still matter. `channel_versions` and `versions_seen` help L
 
 In this version, the Pregel loop reapplies successful writes to matching reconstructed task IDs. The execution path submits tasks that still lack writes. Flight and hotel therefore don't run their bodies again; car does.
 
-[![Checkpoint state and saved Send packets reconstruct runtime tasks. Persisted messages identify completed tasks; an explicit continuation executes work that still lacks saved results.]({{ site.baseurl }}/assets/img/posts/langgraph-after-the-crash/saved-write-recovery.png)]({{ site.baseurl }}/assets/img/posts/langgraph-after-the-crash/saved-write-recovery.svg)
+[![Checkpoint state and saved Send packets reconstruct runtime tasks. Persisted messages identify completed tasks; an explicit continuation executes work that still lacks saved results.](https://raw.githubusercontent.com/tamirdresher/tamirdresher.github.io/654e2762db9c6d32ace35e99d9beb879d30e12ca/assets/img/posts/langgraph-after-the-crash/saved-write-recovery.png)](https://raw.githubusercontent.com/tamirdresher/tamirdresher.github.io/654e2762db9c6d32ace35e99d9beb879d30e12ca/assets/img/posts/langgraph-after-the-crash/saved-write-recovery.svg)
 
-[Open the full-size diagram]({{ site.baseurl }}/assets/img/posts/langgraph-after-the-crash/saved-write-recovery.svg) | [Mermaid source]({{ site.baseurl }}/assets/img/posts/langgraph-after-the-crash/saved-write-recovery.mmd)
+[Open the full-size diagram](https://raw.githubusercontent.com/tamirdresher/tamirdresher.github.io/654e2762db9c6d32ace35e99d9beb879d30e12ca/assets/img/posts/langgraph-after-the-crash/saved-write-recovery.svg) | [Mermaid source](https://raw.githubusercontent.com/tamirdresher/tamirdresher.github.io/654e2762db9c6d32ace35e99d9beb879d30e12ca/assets/img/posts/langgraph-after-the-crash/saved-write-recovery.mmd)
 
 *This is the factory path. The identity belongs to work reconstructed in that saved execution, not a global cache indexed by a Python function's name.*
 
