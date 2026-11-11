@@ -25,13 +25,19 @@ Let's follow the same flight, hotel and car through the actual Python integratio
 
 ## Start with the public integration, not an imaginary wrapper
 
-The code lives in [`langchain_azure_compute.graph`](https://github.com/langchain-ai/langchain-azure/tree/8fce92d3a986eddcb5a2718f1c08ca82999adee9/libs/azure-compute/langchain_azure_compute/graph), in the public `langchain-ai/langchain-azure` repository. Its public entry points include `attach_durability`, `durable_tool` and `sdk_options`.
+The code lives in [`langchain_azure_compute.graph`](https://github.com/langchain-ai/langchain-azure/tree/faec6abc905437386d41b17b592891f6ead28a7f/libs/azure-compute/langchain_azure_compute/graph), in the public `langchain-ai/langchain-azure` repository. Its public entry points include `attach_durability`, `durable_tool` and `sdk_options`.
 
-The integration labels its API **public preview and subject to change**. I am using its public source and examples here, not claiming that a package version you already have installed contains this surface. The source manifest declares the `durabletask` optional dependency group, Python 3.11 or later, LangGraph `>=1.0.2,<1.2`, and the Durable Task SDK packages `>=1.13.0,<1.14`. Check those [declared dependencies](https://github.com/langchain-ai/langchain-azure/blob/8fce92d3a986eddcb5a2718f1c08ca82999adee9/libs/azure-compute/pyproject.toml) before combining it with a different LangGraph environment.
+The integration ships in [`langchain-azure-compute` 0.2.0](https://github.com/langchain-ai/langchain-azure/releases/tag/libs/azure-compute/v0.2.0). Install its `durabletask` extra:
+
+```bash
+python -m pip install "langchain-azure-compute[durabletask]==0.2.0"
+```
+
+The API is still **public preview and subject to change**. This release requires Python `>=3.11,<4.0`, LangGraph `>=1.2.0,<1.3`, and the Durable Task SDK packages `>=1.13.0,<1.14`. The [manifest](https://github.com/langchain-ai/langchain-azure/blob/faec6abc905437386d41b17b592891f6ead28a7f/libs/azure-compute/pyproject.toml#L50-L58) also pins compatible checkpoint and prebuilt ranges. Check those before combining it with a different LangGraph environment.
 
 The important contract is small: pass a **compiled graph** to `attach_durability`, register the returned handlers on a DTS worker, and use its client wrapper to start a run. Passing an uncompiled `StateGraph` builder is rejected.
 
-Does that include the real `langchain.agents.create_agent` factory from the previous article? Yes. The public source has a [factory integration test](https://github.com/langchain-ai/langchain-azure/blob/8fce92d3a986eddcb5a2718f1c08ca82999adee9/libs/azure-compute/tests/unit_tests/graph/test_step.py#L3594-L3602) with this setup:
+Does that include the real `langchain.agents.create_agent` factory from the previous article? Yes. The public source has a [factory integration test](https://github.com/langchain-ai/langchain-azure/blob/faec6abc905437386d41b17b592891f6ead28a7f/libs/azure-compute/tests/unit_tests/graph/test_step.py#L3601-L3608) with this setup:
 
 ```python
 from langchain.agents import create_agent
@@ -46,7 +52,7 @@ reg = attach_durability(graph, name="push_toolnode_v2")
 
 This is an excerpt, not a standalone application: that test supplies the fake model, tools, schema and integration imports. It exercises the factory's tool tasks and the integration's tool execution and result commit path. It is source evidence for the factory boundary, not a worker crash experiment.
 
-For the booking walkthrough, I will use the repository's [vacation example](https://github.com/langchain-ai/langchain-azure/blob/8fce92d3a986eddcb5a2718f1c08ca82999adee9/samples/langgraph-durabletask/02_vacation_booking/sample.py). That graph is deliberately hand-built. Its scripted planning node emits the three tool calls, followed by `ToolNode`, review and confirmation nodes. There is no live model or booking provider to distract from the execution mechanism.
+For the booking walkthrough, I will use the repository's [vacation example](https://github.com/langchain-ai/langchain-azure/blob/faec6abc905437386d41b17b592891f6ead28a7f/samples/langgraph-durabletask/02_vacation_booking/sample.py). That graph is deliberately hand-built. Its scripted planning node emits the three tool calls, followed by `ToolNode`, review and confirmation nodes. There is no live model or booking provider to distract from the execution mechanism.
 
 ---
 
@@ -57,18 +63,20 @@ Here is the flight tool, directly from the vacation example:
 ```python
 @durable_tool(retries=3)
 @tool
-def book_flight(destination: str) -> str:
+def book_flight(destination: str, runtime: ToolRuntime) -> str:
     """Book a flight to the destination."""
-    return record_booking("FLIGHT", destination)
+    return record_booking(
+        "FLIGHT", destination, runtime.config["metadata"]["durable_call_id"]
+    )
 ```
 
-Hotel and car use the same decorator arrangement. The sample's `record_booking` appends a fake confirmation to a local log. It is not a real reservation service or a production idempotency implementation.
+Hotel and car use the same decorator arrangement. The sample imports `ToolRuntime` from `langgraph.prebuilt.tool_node`. Its [booking helper](https://github.com/langchain-ai/langchain-azure/blob/faec6abc905437386d41b17b592891f6ead28a7f/samples/langgraph-durabletask/02_vacation_booking/sample.py#L43-L81) checks the JSON ledger for the same `durable_call_id` and returns the existing confirmation before appending a new booking. That illustrates reusing a stable effect identity across attempts. A local file check under a single-process lock is not transactional duplicate suppression across workers, and it is not a real reservation service.
 
 `@tool` gives LangChain the tool schema and invocation interface. The outer `@durable_tool` adds the durability policy and retry setting. **The decorator does not contact DTS when Python defines the function.** The attached graph's runner interprets that policy when the graph reaches the tool call.
 
 There is another detail worth knowing before you decorate every function in sight: `attach_durability` defaults `durable_tools` to `True`. In that default configuration, supported tools in `ToolNode`s become isolated activities even without an explicit durability decorator. The decorator is useful for making the boundary visible and setting a per-tool policy.
 
-To select tools, the [API](https://github.com/langchain-ai/langchain-azure/blob/8fce92d3a986eddcb5a2718f1c08ca82999adee9/libs/azure-compute/langchain_azure_compute/graph/_api.py#L884-L960) accepts tool names or objects through `durable_tools`, and selector policies through `tool_policy`. An unlisted decorated tool can still become durable through its decorator metadata; the selection list alone does not disable that policy. To force a decorated tool to run locally, set an explicit `"local"` override for that tool in `tool_policy`. Local tools do not get their own durable activity result. In a mixed batch, the runner executes them in the graph step that combines the durable outputs.
+To select tools, the [API](https://github.com/langchain-ai/langchain-azure/blob/faec6abc905437386d41b17b592891f6ead28a7f/libs/azure-compute/langchain_azure_compute/graph/_api.py#L1001-L1056) accepts tool names or objects through `durable_tools`, and selector policies through `tool_policy`. An unlisted decorated tool can still become durable through its decorator metadata; the selection list alone does not disable that policy. To force a decorated tool to run locally, set an explicit `"local"` override for that tool in `tool_policy`. Local tools do not get their own durable activity result. In a mixed batch, the runner executes them in the graph step that combines the durable outputs.
 
 The selection matters. A cheap pure calculation and a reservation API do not necessarily deserve the same scheduling boundary.
 
@@ -81,14 +89,16 @@ And `retries=3` is passed to the SDK's `max_number_of_attempts`. It means up to 
 The vacation graph ends its builder function with `builder.compile()`, without an external checkpointer. Its worker setup is:
 
 ```python
-reg = attach_durability(build_vacation_graph(log_path, fail_car_once=True), name="vacation_planner")
+reg = attach_durability(
+    build_vacation_graph(log_path, fail_car_once=True), name="vacation_planner"
+)
 worker = DurableTaskSchedulerWorker(**sdk_options(endpoint))
 sdk = DurableTaskSchedulerClient(**sdk_options(endpoint))
 reg.register(worker)
 worker.start()
 ```
 
-These are exact setup lines from the [sample](https://github.com/langchain-ai/langchain-azure/blob/8fce92d3a986eddcb5a2718f1c08ca82999adee9/samples/langgraph-durabletask/02_vacation_booking/sample.py#L135-L139). It imports `DurableTaskSchedulerWorker` and `DurableTaskSchedulerClient` from the SDK's `durabletask.azuremanaged` worker and client modules, and the three integration functions from `langchain_azure_compute.graph`.
+These are exact setup lines from the [sample](https://github.com/langchain-ai/langchain-azure/blob/faec6abc905437386d41b17b592891f6ead28a7f/samples/langgraph-durabletask/02_vacation_booking/sample.py#L184-L190). It imports `DurableTaskSchedulerWorker` and `DurableTaskSchedulerClient` from the SDK's `durabletask.azuremanaged` worker and client modules, and the three integration functions from `langchain_azure_compute.graph`.
 
 `sdk_options(endpoint)` builds SDK connection options. In a local emulator setup, the endpoint can be `127.0.0.1:8080`. A hosted scheduler also needs the appropriate task hub and authenticated connection configuration. Creating this options dictionary does not create a scheduler or deploy a worker.
 
@@ -121,7 +131,7 @@ The sample's second `client.start` uses the same instance ID to demonstrate atta
 
 The integration does not execute the entire agent inside a deterministic orchestrator. That would put model calls and booking side effects in replayable orchestration code, which is exactly where they should not be.
 
-Instead, the [runner](https://github.com/langchain-ai/langchain-azure/blob/8fce92d3a986eddcb5a2718f1c08ca82999adee9/libs/azure-compute/langchain_azure_compute/graph/runner.py) separates control from execution.
+Instead, the [runner](https://github.com/langchain-ai/langchain-azure/blob/faec6abc905437386d41b17b592891f6ead28a7f/libs/azure-compute/langchain_azure_compute/graph/runner.py) separates control from execution.
 
 A graph step activity advances LangGraph to the next boundary. When selected tool calls are pending, its report contains the calls, their packed arguments, checkpoint information and durability policies. The orchestration uses that report to schedule separate tool activities.
 
@@ -129,7 +139,7 @@ Here is the scheduling boundary in the runner:
 
 ```python
 batch_tasks.append(
-    ctx.call_activity(
+    call_activity(
         state.active_tool_name,
         input=t_req,
         retry_policy=t_retry,
@@ -137,7 +147,7 @@ batch_tasks.append(
 )
 ```
 
-The surrounding [orchestrator code](https://github.com/langchain-ai/langchain-azure/blob/8fce92d3a986eddcb5a2718f1c08ca82999adee9/libs/azure-compute/langchain_azure_compute/graph/runner.py#L1180-L1260) constructs `t_req` with the thread, checkpoint, tool node, logical call identity, index and packed tool call. In the default checkpoint mode it also carries the graph checkpoint bundle.
+The surrounding [orchestrator code](https://github.com/langchain-ai/langchain-azure/blob/faec6abc905437386d41b17b592891f6ead28a7f/libs/azure-compute/langchain_azure_compute/graph/runner.py#L1364-L1393) constructs `t_req` with the thread, checkpoint, tool node, logical call identity, index and packed tool call. In the default checkpoint mode it also carries the graph checkpoint bundle. The local [`call_activity` helper](https://github.com/langchain-ai/langchain-azure/blob/faec6abc905437386d41b17b592891f6ead28a7f/libs/azure-compute/langchain_azure_compute/graph/runner.py#L1297-L1304) checks the input payload size before forwarding the call to the SDK.
 
 The orchestration builds the tasks in a batch before yielding their results. With `tool_max_concurrency=None`, the default, all selected calls in that batch can run in parallel. `tool_max_concurrency=1` schedules them sequentially; larger values bound the batch size. This is the integration's scheduling control, not the claim that LangGraph's own executor concurrency setting creates durability.
 
@@ -161,7 +171,7 @@ Here is the recovery mechanism in that specific mode:
 
 *Illustrative selected crash window in inline-bundle mode, not a captured log or a serial-tool ordering guarantee. Graph state travels in checkpoint bundles; recorded tool completions belong to logically separate service history and are reused on replay. An already registered, connected and eligible Worker B receives pending work, hydrates the carried state and runs new Python calls—not Worker A's stack. DTS does not provision workers or guarantee exactly-once booking effects. The scheduler must remain available. The client only observes its original execution; it does not start a recovery run.*
 
-The [bundle implementation](https://github.com/langchain-ai/langchain-azure/blob/8fce92d3a986eddcb5a2718f1c08ca82999adee9/libs/azure-compute/langchain_azure_compute/graph/_inline_saver.py) exports the checkpoint slice, pending writes and referenced channel blobs needed for continuation. It is not an unlimited archive of every graph snapshot. State serialization and payload limits are real design constraints.
+The [bundle implementation](https://github.com/langchain-ai/langchain-azure/blob/faec6abc905437386d41b17b592891f6ead28a7f/libs/azure-compute/langchain_azure_compute/graph/_inline_saver.py) exports the checkpoint slice, pending writes and referenced channel blobs needed for continuation. It is not an unlimited archive of every graph snapshot. State serialization and payload limits are real design constraints.
 
 If you supply a persistent checkpointer instead, `inline_checkpoints` defaults to `False`. That mode keeps graph checkpoints in the external store rather than shipping full bundles. DTS still carries the input, tool calls, activity results and control envelopes. "External checkpointer" does not mean "no application data in DTS."
 
@@ -224,7 +234,7 @@ For this agent, the deployment contract is straightforward: keep a scheduler out
 
 Then put the flight, hotel and car effects behind selected durable tool activities. DTS records their scheduling and completions and delivers unfinished work; LangGraph keeps the state, routing and agent loop. Ordinary code inside a graph step does not automatically become a separately recorded activity just because the graph is attached.
 
-The public repository has the complete [vacation example](https://github.com/langchain-ai/langchain-azure/tree/8fce92d3a986eddcb5a2718f1c08ca82999adee9/samples/langgraph-durabletask/02_vacation_booking) and a separate [two-process checkpoint-bundle example](https://github.com/langchain-ai/langchain-azure/tree/8fce92d3a986eddcb5a2718f1c08ca82999adee9/samples/langgraph-durabletask/09_two_process_crash_recovery). The latter uses an approval interrupt and an explicit human response, not the same mid-booking failure scenario. Neither should be confused with the [native LangGraph crash reproduction](https://github.com/tamirdresher/langgraph-internals-samples/tree/main/crash-recovery).
+The public repository has the complete [vacation example](https://github.com/langchain-ai/langchain-azure/tree/faec6abc905437386d41b17b592891f6ead28a7f/samples/langgraph-durabletask/02_vacation_booking) and a separate [two-process checkpoint-bundle example](https://github.com/langchain-ai/langchain-azure/tree/faec6abc905437386d41b17b592891f6ead28a7f/samples/langgraph-durabletask/09_two_process_crash_recovery). The latter uses an approval interrupt and an explicit human response, not the same mid-booking failure scenario. Neither should be confused with the [native LangGraph crash reproduction](https://github.com/tamirdresher/langgraph-internals-samples/tree/main/crash-recovery).
 
 The practical question is no longer just "can I reopen this checkpoint?" It is "who owns the pending booking, where is its recorded result, and what happens if the provider accepted it before my worker disappeared?"
 
