@@ -50,6 +50,7 @@ baseurl: ''
 
 # Change to your timezone › http://www.timezoneconverter.com/cgi-bin/findzone/findzone
 timezone: Asia/Jerusalem
+future: false
 
 google_analytics:
   id: 'G-MCQT5DNKFL'          # Fill with your Google Analytics ID
