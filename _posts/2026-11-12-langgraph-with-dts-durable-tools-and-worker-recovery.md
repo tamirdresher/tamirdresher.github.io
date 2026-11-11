@@ -2,6 +2,8 @@
 layout: post
 title: "LangGraph With Durable Task Scheduler: Durable Tools and Worker Recovery"
 date: 2026-11-12
+description: "How Azure Durable Task Scheduler adds durable tool execution and worker recovery to LangGraph agents."
+image: /assets/langgraph-with-dts-durable-tools-and-worker-recovery/langgraph-durable-task-recovery.png
 tags: [langgraph, langchain, durable-task-scheduler, durable-execution, python, ai-agents]
 ---
 
