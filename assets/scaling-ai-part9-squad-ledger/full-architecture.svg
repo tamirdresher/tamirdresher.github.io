@@ -1,0 +1,189 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" font-family="'Segoe UI', system-ui, -apple-system, sans-serif">
+  <defs>
+    <marker id="a-right" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#888ea8"/>
+    </marker>
+    <marker id="a-right-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#7dff9a"/>
+    </marker>
+    <marker id="a-right-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#4a9eed"/>
+    </marker>
+    <marker id="a-right-orange" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#ffaa44"/>
+    </marker>
+    <marker id="a-left" markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto-start-reverse">
+      <polygon points="8 0, 0 3, 8 6" fill="#888ea8"/>
+    </marker>
+    <linearGradient id="code-bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e1e3a"/>
+      <stop offset="100%" stop-color="#16162e"/>
+    </linearGradient>
+    <linearGradient id="ledger-bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0d1f14"/>
+      <stop offset="100%" stop-color="#0a1a10"/>
+    </linearGradient>
+    <linearGradient id="notes-bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0d1420"/>
+      <stop offset="100%" stop-color="#0a101a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="600" fill="#1a1a2e" rx="12"/>
+
+  <!-- Title -->
+  <text x="480" y="36" text-anchor="middle" fill="#ffffff" font-size="20" font-weight="700">Complete Squad State Architecture</text>
+  <text x="480" y="56" text-anchor="middle" fill="#888ea8" font-size="12">Code Repo → Ledger (Tier 1) + Git Notes (Tier 2)</text>
+
+  <!-- ═══ CODE REPO (left) ═══ -->
+  <rect x="30" y="80" width="260" height="370" rx="10" fill="url(#code-bg)" stroke="#888ea8" stroke-width="2"/>
+  <rect x="30" y="80" width="260" height="35" rx="10" fill="#2a2a4e"/>
+  <rect x="30" y="105" width="260" height="10" fill="#2a2a4e"/>
+  <text x="160" y="103" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">📁 Code Repo</text>
+  <text x="160" y="132" text-anchor="middle" fill="#888ea8" font-size="11">your-project</text>
+
+  <!-- Code repo contents -->
+  <text x="55" y="160" fill="#aaa" font-size="12">📂 src/</text>
+  <text x="55" y="180" fill="#aaa" font-size="12">📂 tests/</text>
+  <text x="55" y="205" fill="#ffaa44" font-size="12" font-weight="600">📂 .squad/</text>
+  <rect x="70" y="215" width="200" height="22" rx="4" fill="#1a1a2e" stroke="#ffaa44" stroke-width="1" opacity="0.7"/>
+  <text x="80" y="231" fill="#ffaa44" font-size="11">📄 ledger.json → pointer</text>
+  <rect x="70" y="242" width="200" height="22" rx="4" fill="#1a1a2e" stroke="#7dff9a" stroke-width="1" opacity="0.5"/>
+  <text x="80" y="258" fill="#7dff9a" font-size="11">📄 decisions.md</text>
+  <rect x="70" y="269" width="200" height="22" rx="4" fill="#1a1a2e" stroke="#7dff9a" stroke-width="1" opacity="0.5"/>
+  <text x="80" y="285" fill="#7dff9a" font-size="11">📄 routing.md</text>
+  <rect x="70" y="296" width="200" height="22" rx="4" fill="#1a1a2e" stroke="#7dff9a" stroke-width="1" opacity="0.5"/>
+  <text x="80" y="312" fill="#7dff9a" font-size="11">📂 agents/*/history.md</text>
+
+  <text x="55" y="345" fill="#aaa" font-size="12">📂 .github/workflows/</text>
+  <rect x="70" y="355" width="200" height="22" rx="4" fill="#1a1a2e" stroke="#888ea8" stroke-width="1" opacity="0.5"/>
+  <text x="80" y="371" fill="#ccc" font-size="11">⚙️ squad-ledger-sync.yml</text>
+
+  <!-- Commit dots at bottom of code repo -->
+  <text x="55" y="410" fill="#4a9eed" font-size="12" font-weight="600">Commits:</text>
+  <circle cx="140" cy="425" r="8" fill="#0d1420" stroke="#4a9eed" stroke-width="1.5"/>
+  <circle cx="165" cy="425" r="8" fill="#0d1420" stroke="#4a9eed" stroke-width="1.5"/>
+  <circle cx="190" cy="425" r="8" fill="#0d1420" stroke="#4a9eed" stroke-width="1.5"/>
+  <text x="140" y="429" text-anchor="middle" fill="#4a9eed" font-size="7">📝</text>
+  <text x="165" y="429" text-anchor="middle" fill="#4a9eed" font-size="7">📝</text>
+  <text x="190" y="429" text-anchor="middle" fill="#4a9eed" font-size="7">📝</text>
+  <text x="215" y="429" fill="#888ea8" font-size="10">← notes attached</text>
+
+  <!-- ═══ LEDGER REPO — TIER 1 (top right) ═══ -->
+  <rect x="570" y="80" width="360" height="200" rx="10" fill="url(#ledger-bg)" stroke="#7dff9a" stroke-width="2"/>
+  <rect x="570" y="80" width="360" height="35" rx="10" fill="#1a3a2a"/>
+  <rect x="570" y="105" width="360" height="10" fill="#1a3a2a"/>
+  <text x="665" y="103" fill="#7dff9a" font-size="13" font-weight="700">🟢 TIER 1</text>
+  <text x="750" y="103" fill="#ffffff" font-size="13" font-weight="600">Ledger Repo</text>
+  <text x="860" y="103" fill="#888ea8" font-size="11">squad/state</text>
+
+  <text x="590" y="132" fill="#888ea8" font-size="11" font-style="italic">orphan branch — permanent state</text>
+
+  <!-- Ledger contents -->
+  <rect x="590" y="145" width="150" height="28" rx="5" fill="#0d1f14" stroke="#7dff9a" stroke-width="1"/>
+  <text x="665" y="164" text-anchor="middle" fill="#7dff9a" font-size="11">📄 team.md</text>
+
+  <rect x="755" y="145" width="160" height="28" rx="5" fill="#0d1f14" stroke="#7dff9a" stroke-width="1"/>
+  <text x="835" y="164" text-anchor="middle" fill="#7dff9a" font-size="11">📄 routing.md</text>
+
+  <rect x="590" y="182" width="150" height="28" rx="5" fill="#0d1f14" stroke="#7dff9a" stroke-width="1"/>
+  <text x="665" y="201" text-anchor="middle" fill="#7dff9a" font-size="11">📄 decisions.md</text>
+
+  <rect x="755" y="182" width="160" height="28" rx="5" fill="#0d1f14" stroke="#7dff9a" stroke-width="1"/>
+  <text x="835" y="201" text-anchor="middle" fill="#7dff9a" font-size="11">📂 agents/*/history</text>
+
+  <rect x="590" y="219" width="150" height="28" rx="5" fill="#0d1f14" stroke="#7dff9a" stroke-width="1"/>
+  <text x="665" y="238" text-anchor="middle" fill="#7dff9a" font-size="11">📂 knowledge/</text>
+
+  <rect x="755" y="219" width="160" height="28" rx="5" fill="#0d1f14" stroke="#7dff9a" stroke-width="1"/>
+  <text x="835" y="238" text-anchor="middle" fill="#7dff9a" font-size="11">📂 orchestration/</text>
+
+  <text x="750" y="270" text-anchor="middle" fill="#7dff9a" font-size="11" font-weight="600">Survives everything ✓</text>
+
+  <!-- ═══ GIT NOTES — TIER 2 (bottom right) ═══ -->
+  <rect x="570" y="300" width="360" height="150" rx="10" fill="url(#notes-bg)" stroke="#4a9eed" stroke-width="2"/>
+  <rect x="570" y="300" width="360" height="35" rx="10" fill="#1a2a3e"/>
+  <rect x="570" y="325" width="360" height="10" fill="#1a2a3e"/>
+  <text x="665" y="323" fill="#4a9eed" font-size="13" font-weight="700">🔵 TIER 2</text>
+  <text x="750" y="323" fill="#ffffff" font-size="13" font-weight="600">Git Notes</text>
+  <text x="860" y="323" fill="#888ea8" font-size="11">refs/notes/</text>
+
+  <text x="590" y="352" fill="#888ea8" font-size="11" font-style="italic">per-commit annotations — branch-scoped</text>
+
+  <!-- Notes refs -->
+  <rect x="590" y="365" width="155" height="32" rx="5" fill="#0d1420" stroke="#4a9eed" stroke-width="1"/>
+  <text x="667" y="380" text-anchor="middle" fill="#4a9eed" font-size="10" font-weight="600">squad/decisions</text>
+  <text x="667" y="393" text-anchor="middle" fill="#aaa" font-size="9">scoped decisions</text>
+
+  <rect x="760" y="365" width="155" height="32" rx="5" fill="#0d1420" stroke="#4a9eed" stroke-width="1"/>
+  <text x="837" y="380" text-anchor="middle" fill="#4a9eed" font-size="10" font-weight="600">squad/reviews</text>
+  <text x="837" y="393" text-anchor="middle" fill="#aaa" font-size="9">security per commit</text>
+
+  <rect x="590" y="405" width="155" height="32" rx="5" fill="#0d1420" stroke="#4a9eed" stroke-width="1"/>
+  <text x="667" y="420" text-anchor="middle" fill="#4a9eed" font-size="10" font-weight="600">squad/context</text>
+  <text x="667" y="433" text-anchor="middle" fill="#aaa" font-size="9">research context</text>
+
+  <text x="750" y="455" text-anchor="middle" fill="#4a9eed" font-size="11" font-weight="600">Follows commit lifecycle ✓</text>
+
+  <!-- ═══ SYNC ARROWS ═══ -->
+
+  <!-- Code repo → Ledger (Tier 1): GitHub Actions sync -->
+  <line x1="290" y1="180" x2="565" y2="180" stroke="#7dff9a" stroke-width="2" marker-end="url(#a-right-green)" stroke-dasharray="8,4"/>
+  <rect x="370" y="162" width="140" height="22" rx="4" fill="#1a1a2e" stroke="#7dff9a" stroke-width="1" opacity="0.9"/>
+  <text x="440" y="178" text-anchor="middle" fill="#7dff9a" font-size="10" font-weight="600">⚙️ GitHub Actions</text>
+
+  <!-- Code repo → Tier 1: sync label -->
+  <text x="440" y="200" text-anchor="middle" fill="#888ea8" font-size="9">push to main → sync .squad/ state</text>
+
+  <!-- Code repo commits → Git Notes (Tier 2) -->
+  <line x1="290" y1="425" x2="565" y2="390" stroke="#4a9eed" stroke-width="2" marker-end="url(#a-right-blue)" stroke-dasharray="8,4"/>
+  <rect x="370" y="395" width="140" height="22" rx="4" fill="#1a1a2e" stroke="#4a9eed" stroke-width="1" opacity="0.9"/>
+  <text x="440" y="411" text-anchor="middle" fill="#4a9eed" font-size="10" font-weight="600">git notes + push</text>
+
+  <!-- Code repo: ledger.json pointer -->
+  <line x1="290" y1="230" x2="420" y2="130" stroke="#ffaa44" stroke-width="1.5" marker-end="url(#a-right-orange)" stroke-dasharray="4,3"/>
+  <text x="355" y="140" fill="#ffaa44" font-size="9" transform="rotate(-28, 355, 140)">ledger.json pointer</text>
+
+  <!-- ═══ RALPH (drift detection) ═══ -->
+  <rect x="380" y="240" width="150" height="60" rx="8" fill="#1a1a2e" stroke="#ffaa44" stroke-width="1.5"/>
+  <text x="455" y="262" text-anchor="middle" fill="#ffaa44" font-size="22">🔄</text>
+  <text x="455" y="280" text-anchor="middle" fill="#ffaa44" font-size="11" font-weight="600">Ralph</text>
+  <text x="455" y="293" text-anchor="middle" fill="#888ea8" font-size="9">drift detection (6hr)</text>
+
+  <!-- Ralph arrows -->
+  <line x1="380" y1="270" x2="295" y2="270" stroke="#ffaa44" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#a-right-orange)" transform="rotate(180, 337.5, 270)"/>
+  <line x1="530" y1="270" x2="568" y2="230" stroke="#ffaa44" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#a-right-orange)"/>
+
+  <!-- ═══ FOOTER ═══ -->
+  <rect x="30" y="475" width="900" height="110" rx="10" fill="#12122a" stroke="#333355" stroke-width="1"/>
+  <text x="480" y="500" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">How It Flows</text>
+
+  <!-- Flow steps -->
+  <circle cx="80" cy="530" r="16" fill="#1a1a2e" stroke="#ffaa44" stroke-width="1.5"/>
+  <text x="80" y="535" text-anchor="middle" fill="#ffaa44" font-size="12" font-weight="700">1</text>
+  <text x="105" y="525" fill="#ddd" font-size="11">Agents write to <tspan fill="#ffaa44" font-weight="600">.squad/</tspan></text>
+  <text x="105" y="542" fill="#888ea8" font-size="10">in the code repo</text>
+
+  <circle cx="310" cy="530" r="16" fill="#1a1a2e" stroke="#7dff9a" stroke-width="1.5"/>
+  <text x="310" y="535" text-anchor="middle" fill="#7dff9a" font-size="12" font-weight="700">2</text>
+  <text x="335" y="525" fill="#ddd" font-size="11"><tspan fill="#7dff9a" font-weight="600">Tier 1</tspan> syncs on merge</text>
+  <text x="335" y="542" fill="#888ea8" font-size="10">via GitHub Actions</text>
+
+  <circle cx="540" cy="530" r="16" fill="#1a1a2e" stroke="#4a9eed" stroke-width="1.5"/>
+  <text x="540" y="535" text-anchor="middle" fill="#4a9eed" font-size="12" font-weight="700">3</text>
+  <text x="565" y="525" fill="#ddd" font-size="11"><tspan fill="#4a9eed" font-weight="600">Tier 2</tspan> notes on commits</text>
+  <text x="565" y="542" fill="#888ea8" font-size="10">lifecycle = reachability</text>
+
+  <circle cx="770" cy="530" r="16" fill="#1a1a2e" stroke="#ffaa44" stroke-width="1.5"/>
+  <text x="770" y="535" text-anchor="middle" fill="#ffaa44" font-size="12" font-weight="700">4</text>
+  <text x="795" y="525" fill="#ddd" font-size="11"><tspan fill="#ffaa44" font-weight="600">Ralph</tspan> checks drift</text>
+  <text x="795" y="542" fill="#888ea8" font-size="10">every 6 hours</text>
+
+  <!-- Step arrows -->
+  <line x1="235" y1="530" x2="290" y2="530" stroke="#555577" stroke-width="1" marker-end="url(#a-right)"/>
+  <line x1="475" y1="530" x2="520" y2="530" stroke="#555577" stroke-width="1" marker-end="url(#a-right)"/>
+  <line x1="710" y1="530" x2="750" y2="530" stroke="#555577" stroke-width="1" marker-end="url(#a-right)"/>
+
+  <text x="480" y="573" text-anchor="middle" fill="#555577" font-size="10">Permanent state stays permanent. Branch-scoped state follows commits. No lifecycle code required.</text>
+</svg>
