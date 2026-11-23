@@ -7,28 +7,16 @@ layout: page
 # MIT Licensed
 ---
 
-{% assign tag_posts = site.tags[page.tag] %}
-{% if page.tag_keys %}
-  {% assign tag_posts = "" | split: "" %}
-  {% for tag_key in page.tag_keys %}
-    {% assign key_posts = site.tags[tag_key] %}
-    {% if key_posts %}
-      {% assign tag_posts = tag_posts | concat: key_posts %}
-    {% endif %}
-  {% endfor %}
-  {% assign tag_posts = tag_posts | uniq | sort: "date" | reverse %}
-{% endif %}
-
 <div id="page-tag">
   <h1 class="pl-lg-2">
     <i class="fa fa-tag fa-fw text-muted"></i>
-    {{ page.title | escape }}
-    <span class="lead text-muted pl-2">{{ tag_posts | size }}</span>
+    {{ page.title }}
+    <span class="lead text-muted pl-2">{{ site.tags[page.tag] | size }}</span>
   </h1>
   <ul class="post-content pl-0">
-    {% for post in tag_posts %}
+    {% for post in site.tags[page.tag] %}
     <li class="d-flex justify-content-between pl-md-3 pr-md-3">
-      <a href="{{ post.url | relative_url | escape }}">{{ post.title | escape }}</a>
+      <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
       <span class="dash flex-grow-1"></span>
       <span class="text-muted small">{{ post.date | date: site.data.date_format.post.long }}</span>
     </li>

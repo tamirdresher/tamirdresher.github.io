@@ -22,8 +22,7 @@ type: tags
 
 {% for t in sorted_tags %}
   <div>
-    {% capture tag_url %}{% include tag-url.html tag=t %}{% endcapture %}
-    <a class="tag" href="{{ tag_url | escape }}">{{ t | escape }}<span class="text-muted">{{ site.tags[t].size }}</span></a>
+    <a class="tag" href="{{ site.baseurl }}/tags/{{ t | replace: ' ', '-' | downcase | url_encode }}/">{{ t }}<span class="text-muted">{{ site.tags[t].size }}</span></a>
   </div>
 {% endfor %}
 

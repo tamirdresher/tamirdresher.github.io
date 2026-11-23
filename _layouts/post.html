@@ -92,10 +92,9 @@ layout: default
         <div class="post-tags">
           <i class="fa fa-tags fa-fw mr-1"></i>
           {% for tag in page.tags %}
-          {% capture tag_url %}{% include tag-url.html tag=tag %}{% endcapture %}
-          <a href="{{ tag_url | escape }}"
+          <a href="{{ site.baseurl }}/tags/{{ tag | replace: ' ', '-' | downcase | url_encode }}"
             class="post-tag no-text-decoration" >
-            {{- tag | escape -}}
+            {{- tag -}}
           </a>
           {% endfor %}
           </div>
