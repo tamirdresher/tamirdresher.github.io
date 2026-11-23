@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "Durable Doesn't Mean Still in Stock"
-date: 2026-11-16
-tags: [durable-task, distributed-systems, workflows, consistency, software-design]
+date: 2026-11-23
+tags: [durable-task-sdk, distributed-systems, workflows, orchestration, dotnet]
 description: "A durable workflow remembers that stock was available. That isn't a reservation. Here's how I reason about the gap between reliable progress and a valid business decision."
 ---
 

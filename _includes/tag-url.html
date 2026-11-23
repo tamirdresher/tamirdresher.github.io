@@ -1,0 +1,2 @@
+{%- capture tag_path -%}/tags/{{ include.tag | replace: ' ', '-' | downcase | url_encode }}/{%- endcapture -%}
+{{- tag_path | relative_url -}}

@@ -66,6 +66,36 @@ bundle exec jekyll serve
 
 Then open `http://localhost:4000` in your browser.
 
+### Tag archives on GitHub Pages
+
+The site uses legacy GitHub Pages (`master:/`), which does not run custom
+generators or the old Chirpy `_scripts/sh/create_pages.sh` helper. Tag archives
+therefore live in committed `tags/*.md` pages using the existing `tag` layout.
+After adding or changing post tags, regenerate and commit these pages:
+
+```bash
+# Maintenance tooling uses Python and PyYAML (not a Pages build dependency).
+python tools/generate_tag_pages.py
+python tools/generate_tag_pages.py --check
+python tools/test_tag_navigation.py
+python tools/test_tag_navigation.py --render
+```
+
+The last command requires the existing bundled Jekyll toolchain and checks actual
+rendered archives and links, including a project-site baseurl. Generation includes
+scheduled posts, but `future: false` still controls which posts Jekyll displays.
+Archive URLs share the theme's space-to-hyphen/lowercase encoding; colliding tag
+names share an archive without changing the posts' taxonomy.
+
+To check coverage against a current fetched base branch without merging it, add
+`--master-ref origin/master`. For actual legacy Pages rendering, `--render
+--docker-image <installed-image-digest> --master-ref origin/master` uses an
+installed GitHub Pages toolchain (for example, the image documented by
+[`actions/jekyll-build-pages`](https://github.com/actions/jekyll-build-pages)).
+Containers have no network access and mount only this checkout read-only and
+the owned `_site` validation output. The effective master-plus-PR source and
+rendered fixtures are removed when checks finish.
+
 ---
 
 ## License
