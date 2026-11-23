@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant C as Client
+    participant D as DTS
+    participant A as Worker A
+    participant B as Worker B
+    Note over A,B: Matching handlers registered<br/>both workers connected
+    C->>D: Start one execution
+    D->>A: Graph step
+    A-->>D: Step result + checkpoint bundle
+    D->>A: Flight, hotel, car activities<br/>(may run in parallel)
+    A-->>D: Flight + hotel results
+    Note over D: Completions recorded<br/>in service history
+    Note over A: Dies during car<br/>no completion recorded
+    D->>B: Pending car + carried bundle
+    B->>B: Hydrate graph state<br/>execute car
+    B-->>D: Car result
+    D->>B: Continue graph step + bundle
+    B-->>D: New step result + bundle
+    D-->>C: Original execution result
