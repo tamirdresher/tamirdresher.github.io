@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant A as Order A
+    participant I as Inventory
+    participant B as Order B
+    A->>I: Check stock
+    I-->>A: One unit available
+    Note over A: Check result recorded
+    B->>I: Check stock
+    I-->>B: One unit available
+    B->>I: Buy final unit
+    I-->>B: Purchase accepted
+    Note over I: Available stock is now zero
+    A->>A: Obtain quote using saved check
+    Note over A: No stock was held for A
