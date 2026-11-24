@@ -50,8 +50,8 @@
       <div class="d-flex flex-wrap mt-3 mb-1 mr-3">
 
       {% for tag in trending_tags %}
-        {% capture url %}/tags/{{ tag | downcase | url_encode }}{% endcapture %}
-        <a class="post-tag" href="{{ url | relative_url }}">{{ tag | replace: '-', ' ' }}</a>
+        {% capture url %}{% include tag-url.html tag=tag %}{% endcapture %}
+        <a class="post-tag" href="{{ url | escape }}">{{ tag | replace: '-', ' ' | escape }}</a>
       {% endfor %}
       </div>
     </div>
